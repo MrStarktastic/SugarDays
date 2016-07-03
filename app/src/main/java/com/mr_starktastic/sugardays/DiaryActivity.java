@@ -4,18 +4,26 @@ import android.animation.LayoutTransition;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.GravityCompat;
+import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
 import android.util.DisplayMetrics;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,26 +33,85 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.prolificinteractive.materialcalendarview.CalendarDay;
+import com.prolificinteractive.materialcalendarview.DayViewDecorator;
+import com.prolificinteractive.materialcalendarview.DayViewFacade;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import com.prolificinteractive.materialcalendarview.OnDateSelectedListener;
+import com.prolificinteractive.materialcalendarview.OnMonthChangedListener;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Main activity where the user can navigate between days and view his logs
  */
 public class DiaryActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
-        AppBarLayout.OnOffsetChangedListener, OnDateSelectedListener {
+        AppBarLayout.OnOffsetChangedListener, OnMonthChangedListener, OnDateSelectedListener,
+        ViewPager.OnPageChangeListener, DayPageFragment.OnFragmentInteractionListener {
+    /**
+     * Used to determine which view caused the date change in order to update the date on the other
+     * view while avoiding loops
+     */
+    private enum DateChangeCause {
+        CALENDAR_VIEW, VIEW_PAGER
+    }
+
+    /**
+     * Decorate today's DayView from the calendarView by making the text big and bold
+     */
+    private class TodayDecorator implements DayViewDecorator {
+        private static final float SPAN_SIZE_PROPORTION = 1.5f;
+
+        private CalendarDay date;
+
+        public TodayDecorator() {
+            date = CalendarDay.today();
+        }
+
+        @Override
+        public boolean shouldDecorate(CalendarDay day) {
+            return date != null && day.equals(date);
+        }
+
+        @Override
+        public void decorate(DayViewFacade view) {
+            view.addSpan(new StyleSpan(Typeface.BOLD));
+            view.addSpan(new RelativeSizeSpan(SPAN_SIZE_PROPORTION));
+        }
+    }
+
+
+    /**
+     * Adapter for the ViewPager
+     */
+    private class DayAdapter extends FragmentStatePagerAdapter {
+        public DayAdapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        @Override
+        public Fragment getItem(int position) {
+            return DayPageFragment.newInstance("Test", Integer.toString(position));
+        }
+
+        @Override
+        public int getCount() {
+            return DAYS_COUNT;
+        }
+    }
+
     /**
      * Constants
      */
-    private static final int DAYS_IN_WEEK = 7, ARROW_END_ANGLE = -180;
+    private static final int DAYS_IN_WEEK = 7, DAYS_COUNT = 400 * 365, TODAY_IDX = DAYS_COUNT / 2;
+    private static final int ARROW_END_ANGLE = -180;
     private static final long CALENDAR_RESIZE_ANIM_DURATION = 200;
     private static final CalendarDay TODAY_CAL = CalendarDay.today();
+    private static final long TODAY_TIME = TODAY_CAL.getDate().getTime();
 
     /**
      * Date formats for setting title & subtitle texts
@@ -59,17 +126,12 @@ public class DiaryActivity extends AppCompatActivity
     private static final SimpleDateFormat YEAR_FORMAT = new SimpleDateFormat(
             "y", DEFAULT_LOCALE);
 
-    /**
-     * Member variables
-     */
     private static DrawerLayout drawerLayout;
     private static AppBarLayout appBar;
-    private static Toolbar toolbar;
     private static MaterialCalendarView calendarView;
-    private static ViewGroup dropDownLayout;
     private static TextView title, subtitle;
     private static ImageView dropDownArrow;
-    private static FloatingActionButton fab;
+    private static ViewPager pager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,11 +145,11 @@ public class DiaryActivity extends AppCompatActivity
 
         appBar = (AppBarLayout) drawerLayout.findViewById(R.id.app_bar);
         appBar.addOnOffsetChangedListener(this);
-        toolbar = (Toolbar) appBar.findViewById(R.id.toolbar);
+        final Toolbar toolbar = (Toolbar) appBar.findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         // The layout which unveils the calendar view on click and contains the title & subtitle
-        dropDownLayout = (ViewGroup) toolbar.findViewById(R.id.dropdown_layout);
+        final ViewGroup dropDownLayout = (ViewGroup) toolbar.findViewById(R.id.dropdown_layout);
         final LayoutTransition dropDownTransition = dropDownLayout.getLayoutTransition();
         dropDownTransition.setAnimateParentHierarchy(false);
         dropDownTransition.enableTransitionType(LayoutTransition.CHANGING);
@@ -110,25 +172,48 @@ public class DiaryActivity extends AppCompatActivity
                 .getDimensionPixelSize(R.dimen.small_margin)) / DAYS_IN_WEEK);
         // Sets proper height
         setCalendarHeight(calcCalendarHeight(TODAY_CAL.getCalendar()));
+        // Set decorator to highlight today's view
+        calendarView.addDecorator(new TodayDecorator());
 
-        calendarView.setOnMonthChangedListener((widget, date) -> {
-            // The view has to be resized when the amount of rows (weeks) is changed
-            // Built-in implementation of dynamic height isn't satisfying
-            final int newHeight = calcCalendarHeight(date.getCalendar());
+        calendarView.setOnMonthChangedListener(this);
+        calendarView.setOnDateChangedListener(this);
 
-            if (isCalendarHidden()) { // No need to animate
-                setCalendarHeight(newHeight);
+        final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(v ->
+                Snackbar.make(v, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show());
 
-                if (date.getMonth() != widget.getSelectedDate().getMonth())
-                    goToDay(date);
+        dropDownLayout.setOnClickListener(v -> appBar.setExpanded(isCalendarHidden()));
 
-                if (newHeight != widget.getHeight())
-                    appBar.setExpanded(false, false); // Avoids layout quirks
+        final ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar,
+                R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawerLayout.addDrawerListener(toggle);
+        toggle.syncState();
 
-                return;
-            }
+        pager = (ViewPager) drawerLayout.findViewById(R.id.diary_pager);
+        pager.setAdapter(new DayAdapter(getSupportFragmentManager()));
+        pager.addOnPageChangeListener(this);
 
-            final int oldHeight = widget.getHeight();
+        goToDay(TODAY_CAL, null);
+    }
+
+    /**
+     * Resizes the calendarView when the amount of rows (weeks) is changed
+     * Build-in implementation of dynamic height isn't satisfying
+     * Animates iff the calendarView is shown
+     *
+     * @param date The date whose month will help to configure the height
+     */
+    private void animateCalendarHeight(CalendarDay date) {
+        final int newHeight = calcCalendarHeight(date.getCalendar());
+
+        if (isCalendarHidden()) { // No need to animate
+            setCalendarHeight(newHeight);
+
+            if (newHeight != calendarView.getHeight())
+                appBar.setExpanded(false, false); // Avoids layout quirks
+        } else {
+            final int oldHeight = calendarView.getHeight();
 
             if (oldHeight != newHeight) {
                 final ValueAnimator animator = ValueAnimator.ofInt(oldHeight, newHeight);
@@ -136,27 +221,7 @@ public class DiaryActivity extends AppCompatActivity
                         setCalendarHeight((int) valueAnimator.getAnimatedValue()));
                 animator.setDuration(CALENDAR_RESIZE_ANIM_DURATION).start();
             }
-
-            if (date.getMonth() != widget.getSelectedDate().getMonth())
-                goToDay(date);
-        });
-
-        calendarView.setOnDateChangedListener(this);
-
-        fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(v ->
-                Snackbar.make(v, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show());
-
-        dropDownLayout.setOnClickListener(v -> toggleCalendarDropDown());
-
-        calendarView.addDecorator(new TodayDecorator());
-        goToDay(TODAY_CAL);
-
-        final ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar,
-                R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawerLayout.addDrawerListener(toggle);
-        toggle.syncState();
+        }
     }
 
     /**
@@ -183,6 +248,27 @@ public class DiaryActivity extends AppCompatActivity
     }
 
     /**
+     * Calculates the amount of days between one date to another
+     *
+     * @param time1 First date (as time)
+     * @param time2 Second date (as time)
+     * @return Calculation result
+     */
+    private int calcDaysDiff(long time1, long time2) {
+        return (int) TimeUnit.DAYS.convert(time1 - time2, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Calculates the index of the page associated with the given date
+     *
+     * @param date The day date to calculate the index for
+     * @return Index of wanted page
+     */
+    private int getPageIndexFromDate(CalendarDay date) {
+        return TODAY_IDX - calcDaysDiff(TODAY_TIME, date.getDate().getTime());
+    }
+
+    /**
      * @return False if the calendar view is dropped down, true otherwise
      */
     private boolean isCalendarHidden() {
@@ -190,43 +276,56 @@ public class DiaryActivity extends AppCompatActivity
     }
 
     /**
-     * Drops down or raises up the calendarView by expanding/collapsing the AppBar
-     */
-    private void toggleCalendarDropDown() {
-        appBar.setExpanded(isCalendarHidden());
-    }
-
-    /**
-     * Navigates to the desired day (Main goToDay() method)
-     *
-     * @param day     The day's date
-     * @param animate To use smooth-scroll or not to use
-     */
-    private void goToDay(CalendarDay day, boolean animate) {
-        calendarView.setSelectedDate(day);
-        calendarView.setCurrentDate(day, animate);
-        // Provoking the listener
-        onDateSelected(calendarView, day, true);
-    }
-
-    /**
-     * Navigates to the desired day
+     * Navigates to the desired day on both CalendarView & ViewPager
      *
      * @param day The day's date
      */
-    private void goToDay(CalendarDay day) {
-        goToDay(day, true);
-    }
-
-    /**
-     * Navigates to the desired day and uses smooth-scroll iff calendar is shown
-     *
-     * @param day The day's date
-     */
-    private void observantGoToDay(CalendarDay day) {
+    private void goToDay(CalendarDay day, DateChangeCause cause) {
         if (isCalendarHidden())
-            goToDay(day, false);
-        else goToDay(day);
+            setFullDateText(day);
+        else setCondensedDateText(day);
+
+        if (cause != null)
+            switch (cause) {
+                case VIEW_PAGER:
+                    goToDayOnCalendar(day);
+                    break;
+
+                case CALENDAR_VIEW:
+                    goToDayOnPager(day);
+                    break;
+            }
+        else {
+            goToDayOnCalendar(day);
+            goToDayOnPager(day);
+        }
+    }
+
+    /**
+     * Navigates to the desired day on CalendarView
+     * Temporary removes listeners which might cause a loop and adds them back
+     *
+     * @param day The day's date
+     */
+    private void goToDayOnCalendar(CalendarDay day) {
+        animateCalendarHeight(day);
+
+        calendarView.setOnMonthChangedListener(null);
+        calendarView.setSelectedDate(day);
+        calendarView.setCurrentDate(day, !isCalendarHidden());
+        calendarView.setOnMonthChangedListener(this);
+    }
+
+    /**
+     * Navigates to the desired day on ViewPager
+     * Temporary removes listeners which might cause a loop and adds them back
+     *
+     * @param day The day's date
+     */
+    private void goToDayOnPager(CalendarDay day) {
+        pager.removeOnPageChangeListener(this);
+        pager.setCurrentItem(getPageIndexFromDate(day));
+        pager.addOnPageChangeListener(this);
     }
 
     /**
@@ -237,19 +336,15 @@ public class DiaryActivity extends AppCompatActivity
      */
     private void setFullDateText(CalendarDay date) {
         final Date d = date.getDate();
-        final String text = DAY_MONTH_FORMAT.format(d);
+        title.setText(DAY_MONTH_FORMAT.format(d));
 
-        if (!title.getText().toString().equals(text)) {
-            title.setText(text);
-
-            if (TODAY_CAL.equals(date)) {
-                subtitle.setText(R.string.today);
-                subtitle.setVisibility(View.VISIBLE);
-            } else if (TODAY_CAL.getYear() != date.getYear()) {
-                subtitle.setText(YEAR_FORMAT.format(d));
-                subtitle.setVisibility(View.VISIBLE);
-            } else subtitle.setVisibility(View.GONE);
-        }
+        if (TODAY_CAL.equals(date)) {
+            subtitle.setText(R.string.today);
+            subtitle.setVisibility(View.VISIBLE);
+        } else if (TODAY_CAL.getYear() != date.getYear()) {
+            subtitle.setText(YEAR_FORMAT.format(d));
+            subtitle.setVisibility(View.VISIBLE);
+        } else subtitle.setVisibility(View.GONE);
     }
 
     /**
@@ -260,16 +355,12 @@ public class DiaryActivity extends AppCompatActivity
      */
     private void setCondensedDateText(CalendarDay date) {
         final Date d = date.getDate();
-        final String text = MONTH_FORMAT.format(d);
+        title.setText(MONTH_FORMAT.format(d));
 
-        if (!title.getText().toString().equals(text)) {
-            title.setText(text);
-
-            if (TODAY_CAL.getYear() != date.getYear()) {
-                subtitle.setText(YEAR_FORMAT.format(d));
-                subtitle.setVisibility(View.VISIBLE);
-            } else subtitle.setVisibility(View.GONE);
-        }
+        if (TODAY_CAL.getYear() != date.getYear()) {
+            subtitle.setText(YEAR_FORMAT.format(d));
+            subtitle.setVisibility(View.VISIBLE);
+        } else subtitle.setVisibility(View.GONE);
     }
 
     @Override
@@ -311,7 +402,7 @@ public class DiaryActivity extends AppCompatActivity
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_today:
-                observantGoToDay(TODAY_CAL);
+                goToDay(TODAY_CAL, null);
                 break;
         }
 
@@ -333,6 +424,10 @@ public class DiaryActivity extends AppCompatActivity
     @Override
     public void onOffsetChanged(AppBarLayout appBarLayout, int verticalOffset) {
         final float r = ARROW_END_ANGLE * (1 + (float) verticalOffset / calendarView.getHeight());
+
+        if (dropDownArrow.getRotation() == r)
+            return;
+
         dropDownArrow.setRotation(r); // Animates the dropdown arrow
 
         if (r == 0)
@@ -342,10 +437,40 @@ public class DiaryActivity extends AppCompatActivity
     }
 
     @Override
+    public void onMonthChanged(MaterialCalendarView widget, CalendarDay date) {
+        animateCalendarHeight(date);
+
+        if (date.getMonth() != widget.getSelectedDate().getMonth()) {
+            widget.setSelectedDate(date);
+            goToDay(date, DateChangeCause.CALENDAR_VIEW);
+        }
+    }
+
+    @Override
     public void onDateSelected(@NonNull MaterialCalendarView widget, @NonNull CalendarDay date,
                                boolean selected) {
-        if (isCalendarHidden())
-            setFullDateText(date);
-        else setCondensedDateText(date);
+        goToDay(date, DateChangeCause.CALENDAR_VIEW);
+    }
+
+    @Override
+    public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+    }
+
+    @Override
+    public void onPageSelected(int position) {
+        final Calendar tempCal = Calendar.getInstance();
+        tempCal.add(Calendar.DATE, position - TODAY_IDX);
+        goToDay(CalendarDay.from(tempCal), DateChangeCause.VIEW_PAGER);
+    }
+
+    @Override
+    public void onPageScrollStateChanged(int state) {
+
+    }
+
+    @Override
+    public void onFragmentInteraction(Uri uri) {
+
     }
 }

@@ -56,7 +56,7 @@
 
                     <TextView
                         android:id="@+id/toolbar_subtitle"
-                        style="@style/TextAppearance.AppCompat.Widget.ActionMode.Subtitle"
+                        style="@style/TextAppearance.AppCompat.Widget.ActionBar.Subtitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
 
