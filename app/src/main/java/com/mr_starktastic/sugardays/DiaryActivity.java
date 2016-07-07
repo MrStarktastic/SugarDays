@@ -34,9 +34,6 @@ import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import com.prolificinteractive.materialcalendarview.OnDateSelectedListener;
 import com.prolificinteractive.materialcalendarview.OnMonthChangedListener;
 
-import org.joda.time.DateTime;
-import org.joda.time.Days;
-
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -73,8 +70,7 @@ public class DiaryActivity extends AppCompatActivity
      */
     private static final CalendarDay TODAY_CAL = CalendarDay.today();
     private static final CalendarDay MIN_CAL = CalendarDay.from(1900, 1, 1);
-    private static final long TODAY_TIME = TODAY_CAL.getDate().getTime();
-    private static final int TODAY_IDX = calcDaysDiff(TODAY_TIME, MIN_CAL.getDate().getTime());
+    private static final int TODAY_IDX = daysBetween(TODAY_CAL, MIN_CAL);
     private static final int ARROW_END_ANGLE = -180;
     private static final long CALENDAR_RESIZE_ANIM_DURATION = 200;
 
@@ -216,15 +212,29 @@ public class DiaryActivity extends AppCompatActivity
     }
 
     /**
-     * Calculates the amount of days between one date to another
+     * Calculates the amount of days between one date and another
      *
-     * @param time1 First older date (as time)
-     * @param time2 Second date (as time)
+     * @param day1 First older date
+     * @param day2 Second date
      * @return Calculation result
      */
-    private static int calcDaysDiff(long time1, long time2) {
-        return Days.daysBetween(new DateTime(time2).withTimeAtStartOfDay(),
-                new DateTime(time1).withTimeAtStartOfDay()).getDays();
+    public static int daysBetween(CalendarDay day1, CalendarDay day2) {
+        Calendar cal1 = day1.getCalendar(), cal2 = day2.getCalendar();
+
+        if (cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR))
+            return cal1.get(Calendar.DAY_OF_YEAR) - cal2.get(Calendar.DAY_OF_YEAR);
+
+        cal1 = (Calendar) cal1.clone();
+        cal2 = (Calendar) cal2.clone();
+        final int cal1OriginalYearDays = cal1.get(Calendar.DAY_OF_YEAR);
+        int extraDays = 0;
+
+        while (cal1.get(Calendar.YEAR) > cal2.get(Calendar.YEAR)) {
+            cal1.add(Calendar.YEAR, -1);
+            extraDays += cal1.getActualMaximum(Calendar.DAY_OF_YEAR);
+        }
+
+        return extraDays - cal2.get(Calendar.DAY_OF_YEAR) + cal1OriginalYearDays;
     }
 
     /**
@@ -234,7 +244,7 @@ public class DiaryActivity extends AppCompatActivity
      * @return Index of wanted page
      */
     private int getPageIndexFromDate(CalendarDay date) {
-        return TODAY_IDX - calcDaysDiff(TODAY_TIME, date.getDate().getTime());
+        return TODAY_IDX - daysBetween(TODAY_CAL, date);
     }
 
     /**
