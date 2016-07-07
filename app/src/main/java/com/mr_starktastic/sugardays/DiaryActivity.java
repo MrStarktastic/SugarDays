@@ -30,17 +30,17 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.prolificinteractive.materialcalendarview.CalendarDay;
-import com.prolificinteractive.materialcalendarview.DayViewDecorator;
-import com.prolificinteractive.materialcalendarview.DayViewFacade;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import com.prolificinteractive.materialcalendarview.OnDateSelectedListener;
 import com.prolificinteractive.materialcalendarview.OnMonthChangedListener;
+
+import org.joda.time.DateTime;
+import org.joda.time.Days;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Main activity where the user can navigate between days and view his logs
@@ -49,35 +49,6 @@ public class DiaryActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
         AppBarLayout.OnOffsetChangedListener, OnMonthChangedListener, OnDateSelectedListener,
         ViewPager.OnPageChangeListener, DayPageFragment.OnFragmentInteractionListener {
-    /**
-     * Used to determine which view caused the date change in order to update the date on the other
-     * view while avoiding loops
-     */
-    private enum DateChangeCause {
-        CALENDAR_VIEW, VIEW_PAGER
-    }
-
-    /**
-     * Decorates future days by disabling their views
-     */
-    private static class FutureDaysDisabler implements DayViewDecorator {
-        private final CalendarDay date;
-
-        public FutureDaysDisabler() {
-            date = CalendarDay.today();
-        }
-
-        @Override
-        public boolean shouldDecorate(CalendarDay day) {
-            return date.isBefore(day);
-        }
-
-        @Override
-        public void decorate(DayViewFacade view) {
-            view.setDaysDisabled(true);
-        }
-    }
-
     /**
      * Adapter for the ViewPager
      */
@@ -161,10 +132,8 @@ public class DiaryActivity extends AppCompatActivity
         dropDownArrow = (ImageView) dropDownLayout.findViewById(R.id.dropdown_arrow);
 
         calendarView = (MaterialCalendarView) appBar.findViewById(R.id.calendar_view);
-        // Sets the min (Jan 1st, 1900) & max (last day of current month) dates visible
-        calendarView.state().edit().setMinimumDate(MIN_CAL)
-                .setMaximumDate(CalendarDay.from(TODAY_CAL.getYear(), TODAY_CAL.getMonth(),
-                        TODAY_CAL.getCalendar().getActualMaximum(Calendar.DAY_OF_MONTH))).commit();
+        // Sets the min (Jan 1st, 1900) & max (today) dates visible
+        calendarView.state().edit().setMinimumDate(MIN_CAL).setMaximumDate(TODAY_CAL).commit();
         // The date string will be shown in the toolbar instead
         calendarView.setTopbarVisible(false);
         // Properly sets the width of each tile to fill the app bar
@@ -174,8 +143,6 @@ public class DiaryActivity extends AppCompatActivity
                 .getDimension(R.dimen.tiny_margin)) / 7 + 0.5f));
         // Sets proper height according to the current month's rows
         setCalendarHeight(calcCalendarHeight(TODAY_CAL.getCalendar()));
-        // Sets decorator to disable future days
-        calendarView.addDecorator(new FutureDaysDisabler());
 
         calendarView.setOnMonthChangedListener(this);
         calendarView.setOnDateChangedListener(this);
@@ -195,8 +162,7 @@ public class DiaryActivity extends AppCompatActivity
         pager = (ViewPager) drawerLayout.findViewById(R.id.diary_pager);
         pager.setAdapter(new DayAdapter(getSupportFragmentManager()));
         pager.addOnPageChangeListener(this);
-
-        goToDay(TODAY_CAL, null);
+        pager.setCurrentItem(TODAY_IDX);
     }
 
     /**
@@ -252,12 +218,13 @@ public class DiaryActivity extends AppCompatActivity
     /**
      * Calculates the amount of days between one date to another
      *
-     * @param time1 First date (as time)
+     * @param time1 First older date (as time)
      * @param time2 Second date (as time)
      * @return Calculation result
      */
     private static int calcDaysDiff(long time1, long time2) {
-        return (int) TimeUnit.DAYS.convert(time1 - time2, TimeUnit.MILLISECONDS);
+        return Days.daysBetween(new DateTime(time2).withTimeAtStartOfDay(),
+                new DateTime(time1).withTimeAtStartOfDay()).getDays();
     }
 
     /**
@@ -282,55 +249,10 @@ public class DiaryActivity extends AppCompatActivity
      *
      * @param day The day's date
      */
-    private void goToDay(CalendarDay day, DateChangeCause cause) {
+    private void setDateText(CalendarDay day) {
         if (isCalendarHidden())
             setFullDateText(day);
         else setCondensedDateText(day);
-
-        if (cause != null)
-            switch (cause) {
-                case VIEW_PAGER:
-                    goToDayOnCalendar(day);
-                    break;
-
-                case CALENDAR_VIEW:
-                    goToDayOnPager(day);
-                    break;
-            }
-        else {
-            goToDayOnCalendar(day);
-            goToDayOnPager(day);
-        }
-    }
-
-    /**
-     * Navigates to the desired day on CalendarView
-     * Temporary removes listeners which might cause a loop and adds them back
-     *
-     * @param day The day's date
-     */
-    private void goToDayOnCalendar(CalendarDay day) {
-        final CalendarDay selectedDate = calendarView.getSelectedDate();
-
-        if (selectedDate != null && day.getMonth() != selectedDate.getMonth())
-            animateCalendarHeight(day);
-
-        calendarView.setOnMonthChangedListener(null);
-        calendarView.setSelectedDate(day);
-        calendarView.setCurrentDate(day, !isCalendarHidden());
-        calendarView.setOnMonthChangedListener(this);
-    }
-
-    /**
-     * Navigates to the desired day on ViewPager
-     * Temporary removes listeners which might cause a loop and adds them back
-     *
-     * @param day The day's date
-     */
-    private void goToDayOnPager(CalendarDay day) {
-        pager.removeOnPageChangeListener(this);
-        pager.setCurrentItem(getPageIndexFromDate(day));
-        pager.addOnPageChangeListener(this);
     }
 
     /**
@@ -407,7 +329,7 @@ public class DiaryActivity extends AppCompatActivity
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_today:
-                goToDay(TODAY_CAL, null);
+                pager.setCurrentItem(TODAY_IDX);
                 break;
         }
 
@@ -443,17 +365,27 @@ public class DiaryActivity extends AppCompatActivity
 
     @Override
     public void onMonthChanged(MaterialCalendarView widget, CalendarDay date) {
-        if (date.getMonth() != widget.getSelectedDate().getMonth()) {
-            animateCalendarHeight(date);
+        animateCalendarHeight(date);
+        final CalendarDay selectedDate = widget.getSelectedDate();
+
+        if (date.getMonth() != selectedDate.getMonth()) {
             widget.setSelectedDate(date);
-            goToDay(date, DateChangeCause.CALENDAR_VIEW);
-        }
+            setDateText(date);
+        } else
+            date = selectedDate;
+
+        final int index = getPageIndexFromDate(date);
+
+        // Checks if the viewPager has to be updated
+        if (index != pager.getCurrentItem())
+            pager.setCurrentItem(index);
     }
 
     @Override
     public void onDateSelected(@NonNull MaterialCalendarView widget, @NonNull CalendarDay date,
                                boolean selected) {
-        goToDay(date, DateChangeCause.CALENDAR_VIEW);
+        // This listener is triggered only by the user's explicit selection on the calendarView
+        pager.setCurrentItem(getPageIndexFromDate(date));
     }
 
     @Override
@@ -466,7 +398,14 @@ public class DiaryActivity extends AppCompatActivity
         // Increments or decrements the current date by 1
         final Calendar tempCal = Calendar.getInstance();
         tempCal.add(Calendar.DATE, position - TODAY_IDX);
-        goToDay(CalendarDay.from(tempCal), DateChangeCause.VIEW_PAGER);
+        final CalendarDay tempCalDay = CalendarDay.from(tempCal);
+        setDateText(tempCalDay);
+
+        // Checks if the calendarView has to be updated
+        if (!tempCalDay.equals(calendarView.getSelectedDate())) {
+            calendarView.setSelectedDate(tempCalDay);
+            calendarView.setCurrentDate(tempCalDay);
+        }
     }
 
     @Override

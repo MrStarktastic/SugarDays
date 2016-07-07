@@ -25,6 +25,7 @@
             app:layout_collapseMode="parallax"
             app:layout_collapseParallaxMultiplier="@integer/calendar_view_parallax_mul"
             app:mcv_dateTextAppearance="@style/MaterialCalendarView.TextAppearance"
+            app:mcv_showOtherDates="out_of_range"
             app:mcv_tileHeight="@dimen/calendar_view_tile_height" />
 
         <android.support.v7.widget.Toolbar
