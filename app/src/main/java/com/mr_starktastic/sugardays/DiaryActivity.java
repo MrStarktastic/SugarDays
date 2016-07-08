@@ -68,10 +68,10 @@ public class DiaryActivity extends AppCompatActivity
     /**
      * Constants
      */
-    private static final CalendarDay TODAY_CAL = CalendarDay.today();
-    private static final CalendarDay MIN_CAL = CalendarDay.from(1900, 1, 1);
-    private static final int TODAY_IDX = daysBetween(TODAY_CAL, MIN_CAL);
-    private static final int ARROW_END_ANGLE = -180;
+    private static final Calendar TODAY_CAL = CalendarDay.today().getCalendar(),
+            MIN_CAL = CalendarDay.from(1900, 1, 1).getCalendar();
+    private static final int TODAY_IDX = daysBetween(TODAY_CAL, MIN_CAL),
+            ARROW_START_ANGLE = 0, ARROW_END_ANGLE = -180;
     private static final long CALENDAR_RESIZE_ANIM_DURATION = 200;
 
     /**
@@ -79,13 +79,10 @@ public class DiaryActivity extends AppCompatActivity
      */
     private static final Locale DEFAULT_LOCALE = Locale.getDefault();
     private static final SimpleDateFormat DAY_MONTH_FORMAT = new SimpleDateFormat(
-            "EEE, MMM d", DEFAULT_LOCALE);
-    private static final SimpleDateFormat DAY_NUMBER_FORMAT = new SimpleDateFormat(
-            "d", DEFAULT_LOCALE);
-    private static final SimpleDateFormat MONTH_FORMAT = new SimpleDateFormat(
-            "MMMM", DEFAULT_LOCALE);
-    private static final SimpleDateFormat YEAR_FORMAT = new SimpleDateFormat(
-            "y", DEFAULT_LOCALE);
+            "EEE, MMM d", DEFAULT_LOCALE),
+            DAY_NUMBER_FORMAT = new SimpleDateFormat("d", DEFAULT_LOCALE),
+            MONTH_FORMAT = new SimpleDateFormat("MMMM", DEFAULT_LOCALE),
+            YEAR_FORMAT = new SimpleDateFormat("y", DEFAULT_LOCALE);
 
     /**
      * Major layouts & views of this activity
@@ -138,7 +135,7 @@ public class DiaryActivity extends AppCompatActivity
         calendarView.setTileWidth((int) ((displayMetrics.widthPixels - getResources()
                 .getDimension(R.dimen.tiny_margin)) / 7 + 0.5f));
         // Sets proper height according to the current month's rows
-        setCalendarHeight(calcCalendarHeight(TODAY_CAL.getCalendar()));
+        setCalendarHeight(calcCalendarHeight(TODAY_CAL));
 
         calendarView.setOnMonthChangedListener(this);
         calendarView.setOnDateChangedListener(this);
@@ -214,15 +211,16 @@ public class DiaryActivity extends AppCompatActivity
     /**
      * Calculates the amount of days between one date and another
      *
-     * @param day1 First older date
-     * @param day2 Second date
+     * @param cal1 First older date
+     * @param cal2 Second date
      * @return Calculation result
      */
-    public static int daysBetween(CalendarDay day1, CalendarDay day2) {
-        Calendar cal1 = day1.getCalendar(), cal2 = day2.getCalendar();
+    public static int daysBetween(Calendar cal1, Calendar cal2) {
+        final int cal2Year = cal2.get(Calendar.YEAR),
+                cal2DayOfYear = cal2.get(Calendar.DAY_OF_YEAR);
 
-        if (cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR))
-            return cal1.get(Calendar.DAY_OF_YEAR) - cal2.get(Calendar.DAY_OF_YEAR);
+        if (cal1.get(Calendar.YEAR) == cal2Year)
+            return cal1.get(Calendar.DAY_OF_YEAR) - cal2DayOfYear;
 
         cal1 = (Calendar) cal1.clone();
         cal2 = (Calendar) cal2.clone();
@@ -234,7 +232,7 @@ public class DiaryActivity extends AppCompatActivity
             extraDays += cal1.getActualMaximum(Calendar.DAY_OF_YEAR);
         }
 
-        return extraDays - cal2.get(Calendar.DAY_OF_YEAR) + cal1OriginalYearDays;
+        return extraDays - cal2DayOfYear + cal1OriginalYearDays;
     }
 
     /**
@@ -244,7 +242,7 @@ public class DiaryActivity extends AppCompatActivity
      * @return Index of wanted page
      */
     private int getPageIndexFromDate(CalendarDay date) {
-        return TODAY_IDX - daysBetween(TODAY_CAL, date);
+        return TODAY_IDX - daysBetween(TODAY_CAL, date.getCalendar());
     }
 
     /**
@@ -275,10 +273,10 @@ public class DiaryActivity extends AppCompatActivity
         final Date d = date.getDate();
         title.setText(DAY_MONTH_FORMAT.format(d));
 
-        if (TODAY_CAL.equals(date)) {
+        if (TODAY_CAL.equals(date.getCalendar())) {
             subtitle.setText(R.string.today);
             subtitle.setVisibility(View.VISIBLE);
-        } else if (TODAY_CAL.getYear() != date.getYear()) {
+        } else if (TODAY_CAL.get(Calendar.YEAR) != date.getYear()) {
             subtitle.setText(YEAR_FORMAT.format(d));
             subtitle.setVisibility(View.VISIBLE);
         } else subtitle.setVisibility(View.GONE);
@@ -294,7 +292,7 @@ public class DiaryActivity extends AppCompatActivity
         final Date d = date.getDate();
         title.setText(MONTH_FORMAT.format(d));
 
-        if (TODAY_CAL.getYear() != date.getYear()) {
+        if (TODAY_CAL.get(Calendar.YEAR) != date.getYear()) {
             subtitle.setText(YEAR_FORMAT.format(d));
             subtitle.setVisibility(View.VISIBLE);
         } else subtitle.setVisibility(View.GONE);
@@ -316,7 +314,7 @@ public class DiaryActivity extends AppCompatActivity
 
         // Sets today's number
         ((TextView) todayIconView.findViewById(R.id.today_num_text))
-                .setText(DAY_NUMBER_FORMAT.format(TODAY_CAL.getDate()));
+                .setText(DAY_NUMBER_FORMAT.format(TODAY_CAL.get(Calendar.DATE)));
 
         // Converts the layout into a bitmap for use as an icon
         todayIconView.setDrawingCacheEnabled(true);
@@ -367,7 +365,7 @@ public class DiaryActivity extends AppCompatActivity
 
         dropDownArrow.setRotation(r); // Animates the dropdown arrow
 
-        if (r == 0)
+        if (r == ARROW_START_ANGLE)
             setFullDateText(calendarView.getSelectedDate());
         else if (r == ARROW_END_ANGLE)
             setCondensedDateText(calendarView.getSelectedDate());
@@ -405,8 +403,7 @@ public class DiaryActivity extends AppCompatActivity
 
     @Override
     public void onPageSelected(int position) {
-        // Increments or decrements the current date by 1
-        final Calendar tempCal = Calendar.getInstance();
+        final Calendar tempCal = (Calendar) TODAY_CAL.clone();
         tempCal.add(Calendar.DATE, position - TODAY_IDX);
         final CalendarDay tempCalDay = CalendarDay.from(tempCal);
         setDateText(tempCalDay);
