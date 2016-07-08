@@ -224,7 +224,7 @@ public class DiaryActivity extends AppCompatActivity
 
         cal1 = (Calendar) cal1.clone();
         cal2 = (Calendar) cal2.clone();
-        final int cal1OriginalYearDays = cal1.get(Calendar.DAY_OF_YEAR);
+        final int cal1OriginalDayOfYear = cal1.get(Calendar.DAY_OF_YEAR);
         int extraDays = 0;
 
         while (cal1.get(Calendar.YEAR) > cal2.get(Calendar.YEAR)) {
@@ -232,7 +232,7 @@ public class DiaryActivity extends AppCompatActivity
             extraDays += cal1.getActualMaximum(Calendar.DAY_OF_YEAR);
         }
 
-        return extraDays - cal2DayOfYear + cal1OriginalYearDays;
+        return extraDays - cal2DayOfYear + cal1OriginalDayOfYear;
     }
 
     /**
@@ -314,7 +314,7 @@ public class DiaryActivity extends AppCompatActivity
 
         // Sets today's number
         ((TextView) todayIconView.findViewById(R.id.today_num_text))
-                .setText(DAY_NUMBER_FORMAT.format(TODAY_CAL.get(Calendar.DATE)));
+                .setText(DAY_NUMBER_FORMAT.format(TODAY_CAL.getTime()));
 
         // Converts the layout into a bitmap for use as an icon
         todayIconView.setDrawingCacheEnabled(true);
