@@ -258,6 +258,12 @@ public class DiaryActivity extends AppCompatActivity
      * @param day The day's date
      */
     private void setDateText(CalendarDay day) {
+        /*
+        TODO implement custom text change animations
+        to avoid lag probably caused by animateLayoutChanges.
+        That would also allow the title & subtitle container
+        to be free from the "wrap_content" layout_height flag.
+         */
         if (isCalendarHidden())
             setFullDateText(day);
         else setCondensedDateText(day);
@@ -273,7 +279,7 @@ public class DiaryActivity extends AppCompatActivity
         final Date d = date.getDate();
         title.setText(DAY_MONTH_FORMAT.format(d));
 
-        if (TODAY_CAL.equals(date.getCalendar())) {
+        if (TODAY_IDX == pager.getCurrentItem()) {
             subtitle.setText(R.string.today);
             subtitle.setVisibility(View.VISIBLE);
         } else if (TODAY_CAL.get(Calendar.YEAR) != date.getYear()) {
@@ -376,17 +382,16 @@ public class DiaryActivity extends AppCompatActivity
         animateCalendarHeight(date);
         final CalendarDay selectedDate = widget.getSelectedDate();
 
-        if (date.getMonth() != selectedDate.getMonth()) {
+        if (date.getMonth() != selectedDate.getMonth())
             widget.setSelectedDate(date);
-            setDateText(date);
-        } else
-            date = selectedDate;
+        else date = selectedDate;
 
         final int index = getPageIndexFromDate(date);
 
         // Checks if the viewPager has to be updated
         if (index != pager.getCurrentItem())
             pager.setCurrentItem(index);
+        else setDateText(date);
     }
 
     @Override
