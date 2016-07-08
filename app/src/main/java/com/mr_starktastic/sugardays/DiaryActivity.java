@@ -258,12 +258,6 @@ public class DiaryActivity extends AppCompatActivity
      * @param day The day's date
      */
     private void setDateText(CalendarDay day) {
-        /*
-        TODO implement custom text change animations
-        to avoid lag probably caused by animateLayoutChanges.
-        That would also allow the title & subtitle container
-        to be free from the "wrap_content" layout_height flag.
-         */
         if (isCalendarHidden())
             setFullDateText(day);
         else setCondensedDateText(day);
