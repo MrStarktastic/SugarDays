@@ -169,10 +169,10 @@ public class DiaryActivity extends AppCompatActivity
         final int newHeight = calcCalendarHeight(date.getCalendar());
 
         if (isCalendarHidden()) { // No need to animate
-            setCalendarHeight(newHeight);
-
-            if (newHeight != calendarView.getHeight())
+            if (newHeight != calendarView.getHeight()) {
+                setCalendarHeight(newHeight);
                 appBar.setExpanded(false, false); // Avoids layout quirks
+            }
         } else {
             final int oldHeight = calendarView.getHeight();
 
