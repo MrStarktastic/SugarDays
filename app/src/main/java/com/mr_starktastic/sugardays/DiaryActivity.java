@@ -103,7 +103,6 @@ public class DiaryActivity extends AppCompatActivity
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         ((NavigationView) drawerLayout.findViewById(R.id.nav_view)).
                 setNavigationItemSelectedListener(this);
-
         appBar = (AppBarLayout) drawerLayout.findViewById(R.id.app_bar);
         appBar.addOnOffsetChangedListener(this);
         final Toolbar toolbar = (Toolbar) appBar.findViewById(R.id.toolbar);
@@ -125,7 +124,7 @@ public class DiaryActivity extends AppCompatActivity
         dropDownArrow = (ImageView) dropDownLayout.findViewById(R.id.dropdown_arrow);
 
         calendarView = (MaterialCalendarView) appBar.findViewById(R.id.calendar_view);
-        // Sets the min (Jan 1st, 1900) & max (today) dates visible
+        // Sets the min (Jan 1st, 1900) & max (today) dates
         calendarView.state().edit().setMinimumDate(MIN_CAL).setMaximumDate(TODAY_CAL).commit();
         // The date string will be shown in the toolbar instead
         calendarView.setTopbarVisible(false);
@@ -152,37 +151,14 @@ public class DiaryActivity extends AppCompatActivity
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
+        /*
+        The ViewPager will display each page as a day with its logs.
+        Its onPageSelected is the master listener method behind the date navigation mechanism.
+         */
         pager = (ViewPager) drawerLayout.findViewById(R.id.diary_pager);
         pager.setAdapter(new DayAdapter(getSupportFragmentManager()));
         pager.addOnPageChangeListener(this);
         pager.setCurrentItem(TODAY_IDX);
-    }
-
-    /**
-     * Resizes the calendarView when the amount of rows (weeks) is changed
-     * Build-in implementation of dynamic height isn't satisfying
-     * Animates iff the calendarView is shown
-     *
-     * @param date The date whose month will help to configure the height
-     */
-    private void animateCalendarHeight(CalendarDay date) {
-        final int newHeight = calcCalendarHeight(date.getCalendar());
-
-        if (isCalendarHidden()) { // No need to animate
-            if (newHeight != calendarView.getHeight()) {
-                setCalendarHeight(newHeight);
-                appBar.setExpanded(false, false); // Avoids layout quirks
-            }
-        } else {
-            final int oldHeight = calendarView.getHeight();
-
-            if (oldHeight != newHeight) {
-                final ValueAnimator animator = ValueAnimator.ofInt(oldHeight, newHeight);
-                animator.addUpdateListener(valueAnimator ->
-                        setCalendarHeight((int) valueAnimator.getAnimatedValue()));
-                animator.setDuration(CALENDAR_RESIZE_ANIM_DURATION).start();
-            }
-        }
     }
 
     /**
@@ -215,7 +191,7 @@ public class DiaryActivity extends AppCompatActivity
      * @param cal2 Second date
      * @return Calculation result
      */
-    public static int daysBetween(Calendar cal1, Calendar cal2) {
+    private static int daysBetween(Calendar cal1, Calendar cal2) {
         final int cal2Year = cal2.get(Calendar.YEAR),
                 cal2DayOfYear = cal2.get(Calendar.DAY_OF_YEAR);
 
@@ -250,17 +226,6 @@ public class DiaryActivity extends AppCompatActivity
      */
     private boolean isCalendarHidden() {
         return dropDownArrow.getRotation() == 0;
-    }
-
-    /**
-     * Navigates to the desired day on both CalendarView & ViewPager
-     *
-     * @param day The day's date
-     */
-    private void setDateText(CalendarDay day) {
-        if (isCalendarHidden())
-            setFullDateText(day);
-        else setCondensedDateText(day);
     }
 
     /**
@@ -373,19 +338,30 @@ public class DiaryActivity extends AppCompatActivity
 
     @Override
     public void onMonthChanged(MaterialCalendarView widget, CalendarDay date) {
-        animateCalendarHeight(date);
-        final CalendarDay selectedDate = widget.getSelectedDate();
+        // First animates the height of calendarView if necessary
+        final int newHeight = calcCalendarHeight(date.getCalendar());
 
-        if (date.getMonth() != selectedDate.getMonth())
+        if (isCalendarHidden()) { // No need to animate
+            if (newHeight != calendarView.getHeight()) {
+                setCalendarHeight(newHeight);
+                appBar.setExpanded(false, false); // Avoids layout quirks
+            }
+        } else {
+            final int oldHeight = calendarView.getHeight();
+
+            if (oldHeight != newHeight) {
+                final ValueAnimator animator = ValueAnimator.ofInt(oldHeight, newHeight);
+                animator.addUpdateListener(valueAnimator ->
+                        setCalendarHeight((int) valueAnimator.getAnimatedValue()));
+                animator.setDuration(CALENDAR_RESIZE_ANIM_DURATION).start();
+            }
+        }
+
+        if (date.getMonth() != widget.getSelectedDate().getMonth()) {
+            // Then selected date becomes the first day of the month and pager must be updated
             widget.setSelectedDate(date);
-        else date = selectedDate;
-
-        final int index = getPageIndexFromDate(date);
-
-        // Checks if the viewPager has to be updated
-        if (index != pager.getCurrentItem())
-            pager.setCurrentItem(index);
-        else setDateText(date);
+            pager.setCurrentItem(getPageIndexFromDate(date));
+        }
     }
 
     @Override
@@ -405,9 +381,12 @@ public class DiaryActivity extends AppCompatActivity
         final Calendar tempCal = (Calendar) TODAY_CAL.clone();
         tempCal.add(Calendar.DATE, position - TODAY_IDX);
         final CalendarDay tempCalDay = CalendarDay.from(tempCal);
-        setDateText(tempCalDay);
 
-        // Checks if the calendarView has to be updated
+        if (isCalendarHidden())
+            setFullDateText(tempCalDay);
+        else setCondensedDateText(tempCalDay);
+
+        // Checks if the calendarView needs to be updated
         if (!tempCalDay.equals(calendarView.getSelectedDate())) {
             calendarView.setSelectedDate(tempCalDay);
             calendarView.setCurrentDate(tempCalDay);
