@@ -50,6 +50,8 @@ public class DiaryActivity extends AppCompatActivity
      * Adapter for the ViewPager
      */
     private static class DayAdapter extends FragmentStatePagerAdapter {
+        private static final int PAGE_COUNT = TODAY_IDX + 1;
+
         public DayAdapter(FragmentManager fm) {
             super(fm);
         }
@@ -61,7 +63,7 @@ public class DiaryActivity extends AppCompatActivity
 
         @Override
         public int getCount() {
-            return TODAY_IDX + 1;
+            return PAGE_COUNT;
         }
     }
 
@@ -93,6 +95,9 @@ public class DiaryActivity extends AppCompatActivity
     private static TextView title, subtitle;
     private static ImageView dropDownArrow;
     private static ViewPager pager;
+
+    private final ValueAnimator.AnimatorUpdateListener calendarResizeAnimListener =
+            valueAnimator -> setCalendarHeight((int) valueAnimator.getAnimatedValue());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -351,8 +356,7 @@ public class DiaryActivity extends AppCompatActivity
 
             if (oldHeight != newHeight) {
                 final ValueAnimator animator = ValueAnimator.ofInt(oldHeight, newHeight);
-                animator.addUpdateListener(valueAnimator ->
-                        setCalendarHeight((int) valueAnimator.getAnimatedValue()));
+                animator.addUpdateListener(calendarResizeAnimListener);
                 animator.setDuration(CALENDAR_RESIZE_ANIM_DURATION).start();
             }
         }
