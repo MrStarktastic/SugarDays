@@ -3,6 +3,7 @@ package com.mr_starktastic.sugardays;
 import android.animation.LayoutTransition;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
@@ -136,8 +137,7 @@ public class DiaryActivity extends AppCompatActivity
         // Properly sets the width of each tile to fill the app bar
         final DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        calendarView.setTileWidth((int) ((displayMetrics.widthPixels - getResources()
-                .getDimension(R.dimen.tiny_margin)) / 7 + 0.5f));
+        calendarView.setTileWidth((int) (displayMetrics.widthPixels / 7 + 0.5f));
         // Sets proper height according to the current month's rows
         setCalendarHeight(calcCalendarHeight(TODAY_CAL));
 
@@ -305,25 +305,23 @@ public class DiaryActivity extends AppCompatActivity
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.action_today:
-                pager.setCurrentItem(TODAY_IDX);
-                break;
-        }
+        if (item.getItemId() == R.id.action_today)
+            pager.setCurrentItem(TODAY_IDX);
 
         return super.onOptionsItemSelected(item);
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-
+            case R.id.nav_settings:
+                startActivity(new Intent(this, SettingsActivity.class));
+                break;
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);
 
-        return false;
+        return true;
     }
 
     @Override
@@ -346,7 +344,7 @@ public class DiaryActivity extends AppCompatActivity
         // First animates the height of calendarView if necessary
         final int newHeight = calcCalendarHeight(date.getCalendar());
 
-        if (isCalendarHidden()) { // No need to animate
+        if (isCalendarHidden()) { // Then no need to animate
             if (newHeight != calendarView.getHeight()) {
                 setCalendarHeight(newHeight);
                 appBar.setExpanded(false, false); // Avoids layout quirks

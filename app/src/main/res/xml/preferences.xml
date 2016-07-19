@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/pref_category_medicine">
+
+        <ListPreference
+            android:defaultValue="@string/pref_insulin_default"
+            android:entries="@array/pref_insulin_entries"
+            android:entryValues="@array/pref_insulin_entryValues"
+            android:key="pref_insulin"
+            android:summary="%s"
+            android:title="@string/pref_insulin_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_category_bg">
+
+        <ListPreference
+            android:defaultValue="@string/pref_bgUnits_default"
+            android:entries="@array/pref_bgUnits_entries"
+            android:entryValues="@array/pref_bgUnits_entryValues"
+            android:key="pref_bgUnits"
+            android:summary="%s"
+            android:title="@string/pref_bgUnits_title" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

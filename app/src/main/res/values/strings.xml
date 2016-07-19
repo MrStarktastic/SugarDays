@@ -4,7 +4,6 @@
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
-    <string name="action_settings">Settings</string>
     <string name="action_today">Jump to Today</string>
 
     <string name="today">Today</string>
@@ -12,4 +11,35 @@
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <!-- Settings related -->
+    <string name="settings">Settings</string>
+
+    <string name="pref_category_medicine">Medicine</string>
+
+    <string name="pref_insulin_title">Insulin therapy</string>
+    <string-array name="pref_insulin_entries">
+        <item>No insulin</item>
+        <item>Pen/Syringes</item>
+        <item>Pump</item>
+    </string-array>
+    <string-array name="pref_insulin_entryValues">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+    <string name="pref_insulin_default">0</string>
+
+    <string name="pref_category_bg">Blood glucose preferences</string>
+
+    <string name="pref_bgUnits_title">Blood glucose unit</string>
+    <string-array name="pref_bgUnits_entries">
+        <item>mg/dL</item>
+        <item>mmol/L</item>
+    </string-array>
+    <string-array name="pref_bgUnits_entryValues">
+        <item>0</item>
+        <item>1</item>
+    </string-array>
+    <string name="pref_bgUnits_default">0</string>
 </resources>
