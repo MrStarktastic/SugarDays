@@ -25,4 +25,13 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/pref_category_insulin_predictions">
+
+        <EditTextPreference
+            android:key="pref_correction"
+            android:summary="15 mg/dL per insulin unit"
+            android:title="@string/pref_correction_title" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>

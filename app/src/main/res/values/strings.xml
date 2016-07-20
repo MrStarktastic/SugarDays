@@ -42,4 +42,8 @@
         <item>1</item>
     </string-array>
     <string name="pref_bgUnits_default">0</string>
+
+    <string name="pref_category_insulin_predictions">Insulin predictions</string>
+
+    <string name="pref_correction_title">Correction factor</string>
 </resources>
