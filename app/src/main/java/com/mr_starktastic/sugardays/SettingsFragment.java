@@ -1,45 +1,80 @@
 package com.mr_starktastic.sugardays;
 
 import android.os.Bundle;
-import android.support.v7.preference.EditTextPreference;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.preference.CheckBoxPreference;
 import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.PreferenceFragmentCompat;
+import android.support.v7.preference.PreferenceScreen;
+import android.support.v7.widget.AppCompatSeekBar;
+
+import com.mr_starktastic.sugardays.widget.RangeSeekBar;
+import com.mr_starktastic.sugardays.widget.ReversedSeekBar;
 
 public class SettingsFragment extends PreferenceFragmentCompat {
-    /**
-     * Blood glucose constants for both measure units (mg/dL & mmol/L)
-     */
-    private static final int MGPDL_MIN_BG = 10, MGPDL_MAX_BG = 900, MGPDL_INCREMENT = 10;
-    private static final float MMOLPL_MIN_BG = 0.6f, MMOLPL_MAX_BG = 49.9f, MMOLPL_INCREMENT = 0.1f;
-
-    /**
-     * Preference objects
-     */
-    private static ListPreference insulinListPref, bgUnitsListPref;
-    private static EditTextPreference correctionEditPref;
+    private ListPreference insulinListPref, bgUnitsListPref;
+    private CustomPreference hypoPref, targetRangePref, hyperPref;
+    private AppCompatSeekBar hypoSeekBar;
+    private RangeSeekBar targetRangeSeekBar;
+    private ReversedSeekBar hyperSeekBar;
+    private PreferenceScreen bolusPredictPrefScr;
+    private CheckBoxPreference savePhotosPref, autoLocationPref;
 
     @Override
-    public void onCreatePreferences(Bundle bundle, String s) {
-        addPreferencesFromResource(R.xml.preferences);
+    public void onCreatePreferences(Bundle bundle, String prefScrKey) {
+        setPreferencesFromResource(R.xml.preferences, prefScrKey);
 
-        insulinListPref = (ListPreference) findPreference(PrefKeys.INSULIN);
-        insulinListPref.setOnPreferenceChangeListener(
-                (preference, newValue) -> configInsulinDependencies((String) newValue));
+        if (prefScrKey == null) {
+            insulinListPref = (ListPreference) findPreference(PrefKeys.INSULIN);
+            insulinListPref.setOnPreferenceChangeListener(
+                    (preference, newValue) -> setBolusPredictAvailable((String) newValue));
 
-        bgUnitsListPref = (ListPreference) findPreference(PrefKeys.BG_UNITS);
-        correctionEditPref = (EditTextPreference) findPreference(PrefKeys.CORRECTION);
+            /* Pills preference placeholder */
 
-        configInsulinDependencies(insulinListPref.getValue());
+            bgUnitsListPref = (ListPreference) findPreference(PrefKeys.BG_UNITS);
+
+            hypoPref = (CustomPreference) findPreference(PrefKeys.HYPO);
+            hypoSeekBar = (AppCompatSeekBar) hypoPref.getWidget();
+
+            targetRangePref = (CustomPreference) findPreference(PrefKeys.TARGET_RANGE);
+            targetRangeSeekBar = (RangeSeekBar) targetRangePref.getWidget();
+
+            hyperPref = (CustomPreference) findPreference(PrefKeys.HYPER);
+            hyperSeekBar = (ReversedSeekBar) hyperPref.getWidget();
+
+            bolusPredictPrefScr = (PreferenceScreen) findPreference(PrefKeys.SCR_BOLUS_PREDICT);
+
+            savePhotosPref = (CheckBoxPreference) findPreference(PrefKeys.SAVE_PHOTOS);
+            autoLocationPref = (CheckBoxPreference) findPreference(PrefKeys.AUTO_LOCATION);
+
+            setBolusPredictAvailable(insulinListPref.getValue());
+        }
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        final ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
+
+        if (actionBar != null)
+            actionBar.setTitle(getPreferenceScreen().getTitle());
+
+        super.onActivityCreated(savedInstanceState);
     }
 
     /**
-     * Disables the dependencies of the insulin therapy if set to "No insulin", enables otherwise
+     * Disables (renders unavailable) the "Bolus prediction" preference when selected "No insulin"
+     * as the value of "Insulin therapy", enables it otherwise
      *
      * @param newValue The new insulin therapy selected value
      * @return always true
      */
-    private boolean configInsulinDependencies(String newValue) {
-        correctionEditPref.setEnabled(Integer.parseInt(newValue) != 0);
+    private boolean setBolusPredictAvailable(String newValue) {
+        final boolean enabled = Integer.parseInt(newValue) != 0;
+        bolusPredictPrefScr.setEnabled(enabled);
+
+        if (enabled)
+            bolusPredictPrefScr.setSummary(getContext().getString(R.string.off));
 
         return true;
     }

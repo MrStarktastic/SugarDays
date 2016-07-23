@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<android.support.v7.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:title="@string/settings">
 
-    <PreferenceCategory android:title="@string/pref_category_medicine">
+    <android.support.v7.preference.PreferenceCategory android:title="@string/pref_cat_gen_title">
 
-        <ListPreference
+        <android.support.v7.preference.ListPreference
             android:defaultValue="@string/pref_insulin_default"
             android:entries="@array/pref_insulin_entries"
             android:entryValues="@array/pref_insulin_entryValues"
@@ -11,11 +13,12 @@
             android:summary="%s"
             android:title="@string/pref_insulin_title" />
 
-    </PreferenceCategory>
+        <android.support.v7.preference.Preference
+            android:key="pref_pills"
+            android:summary="@string/pref_pills_null_summary"
+            android:title="@string/pref_pills_title" />
 
-    <PreferenceCategory android:title="@string/pref_category_bg">
-
-        <ListPreference
+        <android.support.v7.preference.ListPreference
             android:defaultValue="@string/pref_bgUnits_default"
             android:entries="@array/pref_bgUnits_entries"
             android:entryValues="@array/pref_bgUnits_entryValues"
@@ -23,15 +26,50 @@
             android:summary="%s"
             android:title="@string/pref_bgUnits_title" />
 
-    </PreferenceCategory>
+        <com.mr_starktastic.sugardays.CustomPreference
+            android:key="pref_hypo"
+            android:summary="70"
+            android:title="@string/pref_hypo_title"
+            android:widgetLayout="@layout/preference_seek_bar_widget"
+            app:summaryTextColor="@color/colorBadBloodGlucose" />
 
-    <PreferenceCategory android:title="@string/pref_category_insulin_predictions">
+        <com.mr_starktastic.sugardays.CustomPreference
+            android:key="pref_target_range"
+            android:summary="90-120"
+            android:title="@string/pref_targetRange_title"
+            android:widgetLayout="@layout/preference_range_seek_bar_widget"
+            app:summaryTextColor="@color/colorGoodBloodGlucose" />
 
-        <EditTextPreference
-            android:key="pref_correction"
-            android:summary="15 mg/dL per insulin unit"
-            android:title="@string/pref_correction_title" />
+        <com.mr_starktastic.sugardays.CustomPreference
+            android:key="pref_hyper"
+            android:summary="180"
+            android:title="@string/pref_hyper_title"
+            android:widgetLayout="@layout/preference_reversed_seek_bar_widget"
+            app:summaryTextColor="@color/colorBadBloodGlucose" />
 
-    </PreferenceCategory>
+        <android.support.v7.preference.PreferenceScreen
+            android:key="pref_scr_bolus_predict"
+            android:summary="Off"
+            android:title="@string/pref_scr_bolus_predict_title">
 
-</PreferenceScreen>
+            <android.support.v7.preference.Preference android:title="Placeholder" />
+
+        </android.support.v7.preference.PreferenceScreen>
+
+    </android.support.v7.preference.PreferenceCategory>
+
+    <android.support.v7.preference.PreferenceCategory android:title="@string/pref_cat_extras_title">
+
+        <android.support.v7.preference.CheckBoxPreference
+            android:defaultValue="true"
+            android:key="pref_save_photos"
+            android:title="@string/pref_save_photos_title" />
+
+        <android.support.v7.preference.CheckBoxPreference
+            android:defaultValue="true"
+            android:key="pref_auto_location"
+            android:title="@string/pref_auto_location_title" />
+
+    </android.support.v7.preference.PreferenceCategory>
+
+</android.support.v7.preference.PreferenceScreen>

@@ -12,10 +12,12 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
-    <!-- Settings related -->
+    <!-- Preferences -->
     <string name="settings">Settings</string>
+    <string name="off">Off</string>
+    <string name="on">On</string>
 
-    <string name="pref_category_medicine">Medicine</string>
+    <string name="pref_cat_gen_title">General</string>
 
     <string name="pref_insulin_title">Insulin therapy</string>
     <string-array name="pref_insulin_entries">
@@ -30,7 +32,8 @@
     </string-array>
     <string name="pref_insulin_default">0</string>
 
-    <string name="pref_category_bg">Blood glucose preferences</string>
+    <string name="pref_pills_title">Pills</string>
+    <string name="pref_pills_null_summary">N/A</string>
 
     <string name="pref_bgUnits_title">Blood glucose unit</string>
     <string-array name="pref_bgUnits_entries">
@@ -43,7 +46,14 @@
     </string-array>
     <string name="pref_bgUnits_default">0</string>
 
-    <string name="pref_category_insulin_predictions">Insulin predictions</string>
+    <string name="pref_hypo_title">Hypo</string>
+    <string name="pref_targetRange_title">Target range</string>
+    <string name="pref_hyper_title">Hyper</string>
 
-    <string name="pref_correction_title">Correction factor</string>
+    <string name="pref_scr_bolus_predict_title">Bolus prediction</string>
+
+    <string name="pref_cat_extras_title">Extras</string>
+
+    <string name="pref_save_photos_title">Save photos to gallery</string>
+    <string name="pref_auto_location_title">Automatically register location</string>
 </resources>
