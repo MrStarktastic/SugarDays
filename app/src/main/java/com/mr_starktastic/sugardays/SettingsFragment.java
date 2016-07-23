@@ -35,13 +35,8 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             bgUnitsListPref = (ListPreference) findPreference(PrefKeys.BG_UNITS);
 
             hypoPref = (CustomPreference) findPreference(PrefKeys.HYPO);
-            hypoSeekBar = (AppCompatSeekBar) hypoPref.getWidget();
-
             targetRangePref = (CustomPreference) findPreference(PrefKeys.TARGET_RANGE);
-            targetRangeSeekBar = (RangeSeekBar) targetRangePref.getWidget();
-
             hyperPref = (CustomPreference) findPreference(PrefKeys.HYPER);
-            hyperSeekBar = (ReversedSeekBar) hyperPref.getWidget();
 
             bolusPredictPrefScr = (PreferenceScreen) findPreference(PrefKeys.SCR_BOLUS_PREDICT);
 
@@ -63,8 +58,8 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     }
 
     /**
-     * Disables (renders unavailable) the "Bolus prediction" preference when selected "No insulin"
-     * as the value of "Insulin therapy", enables it otherwise
+     * Disables the "Bolus prediction" preference when selected "No insulin" as the value of
+     * "Insulin therapy", enables it otherwise
      *
      * @param newValue The new insulin therapy selected value
      * @return always true

@@ -11,9 +11,10 @@ import android.graphics.Paint;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
-import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.animation.AccelerateInterpolator;
 
 import com.mr_starktastic.sugardays.R;
@@ -32,25 +33,7 @@ public class RangeSeekBar extends View {
         void onMinChanged(int newValue);
     }
 
-    /**
-     * Converts from dp to pixels
-     *
-     * @param dp Dimension value in dp
-     * @return Dimension value in pixels as an integer
-     */
-    private static int dpToPx(int dp) {
-        return Math.round(TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_DIP, dp, Resources.getSystem().getDisplayMetrics()));
-    }
-
-    private static final int HORIZONTAL_PADDING = dpToPx(16);
-    private static final int DEFAULT_TOUCH_TARGET_SIZE = dpToPx(40);
-    private static final int DEFAULT_UNPRESSED_RADIUS = dpToPx(6);
-    private static final int DEFAULT_PRESSED_RADIUS = dpToPx(9);
-    private static final int DEFAULT_INSIDE_RANGE_STROKE_WIDTH = dpToPx(2);
-    private static final int DEFAULT_OUTSIDE_RANGE_STROKE_WIDTH = dpToPx(2);
-    private static final int DEFAULT_MAX = 100;
-
+    private int touchTargetSize;
     private float unpressedRadius;
     private float pressedRadius;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -66,7 +49,7 @@ public class RangeSeekBar extends View {
     private Set<Integer> isTouchingMinTarget = new HashSet<>();
     private Set<Integer> isTouchingMaxTarget = new HashSet<>();
     private int min = 0;
-    private int max = DEFAULT_MAX;
+    private int max = 100;
     private int range;
     private float convertFactor;
     private RangeSeekBarListener rangeSeekBarListener;
@@ -115,16 +98,16 @@ public class RangeSeekBar extends View {
         min = styledAttrs.getInt(R.styleable.RangeSeekBar_min, min);
         max = styledAttrs.getInt(R.styleable.RangeSeekBar_max, max);
 
+        final Resources res = getResources();
         unpressedRadius = styledAttrs.getDimension(R.styleable.RangeSeekBar_unpressedTargetRadius,
-                DEFAULT_UNPRESSED_RADIUS);
+                res.getDimension(R.dimen.unpressed_radius));
         pressedRadius = styledAttrs.getDimension(R.styleable.RangeSeekBar_pressedTargetRadius,
-                DEFAULT_PRESSED_RADIUS);
+                res.getDimension(R.dimen.pressed_radius));
+        final float defStrokeWidth = res.getDimension(R.dimen.stroke_width);
         insideRangeLineStrokeWidth = styledAttrs.getDimension(
-                R.styleable.RangeSeekBar_insideRangeLineStrokeWidth,
-                DEFAULT_INSIDE_RANGE_STROKE_WIDTH);
+                R.styleable.RangeSeekBar_insideRangeLineStrokeWidth, defStrokeWidth);
         outsideRangeLineStrokeWidth = styledAttrs.getDimension(
-                R.styleable.RangeSeekBar_outsideRangeLineStrokeWidth,
-                DEFAULT_OUTSIDE_RANGE_STROKE_WIDTH);
+                R.styleable.RangeSeekBar_outsideRangeLineStrokeWidth, defStrokeWidth);
 
         styledAttrs.recycle();
 
@@ -134,6 +117,7 @@ public class RangeSeekBar extends View {
 
         minAnimator = getMinTargetAnimator(true);
         maxAnimator = getMaxTargetAnimator(true);
+        touchTargetSize = res.getDimensionPixelSize(R.dimen.touch_target_size);
     }
 
     private ObjectAnimator getMinTargetAnimator(boolean touching) {
@@ -197,10 +181,11 @@ public class RangeSeekBar extends View {
             height = desiredHeight;
         }
 
-        lineLength = (width - HORIZONTAL_PADDING * 2);
+        final int horizontalPadding = getResources().getDimensionPixelSize(R.dimen.normal_margin);
+        lineLength = (width - horizontalPadding * 2);
         midY = height / 2;
-        lineStartX = HORIZONTAL_PADDING;
-        lineEndX = lineLength + HORIZONTAL_PADDING;
+        lineStartX = horizontalPadding;
+        lineEndX = lineLength + horizontalPadding;
 
         calculateConvertFactor();
 
@@ -337,6 +322,9 @@ public class RangeSeekBar extends View {
                 isTouchingMinTarget.clear();
                 isTouchingMaxTarget.clear();
                 break;
+
+            default:
+                break;
         }
 
         return true;
@@ -393,21 +381,34 @@ public class RangeSeekBar extends View {
     }
 
     private boolean isTouchingMinTarget(int pointerIndex, MotionEvent event) {
-        return event.getX(pointerIndex) > minPosition - DEFAULT_TOUCH_TARGET_SIZE
-                && event.getX(pointerIndex) < minPosition + DEFAULT_TOUCH_TARGET_SIZE
-                && event.getY(pointerIndex) > midY - DEFAULT_TOUCH_TARGET_SIZE
-                && event.getY(pointerIndex) < midY + DEFAULT_TOUCH_TARGET_SIZE;
+        return event.getX(pointerIndex) > minPosition - touchTargetSize
+                && event.getX(pointerIndex) < minPosition + touchTargetSize
+                && event.getY(pointerIndex) > midY - touchTargetSize
+                && event.getY(pointerIndex) < midY + touchTargetSize;
     }
 
     private boolean isTouchingMaxTarget(int pointerIndex, MotionEvent event) {
-        return event.getX(pointerIndex) > maxPosition - DEFAULT_TOUCH_TARGET_SIZE
-                && event.getX(pointerIndex) < maxPosition + DEFAULT_TOUCH_TARGET_SIZE
-                && event.getY(pointerIndex) > midY - DEFAULT_TOUCH_TARGET_SIZE
-                && event.getY(pointerIndex) < midY + DEFAULT_TOUCH_TARGET_SIZE;
+        return event.getX(pointerIndex) > maxPosition - touchTargetSize
+                && event.getX(pointerIndex) < maxPosition + touchTargetSize
+                && event.getY(pointerIndex) > midY - touchTargetSize
+                && event.getY(pointerIndex) < midY + touchTargetSize;
     }
 
     private void calculateConvertFactor() {
         convertFactor = ((float) range) / lineLength;
+    }
+
+    public boolean isInScrollingContainer() {
+        ViewParent p = getParent();
+
+        while (p != null && p instanceof ViewGroup) {
+            if (((ViewGroup) p).shouldDelayChildPressedState())
+                return true;
+
+            p = p.getParent();
+        }
+
+        return false;
     }
 
     public int getSelectedMin() {

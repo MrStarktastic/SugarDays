@@ -14,4 +14,10 @@
 
     <dimen name="tiny_text_size">12sp</dimen>
 
+    <!-- RangeSeekBar dimensions -->
+    <dimen name="touch_target_size">40dp</dimen>
+    <dimen name="unpressed_radius">6dp</dimen>
+    <dimen name="pressed_radius">9dp</dimen>
+    <dimen name="stroke_width">2dp</dimen>
+
 </resources>
