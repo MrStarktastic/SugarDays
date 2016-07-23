@@ -34,7 +34,7 @@
             app:summaryTextColor="@color/colorBadBloodGlucose" />
 
         <com.mr_starktastic.sugardays.CustomPreference
-            android:key="pref_target_range"
+            android:key="pref_targetRange"
             android:summary="90-120"
             android:title="@string/pref_targetRange_title"
             android:widgetLayout="@layout/preference_range_seek_bar_widget"
