@@ -20,4 +20,7 @@
     <dimen name="pressed_radius">9dp</dimen>
     <dimen name="stroke_width">2dp</dimen>
 
+    <string name="demo_min_label">Min</string>
+    <string name="demo_max_label">Max</string>
+
 </resources>
