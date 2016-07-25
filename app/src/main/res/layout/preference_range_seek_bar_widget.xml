@@ -7,6 +7,7 @@
     app:alwaysActive="true"
     app:barHeight="@dimen/stroke_width"
     app:showLabels="false"
+    app:internalPadding="@dimen/normal_margin"
     app:thumbPressedRadius="@dimen/pressed_radius"
     app:thumbUnpressedRadius="@dimen/unpressed_radius"
     app:valuesAboveThumbs="false" />

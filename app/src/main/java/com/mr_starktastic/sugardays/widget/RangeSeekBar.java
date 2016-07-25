@@ -26,16 +26,7 @@ import java.math.BigDecimal;
 
 /**
  * Widget that lets users select a minimum and maximum value on a given numerical range.
- * The range value types can be one of Long, Double, Integer, Float, Short, Byte or BigDecimal.<br>
- * <br>
- * Improved {@link android.view.MotionEvent} handling for smoother use, anti-aliased painting for improved aesthetics.
- *
- * @param <T> The Number type of the range values. One of Long, Double, Integer, Float, Short, Byte or BigDecimal.
- * @author Stephan Tittel (stephan.tittel@kom.tu-darmstadt.de)
- * @author Peter Sinnott (psinnott@gmail.com)
- * @author Thomas Barrasso (tbarrasso@sevenplusandroid.org)
- * @author Alex Florescu (alex@florescu.org)
- * @author Michael Keppler (bananeweizen@gmx.de)
+ * The range value types can be one of Long, Double, Integer, Float, Short, Byte or BigDecimal.
  */
 public class RangeSeekBar<T extends Number> extends View {
     /**
@@ -184,8 +175,8 @@ public class RangeSeekBar<T extends Number> extends View {
             }
         }
 
-        mThumbHalfWidth = thumbUnpressedRadius;
-        mThumbHalfHeight = thumbUnpressedRadius;
+        mThumbHalfWidth = thumbPressedRadius;
+        mThumbHalfHeight = thumbPressedRadius;
 
         setValuePrimAndNumberType();
 
@@ -507,7 +498,8 @@ public class RangeSeekBar<T extends Number> extends View {
             canvas.drawText(minLabel, 0, minMaxHeight, paint);
             canvas.drawText(maxLabel, getWidth() - minMaxLabelSize, minMaxHeight, paint);
         }
-        padding = mInternalPad + minMaxLabelSize + mThumbHalfWidth;
+
+        padding = mInternalPad + minMaxLabelSize;
 
         // draw seek bar background line
         mRect.left = padding;
@@ -603,12 +595,12 @@ public class RangeSeekBar<T extends Number> extends View {
     /**
      * Draws the "normal" resp. "pressed" thumb image on specified x-coordinate.
      *
-     * @param screenCoord The x-coordinate in screen space where to draw the image.
-     * @param pressed     Is the thumb currently in "pressed" state?
-     * @param canvas      The canvas to draw upon.
+     * @param screenX The x-coordinate in screen space where to draw the image.
+     * @param pressed Is the thumb currently in "pressed" state?
+     * @param canvas  The canvas to draw upon.
      */
-    private void drawThumb(float screenCoord, boolean pressed, Canvas canvas) {
-        canvas.drawCircle(screenCoord, mThumbHalfHeight,
+    private void drawThumb(float screenX, boolean pressed, Canvas canvas) {
+        canvas.drawCircle(screenX, mThumbHalfHeight,
                 pressed ? thumbPressedRadius : thumbUnpressedRadius, paint);
     }
 
