@@ -3,7 +3,7 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF5252</color>
-    <color name="colorOutsideRangeLineSeekBar">#D7D7D7</color>
+    <color name="colorOutsideRangeSeekBar">#D7D7D7</color>
     <color name="colorBadBloodGlucose">#B33A3A</color>
     <color name="colorGoodBloodGlucose">#32CD32</color>
 </resources>
