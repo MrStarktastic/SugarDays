@@ -7,15 +7,15 @@ import android.support.v7.preference.CheckBoxPreference;
 import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceScreen;
-import android.support.v7.widget.AppCompatSeekBar;
 
 import com.mr_starktastic.sugardays.widget.RangeSeekBar;
 import com.mr_starktastic.sugardays.widget.ReversedSeekBar;
+import com.mr_starktastic.sugardays.widget.SingleSeekBar;
 
 public class SettingsFragment extends PreferenceFragmentCompat {
     private ListPreference insulinListPref, bgUnitsListPref;
     private CustomPreference hypoPref, targetRangePref, hyperPref;
-    private AppCompatSeekBar hypoSeekBar;
+    private SingleSeekBar hypoSeekBar;
     private RangeSeekBar targetRangeSeekBar;
     private ReversedSeekBar hyperSeekBar;
     private PreferenceScreen bolusPredictPrefScr;

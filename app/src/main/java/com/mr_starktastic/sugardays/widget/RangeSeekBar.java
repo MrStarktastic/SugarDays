@@ -143,6 +143,10 @@ public class RangeSeekBar<T extends Number> extends View {
         scaledTouchSlop = ViewConfiguration.get(c).getScaledTouchSlop();
     }
 
+    protected void setSingleThumb(boolean singleThumb) {
+        this.singleThumb = singleThumb;
+    }
+
     public void setRangeValues(T minValue, T maxValue) {
         this.absoluteMinValue = minValue;
         this.absoluteMaxValue = maxValue;

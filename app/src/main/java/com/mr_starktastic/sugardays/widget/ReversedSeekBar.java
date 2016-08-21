@@ -5,7 +5,7 @@ import android.graphics.Canvas;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
-public class ReversedSeekBar extends android.support.v7.widget.AppCompatSeekBar {
+public class ReversedSeekBar extends SingleSeekBar {
     private static final float DIMEN_PIVOT_RATIO = 2f;
     private static final int SCALE_X = -1, SCALE_Y = 1;
 
