@@ -1,5 +1,8 @@
 package com.mr_starktastic.sugardays.widget;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
@@ -14,6 +17,7 @@ import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.animation.AccelerateInterpolator;
 
 import com.mr_starktastic.sugardays.R;
 
@@ -25,14 +29,14 @@ import java.math.BigDecimal;
  */
 public class RangeSeekBar<T extends Number> extends View {
     // Localized constants from MotionEvent for compatibility with API < 8 "Froyo"
-    public static final int ACTION_POINTER_INDEX_MASK = 0x0000ff00, ACTION_POINTER_INDEX_SHIFT = 8;
-
-    public static final Integer DEFAULT_MINIMUM = 0, DEFAULT_MAXIMUM = 100;
+    private static final int ACTION_POINTER_INDEX_MASK = 0x0000ff00, ACTION_POINTER_INDEX_SHIFT = 8;
+    private static final Integer DEFAULT_MINIMUM = 0, DEFAULT_MAXIMUM = 100;
+    private static final int THUMB_ANIM_DURATION = 125;
 
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    private float thumbUnpressedRadius, thumbPressedRadius;
-
+    private float thumbUnpressedRadius, thumbPressedRadius, minThumbRadius, maxThumbRadius;
+    private ValueAnimator minThumbAnimator, maxThumbAnimator;
     private T absoluteMinValue, absoluteMaxValue;
     private NumberType numberType;
     private double absMinValuePrim, absMaxValuePrim;
@@ -40,17 +44,11 @@ public class RangeSeekBar<T extends Number> extends View {
     private Thumb pressedThumb = null;
     private boolean notifyWhileDragging = false;
     private OnRangeSeekBarChangeListener<T> listener;
-
     private float downMotionX;
-
     private int activePointerId = 255; // Instantiated with an invalid ID
-
     private int scaledTouchSlop;
-
     private boolean isDragging;
-
     private RectF rect;
-
     private boolean singleThumb;
     private boolean alwaysActive;
     private float internalPad;
@@ -127,6 +125,11 @@ public class RangeSeekBar<T extends Number> extends View {
                 a.recycle();
             }
         }
+
+        minThumbRadius = thumbUnpressedRadius;
+        maxThumbRadius = thumbUnpressedRadius;
+        minThumbAnimator = getMinThumbAnimator(true);
+        maxThumbAnimator = getMaxThumbAnimator(true);
 
         setValuePrimAndNumberType();
 
@@ -253,6 +256,50 @@ public class RangeSeekBar<T extends Number> extends View {
         this.listener = listener;
     }
 
+    private ValueAnimator getMinThumbAnimator(boolean isTouching) {
+        final ValueAnimator anim = ValueAnimator.ofFloat(minThumbRadius,
+                isTouching ? thumbPressedRadius : thumbUnpressedRadius);
+        anim.setInterpolator(new AccelerateInterpolator());
+        anim.setDuration(THUMB_ANIM_DURATION);
+
+        anim.addUpdateListener(animation -> {
+            minThumbRadius = (float) anim.getAnimatedValue();
+            invalidate();
+        });
+
+        anim.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                anim.removeAllListeners();
+                super.onAnimationEnd(animation);
+            }
+        });
+
+        return anim;
+    }
+
+    private ValueAnimator getMaxThumbAnimator(boolean isTouching) {
+        final ValueAnimator anim = ValueAnimator.ofFloat(maxThumbRadius,
+                isTouching ? thumbPressedRadius : thumbUnpressedRadius);
+        anim.setInterpolator(new AccelerateInterpolator());
+        anim.setDuration(THUMB_ANIM_DURATION);
+
+        anim.addUpdateListener(animation -> {
+            maxThumbRadius = (float) anim.getAnimatedValue();
+            invalidate();
+        });
+
+        anim.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                anim.removeAllListeners();
+                super.onAnimationEnd(animation);
+            }
+        });
+
+        return anim;
+    }
+
     /**
      * Handles thumb selection and movement. Notifies listener callback on certain events.
      */
@@ -274,14 +321,14 @@ public class RangeSeekBar<T extends Number> extends View {
                     break;
 
                 if (isDragging)
-                    trackTouchEvent(e);
+                    trackTouchEvent(e, false);
                 else if (Math.abs(e.getX(e.findPointerIndex(
                         activePointerId)) - downMotionX) > scaledTouchSlop) {
                     // Scroll to follow the motion event
                     setPressed(true);
                     invalidate();
                     onStartTrackingTouch();
-                    trackTouchEvent(e);
+                    trackTouchEvent(e, false);
                     attemptClaimDrag();
                 }
 
@@ -293,14 +340,14 @@ public class RangeSeekBar<T extends Number> extends View {
 
             case MotionEvent.ACTION_UP:
                 if (isDragging) {
-                    trackTouchEvent(e);
+                    trackTouchEvent(e, true);
                     onStopTrackingTouch();
                     setPressed(false);
                 } else {
                     // Touch up when we never crossed the touch slop threshold
                     // should be interpreted as a tap-seek to that location
                     onStartTrackingTouch();
-                    trackTouchEvent(e);
+                    trackTouchEvent(e, true);
                     onStopTrackingTouch();
                 }
 
@@ -326,6 +373,16 @@ public class RangeSeekBar<T extends Number> extends View {
                 break;
 
             case MotionEvent.ACTION_CANCEL:
+                if (Thumb.MIN.equals(pressedThumb)) {
+                    minThumbAnimator.cancel();
+                    minThumbAnimator = getMinThumbAnimator(false);
+                    minThumbAnimator.start();
+                } else if (Thumb.MAX.equals(pressedThumb)) {
+                    maxThumbAnimator.cancel();
+                    maxThumbAnimator = getMaxThumbAnimator(false);
+                    maxThumbAnimator.start();
+                }
+
                 if (isDragging) {
                     onStopTrackingTouch();
                     setPressed(false);
@@ -334,6 +391,7 @@ public class RangeSeekBar<T extends Number> extends View {
 
                 break;
         }
+
         return true;
     }
 
@@ -350,13 +408,36 @@ public class RangeSeekBar<T extends Number> extends View {
         }
     }
 
-    private void trackTouchEvent(MotionEvent e) {
+    private void trackTouchEvent(MotionEvent e, boolean isEnding) {
         final double normX = screenToNormalized(e.getX(e.findPointerIndex(activePointerId)));
 
-        if (!singleThumb && Thumb.MIN.equals(pressedThumb))
+        if (!singleThumb && Thumb.MIN.equals(pressedThumb)) {
             setNormalizedMinValue(normX);
-        else if (Thumb.MAX.equals(pressedThumb))
+
+            if (!isEnding) {
+                if (!minThumbAnimator.isRunning()) {
+                    minThumbAnimator = getMinThumbAnimator(true);
+                    minThumbAnimator.start();
+                }
+            } else {
+                minThumbAnimator.cancel();
+                minThumbAnimator = getMinThumbAnimator(false);
+                minThumbAnimator.start();
+            }
+        } else if (Thumb.MAX.equals(pressedThumb)) {
             setNormalizedMaxValue(normX);
+
+            if (!isEnding) {
+                if (!maxThumbAnimator.isRunning()) {
+                    maxThumbAnimator = getMaxThumbAnimator(true);
+                    maxThumbAnimator.start();
+                }
+            } else {
+                maxThumbAnimator.cancel();
+                maxThumbAnimator = getMaxThumbAnimator(false);
+                maxThumbAnimator.start();
+            }
+        }
     }
 
     /**
@@ -430,12 +511,11 @@ public class RangeSeekBar<T extends Number> extends View {
         paint.setColor(colorToUseForButtonsAndHighlightedLine);
         canvas.drawRect(rect, paint);
 
-        // draw minimum thumb (& shadow if requested) if not a single thumb control
+        // draw minimum thumb if not a single thumb control
         if (!singleThumb)
-            drawThumb(normalizedToScreen(normalizedMinValue), Thumb.MIN.equals(pressedThumb),
-                    canvas);
+            drawThumb(normalizedToScreen(normalizedMinValue), minThumbRadius, canvas);
 
-        drawThumb(normalizedToScreen(normalizedMaxValue), Thumb.MAX.equals(pressedThumb), canvas);
+        drawThumb(normalizedToScreen(normalizedMaxValue), maxThumbRadius, canvas);
     }
 
     /**
@@ -470,12 +550,11 @@ public class RangeSeekBar<T extends Number> extends View {
      * Draws the "normal" resp. "pressed" thumb image on specified x-coordinate.
      *
      * @param screenX The x-coordinate in screen space where to draw the image.
-     * @param pressed Is the thumb currently in "pressed" state?
+     * @param radius  The radius of the thumb to draw.
      * @param canvas  The canvas to draw upon.
      */
-    private void drawThumb(float screenX, boolean pressed, Canvas canvas) {
-        canvas.drawCircle(screenX, thumbPressedRadius,
-                pressed ? thumbPressedRadius : thumbUnpressedRadius, paint);
+    private void drawThumb(float screenX, float radius, Canvas canvas) {
+        canvas.drawCircle(screenX, thumbPressedRadius, radius, paint);
     }
 
     /**
@@ -522,7 +601,6 @@ public class RangeSeekBar<T extends Number> extends View {
      */
     private void setNormalizedMinValue(double value) {
         normalizedMinValue = Math.max(0d, Math.min(1d, Math.min(value, normalizedMaxValue)));
-        invalidate();
     }
 
     /**
@@ -533,7 +611,6 @@ public class RangeSeekBar<T extends Number> extends View {
      */
     private void setNormalizedMaxValue(double value) {
         normalizedMaxValue = Math.max(0d, Math.min(1d, Math.max(value, normalizedMinValue)));
-        invalidate();
     }
 
     /**
