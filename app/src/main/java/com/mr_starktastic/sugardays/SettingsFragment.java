@@ -30,7 +30,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             insulinListPref.setOnPreferenceChangeListener(
                     (preference, newValue) -> setBolusPredictAvailable((String) newValue));
 
-            /* Pills preference placeholder */
+            /* Pills preference stuff goes here */
 
             bgUnitsListPref = (ListPreference) findPreference(PrefKeys.BG_UNITS);
 
