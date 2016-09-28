@@ -6,8 +6,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 
 public class ReversedSeekBar extends SingleSeekBar {
-    private static final float DIMEN_PIVOT_RATIO = 2f;
-    private static final int SCALE_X = -1, SCALE_Y = 1;
+    private static final int INVERTED_SCALE_X = -1, SCALE_Y = 1;
 
     public ReversedSeekBar(Context context) {
         super(context);
@@ -23,16 +22,18 @@ public class ReversedSeekBar extends SingleSeekBar {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        final float px = getWidth() / DIMEN_PIVOT_RATIO, py = getHeight() / DIMEN_PIVOT_RATIO;
-        canvas.scale(SCALE_X, SCALE_Y, px, py);
-
+        canvas.scale(INVERTED_SCALE_X, SCALE_Y, getWidth() / 2, getHeight() / 2);
         super.onDraw(canvas);
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         event.setLocation(getWidth() - event.getX(), event.getY());
-
         return super.onTouchEvent(event);
     }
+/*
+    @Override
+    public Number getSelectedMinValue() {
+        return normalizedToValue(1 - normalizedMaxValue);
+    }*/
 }

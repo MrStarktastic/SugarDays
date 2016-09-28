@@ -8,16 +8,9 @@ import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceScreen;
 
-import com.mr_starktastic.sugardays.widget.RangeSeekBar;
-import com.mr_starktastic.sugardays.widget.ReversedSeekBar;
-import com.mr_starktastic.sugardays.widget.SingleSeekBar;
-
 public class SettingsFragment extends PreferenceFragmentCompat {
     private ListPreference insulinListPref, bgUnitsListPref;
-    private CustomPreference hypoPref, targetRangePref, hyperPref;
-    private SingleSeekBar hypoSeekBar;
-    private RangeSeekBar targetRangeSeekBar;
-    private ReversedSeekBar hyperSeekBar;
+    private SeekBarPreference hypoPref, targetRangePref, hyperPref;
     private PreferenceScreen bolusPredictPrefScr;
     private CheckBoxPreference savePhotosPref, autoLocationPref;
 
@@ -30,13 +23,13 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             insulinListPref.setOnPreferenceChangeListener(
                     (preference, newValue) -> setBolusPredictAvailable((String) newValue));
 
-            /* Pills preference stuff goes here */
+            // TODO Pills preference stuff goes here
 
             bgUnitsListPref = (ListPreference) findPreference(PrefKeys.BG_UNITS);
 
-            hypoPref = (CustomPreference) findPreference(PrefKeys.HYPO);
-            targetRangePref = (CustomPreference) findPreference(PrefKeys.TARGET_RANGE);
-            hyperPref = (CustomPreference) findPreference(PrefKeys.HYPER);
+            hypoPref = (SeekBarPreference) findPreference(PrefKeys.HYPO);
+            targetRangePref = (SeekBarPreference) findPreference(PrefKeys.TARGET_RANGE);
+            hyperPref = (SeekBarPreference) findPreference(PrefKeys.HYPER);
 
             bolusPredictPrefScr = (PreferenceScreen) findPreference(PrefKeys.SCR_BOLUS_PREDICT);
 

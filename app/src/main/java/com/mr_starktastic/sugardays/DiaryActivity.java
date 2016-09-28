@@ -48,27 +48,6 @@ public class DiaryActivity extends AppCompatActivity
         AppBarLayout.OnOffsetChangedListener, OnMonthChangedListener, OnDateSelectedListener,
         ViewPager.OnPageChangeListener, DayPageFragment.OnFragmentInteractionListener {
     /**
-     * Adapter for the ViewPager
-     */
-    private static class DayAdapter extends FragmentStatePagerAdapter {
-        private static final int PAGE_COUNT = TODAY_IDX + 1;
-
-        public DayAdapter(FragmentManager fm) {
-            super(fm);
-        }
-
-        @Override
-        public Fragment getItem(int position) {
-            return DayPageFragment.newInstance("Test", Integer.toString(position));
-        }
-
-        @Override
-        public int getCount() {
-            return PAGE_COUNT;
-        }
-    }
-
-    /**
      * Constants
      */
     private static final Calendar TODAY_CAL = CalendarDay.today().getCalendar(),
@@ -76,7 +55,6 @@ public class DiaryActivity extends AppCompatActivity
     private static final int TODAY_IDX = daysBetween(TODAY_CAL, MIN_CAL),
             ARROW_START_ANGLE = 0, ARROW_END_ANGLE = -180;
     private static final long CALENDAR_RESIZE_ANIM_DURATION = 200;
-
     /**
      * Date formats for setting title & subtitle texts
      */
@@ -86,19 +64,44 @@ public class DiaryActivity extends AppCompatActivity
             DAY_NUMBER_FORMAT = new SimpleDateFormat("d", DEFAULT_LOCALE),
             MONTH_FORMAT = new SimpleDateFormat("MMMM", DEFAULT_LOCALE),
             YEAR_FORMAT = new SimpleDateFormat("y", DEFAULT_LOCALE);
-
     /**
      * Major layouts & views of this activity
      */
-    private static DrawerLayout drawerLayout;
-    private static AppBarLayout appBar;
-    private static MaterialCalendarView calendarView;
-    private static TextView title, subtitle;
-    private static ImageView dropDownArrow;
-    private static ViewPager pager;
-
+    private DrawerLayout drawerLayout;
+    private AppBarLayout appBar;
+    private MaterialCalendarView calendarView;
     private final ValueAnimator.AnimatorUpdateListener calendarResizeAnimListener =
             valueAnimator -> setCalendarHeight((int) valueAnimator.getAnimatedValue());
+    private TextView title, subtitle;
+    private ImageView dropDownArrow;
+    private ViewPager pager;
+
+    /**
+     * Calculates the amount of days between one date and another
+     *
+     * @param cal1 First older date
+     * @param cal2 Second date
+     * @return Calculation result
+     */
+    private static int daysBetween(Calendar cal1, Calendar cal2) {
+        final int cal2Year = cal2.get(Calendar.YEAR),
+                cal2DayOfYear = cal2.get(Calendar.DAY_OF_YEAR);
+
+        if (cal1.get(Calendar.YEAR) == cal2Year)
+            return cal1.get(Calendar.DAY_OF_YEAR) - cal2DayOfYear;
+
+        cal1 = (Calendar) cal1.clone();
+        cal2 = (Calendar) cal2.clone();
+        final int cal1OriginalDayOfYear = cal1.get(Calendar.DAY_OF_YEAR);
+        int extraDays = 0;
+
+        while (cal1.get(Calendar.YEAR) > cal2.get(Calendar.YEAR)) {
+            cal1.add(Calendar.YEAR, -1);
+            extraDays += cal1.getActualMaximum(Calendar.DAY_OF_YEAR);
+        }
+
+        return extraDays - cal2DayOfYear + cal1OriginalDayOfYear;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -187,33 +190,6 @@ public class DiaryActivity extends AppCompatActivity
     private int calcCalendarHeight(Calendar date) {
         // Adds 1 because the day labels header is also considered a tile
         return (date.getActualMaximum(Calendar.WEEK_OF_MONTH) + 1) * calendarView.getTileHeight();
-    }
-
-    /**
-     * Calculates the amount of days between one date and another
-     *
-     * @param cal1 First older date
-     * @param cal2 Second date
-     * @return Calculation result
-     */
-    private static int daysBetween(Calendar cal1, Calendar cal2) {
-        final int cal2Year = cal2.get(Calendar.YEAR),
-                cal2DayOfYear = cal2.get(Calendar.DAY_OF_YEAR);
-
-        if (cal1.get(Calendar.YEAR) == cal2Year)
-            return cal1.get(Calendar.DAY_OF_YEAR) - cal2DayOfYear;
-
-        cal1 = (Calendar) cal1.clone();
-        cal2 = (Calendar) cal2.clone();
-        final int cal1OriginalDayOfYear = cal1.get(Calendar.DAY_OF_YEAR);
-        int extraDays = 0;
-
-        while (cal1.get(Calendar.YEAR) > cal2.get(Calendar.YEAR)) {
-            cal1.add(Calendar.YEAR, -1);
-            extraDays += cal1.getActualMaximum(Calendar.DAY_OF_YEAR);
-        }
-
-        return extraDays - cal2DayOfYear + cal1OriginalDayOfYear;
     }
 
     /**
@@ -312,7 +288,7 @@ public class DiaryActivity extends AppCompatActivity
     }
 
     @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.nav_settings:
                 startActivity(new Intent(this, SettingsActivity.class));
@@ -403,5 +379,26 @@ public class DiaryActivity extends AppCompatActivity
     @Override
     public void onFragmentInteraction(Uri uri) {
 
+    }
+
+    /**
+     * Adapter for the ViewPager
+     */
+    private static class DayAdapter extends FragmentStatePagerAdapter {
+        private static final int PAGE_COUNT = TODAY_IDX + 1;
+
+        DayAdapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        @Override
+        public Fragment getItem(int position) {
+            return DayPageFragment.newInstance("Test", Integer.toString(position));
+        }
+
+        @Override
+        public int getCount() {
+            return PAGE_COUNT;
+        }
     }
 }

@@ -15,8 +15,8 @@
     <dimen name="tiny_text_size">12sp</dimen>
 
     <!-- RangeSeekBar dimensions -->
-    <dimen name="unpressed_radius">6dp</dimen>
-    <dimen name="pressed_radius">9dp</dimen>
+    <dimen name="unpressed_size">12dp</dimen>
+    <dimen name="pressed_size">18dp</dimen>
     <dimen name="bar_height">2dp</dimen>
 
 </resources>

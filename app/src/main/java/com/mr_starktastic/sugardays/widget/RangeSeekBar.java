@@ -9,474 +9,322 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
-import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
-import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewConfiguration;
 import android.view.animation.AccelerateInterpolator;
 
 import com.mr_starktastic.sugardays.R;
 
-import java.math.BigDecimal;
-
 /**
  * Widget that lets users select a minimum and maximum value on a given numerical range.
  * The range value types can be one of Long, Double, Integer, Float, Short, Byte or BigDecimal.
+ * Resembles the stock SeekBar widget.
  */
-public class RangeSeekBar<T extends Number> extends View {
-    // Localized constants from MotionEvent for compatibility with API < 8 "Froyo"
-    private static final int ACTION_POINTER_INDEX_MASK = 0x0000ff00, ACTION_POINTER_INDEX_SHIFT = 8;
-    private static final Integer DEFAULT_MINIMUM = 0, DEFAULT_MAXIMUM = 100;
+public class RangeSeekBar extends View {
+    private static final int INVALID_POINTER_ID = 255;
+    private static final float NO_STEP = -1f;
+    private static final double DEFAULT_NORM_MIN_VAL = 0d, DEFAULT_NORM_MAX_VAL = 100d;
+    private static final int DEFAULT_MEASURE_WIDTH = 200;
     private static final int THUMB_ANIM_DURATION = 125;
-
-    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-    private float thumbUnpressedRadius, thumbPressedRadius, minThumbRadius, maxThumbRadius;
-    private ValueAnimator minThumbAnimator, maxThumbAnimator;
-    private T absoluteMinValue, absoluteMaxValue;
-    private NumberType numberType;
-    private double absMinValuePrim, absMaxValuePrim;
-    private double normalizedMinValue = 0d, normalizedMaxValue = 1d;
-    private Thumb pressedThumb = null;
-    private boolean notifyWhileDragging = false;
-    private OnRangeSeekBarChangeListener<T> listener;
-    private float downMotionX;
-    private int activePointerId = 255; // Instantiated with an invalid ID
-    private int scaledTouchSlop;
-    private boolean isDragging;
-    private RectF rect;
+    private static final AccelerateInterpolator THUMB_ANIM_INTERP = new AccelerateInterpolator();
+    private static final AnimatorListenerAdapter ANIM_LISTENER_ADAPTER =
+            new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    animation.removeAllListeners();
+                    super.onAnimationEnd(animation);
+                }
+            };
+    private OnRangeSeekBarChangeListener onValueChangeListener;
+    private float absoluteMinValue, absoluteMaxValue, minValue, maxValue, steps;
     private boolean singleThumb;
-    private boolean alwaysActive;
-    private float internalPad;
-    private int activeColor;
-    private int defaultColor;
+    private int activePointerId = INVALID_POINTER_ID;
+    private int dataType;
+    private int barColor, barHighlightColor, thumbColor;
+    private float barPadding, barHeight, thumbUnpressedSize, thumbPressedSize;
+    private float leftThumbSize, rightThumbSize;
+    private final ValueAnimator.AnimatorUpdateListener leftThumbAnimUpdateListener = animation -> {
+        leftThumbSize = (float) animation.getAnimatedValue();
+        invalidate();
+    }, rightThumbAnimUpdateListener = animation -> {
+        rightThumbSize = (float) animation.getAnimatedValue();
+        invalidate();
+    };
+    private double normMinVal = DEFAULT_NORM_MIN_VAL, normMaxVal = DEFAULT_NORM_MAX_VAL;
+    private RectF rect;
+    private Paint paint;
+    private ValueAnimator leftThumbAnimator, rightThumbAnimator;
+    private boolean isDragging;
+    private Thumb pressedThumb;
 
     public RangeSeekBar(Context context) {
-        super(context);
-        init(context, null);
+        this(context, null, 0);
     }
-
     public RangeSeekBar(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        init(context, attrs);
+        this(context, attrs, 0);
     }
 
-    public RangeSeekBar(Context context, AttributeSet attrs, int defStyle) {
-        super(context, attrs, defStyle);
-        init(context, attrs);
-    }
+    public RangeSeekBar(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
 
-    @SuppressWarnings("unchecked")
-    private T extractNumValFromAttrs(TypedArray a, int attribute, int defaultValue) {
-        final TypedValue tv = a.peekValue(attribute);
-
-        if (tv == null)
-            return (T) Integer.valueOf(defaultValue);
-
-        if (tv.type == TypedValue.TYPE_FLOAT)
-            return (T) Float.valueOf(a.getFloat(attribute, defaultValue));
-
-        return (T) Integer.valueOf(a.getInteger(attribute, defaultValue));
-    }
-
-    private void init(Context c, AttributeSet attrs) {
         final Resources res = getResources();
-        int barHeight;
+        thumbColor = barHighlightColor = ContextCompat.getColor(context, R.color.colorAccent);
+        barColor = ContextCompat.getColor(context, R.color.colorOutsideRangeSeekBar);
+        thumbUnpressedSize = res.getDimensionPixelSize(R.dimen.unpressed_size);
+        barPadding = (thumbPressedSize = res.getDimensionPixelSize(R.dimen.pressed_size)) / 2;
+        barHeight = res.getDimensionPixelSize(R.dimen.bar_height);
 
-        if (attrs == null) {
-            setRangeToDefaultValues();
-            alwaysActive = true;
-            singleThumb = false;
-            internalPad = res.getDimensionPixelSize(R.dimen.normal_margin);
-            barHeight = res.getDimensionPixelSize(R.dimen.bar_height);
-            activeColor = ContextCompat.getColor(c, R.color.colorAccent);
-            defaultColor = ContextCompat.getColor(c, R.color.colorOutsideRangeSeekBar);
-            thumbUnpressedRadius = res.getDimensionPixelSize(R.dimen.unpressed_radius);
-            thumbPressedRadius = res.getDimensionPixelSize(R.dimen.pressed_radius);
-        } else {
-            final TypedArray a = c.obtainStyledAttributes(attrs, R.styleable.RangeSeekBar, 0, 0);
+        final TypedArray array = context.obtainStyledAttributes(attrs, R.styleable.RangeSeekBar);
 
-            try {
-                setRangeValues(
-                        extractNumValFromAttrs(a, R.styleable.RangeSeekBar_absoluteMinValue,
-                                DEFAULT_MINIMUM),
-                        extractNumValFromAttrs(a, R.styleable.RangeSeekBar_absoluteMaxValue,
-                                DEFAULT_MAXIMUM)
-                );
-                alwaysActive = a.getBoolean(R.styleable.RangeSeekBar_alwaysActive, true);
-                singleThumb = a.getBoolean(R.styleable.RangeSeekBar_singleThumb, false);
-                internalPad = a.getDimensionPixelSize(R.styleable.RangeSeekBar_internalPadding,
-                        res.getDimensionPixelSize(R.dimen.normal_margin));
-                barHeight = a.getDimensionPixelSize(R.styleable.RangeSeekBar_barHeight,
-                        res.getDimensionPixelSize(R.dimen.bar_height));
-                activeColor = a.getColor(R.styleable.RangeSeekBar_activeColor,
-                        ContextCompat.getColor(c, R.color.colorAccent));
-                defaultColor = a.getColor(R.styleable.RangeSeekBar_defaultColor,
-                        ContextCompat.getColor(c, R.color.colorOutsideRangeSeekBar));
-                thumbUnpressedRadius = a.getDimension(R.styleable.RangeSeekBar_thumbUnpressedRadius,
-                        res.getDimensionPixelSize(R.dimen.unpressed_radius));
-                thumbPressedRadius = a.getDimension(R.styleable.RangeSeekBar_thumbPressedRadius,
-                        res.getDimensionPixelSize(R.dimen.pressed_radius));
-            } finally {
-                a.recycle();
-            }
+        try {
+            singleThumb = array.getBoolean(R.styleable.RangeSeekBar_singleThumb, false);
+            steps = array.getFloat(R.styleable.RangeSeekBar_steps, NO_STEP);
+            dataType = array.getInt(R.styleable.RangeSeekBar_dataType, DataType.INTEGER);
+        } finally {
+            array.recycle();
         }
 
-        minThumbRadius = thumbUnpressedRadius;
-        maxThumbRadius = thumbUnpressedRadius;
-        minThumbAnimator = getMinThumbAnimator(true);
-        maxThumbAnimator = getMaxThumbAnimator(true);
-
-        setValuePrimAndNumberType();
-
-        rect = new RectF(internalPad,
-                thumbPressedRadius - barHeight / 2,
-                getWidth() - internalPad,
-                thumbPressedRadius + barHeight / 2);
-
-        setFocusable(true);
-        setFocusableInTouchMode(true);
-        scaledTouchSlop = ViewConfiguration.get(c).getScaledTouchSlop();
+        init();
     }
 
-    protected void setSingleThumb(boolean singleThumb) {
+    private void init() {
+        absoluteMaxValue = maxValue;
+        absoluteMinValue = minValue;
+
+        paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        rect = new RectF(0, (thumbPressedSize - barHeight) / 2,
+                getWidth(), (thumbPressedSize + barHeight) / 2);
+
+        pressedThumb = null;
+
+        leftThumbSize = rightThumbSize = thumbUnpressedSize;
+        leftThumbAnimator = getThumbAnimator(true, leftThumbSize, leftThumbAnimUpdateListener);
+        rightThumbAnimator = getThumbAnimator(true, rightThumbSize, rightThumbAnimUpdateListener);
+    }
+
+    public void setMinValue(float minValue) {
+        this.minValue = minValue;
+        this.absoluteMinValue = minValue;
+    }
+
+    public void setMaxValue(float maxValue) {
+        this.maxValue = maxValue;
+        this.absoluteMaxValue = maxValue;
+    }
+
+    public void setSingleThumb(boolean singleThumb) {
         this.singleThumb = singleThumb;
     }
 
-    public void setRangeValues(T minValue, T maxValue) {
-        this.absoluteMinValue = minValue;
-        this.absoluteMaxValue = maxValue;
-        setValuePrimAndNumberType();
+    public void setSteps(float steps) {
+        this.steps = steps;
     }
 
-    @SuppressWarnings("unchecked")
-    private void setRangeToDefaultValues() {
-        this.absoluteMinValue = (T) DEFAULT_MINIMUM;
-        this.absoluteMaxValue = (T) DEFAULT_MAXIMUM;
-        setValuePrimAndNumberType();
+    public void setDataType(int dataType) {
+        this.dataType = dataType;
     }
 
-    private void setValuePrimAndNumberType() {
-        absMinValuePrim = absoluteMinValue.doubleValue();
-        absMaxValuePrim = absoluteMaxValue.doubleValue();
-        numberType = NumberType.fromNumber(absoluteMinValue);
+    public void setOnRangeSeekBarChangeListener(OnRangeSeekBarChangeListener listener) {
+        onValueChangeListener = listener;
+        notifyValueChange();
     }
 
-    @SuppressWarnings("unused")
-    public void resetSelectedValues() {
-        setSelectedMinValue(absoluteMinValue);
-        setSelectedMaxValue(absoluteMaxValue);
+    private Number getSelectedValue(double normVal) {
+        if (steps > 0 && steps <= absoluteMaxValue / 2) {
+            final float stp = steps / (absoluteMaxValue - absoluteMinValue) * 100;
+            final double mod = normVal % stp;
+            normVal -= mod > stp / 2 ? mod - stp : mod;
+        } else if (steps != NO_STEP)
+            throw new IllegalStateException("Steps out of range: " + steps);
+
+        return formatValue(normalizedToValue(normVal));
     }
 
-    @SuppressWarnings("unused")
-    public boolean isNotifyWhileDragging() {
-        return notifyWhileDragging;
+    public Number getSelectedMinValue() {
+        return getSelectedValue(normMinVal);
     }
 
-    /**
-     * Should the widget notify the listener callback while the user is still dragging a thumb?
-     * Default is false.
-     */
-    @SuppressWarnings("unused")
-    public void setNotifyWhileDragging(boolean flag) {
-        this.notifyWhileDragging = flag;
+    public Number getSelectedMaxValue() {
+        return getSelectedValue(normMaxVal);
     }
 
-    /**
-     * Returns the absolute minimum value of the range that has been set at construction time.
-     *
-     * @return The absolute minimum value of the range.
-     */
-    public T getAbsoluteMinValue() {
-        return absoluteMinValue;
-    }
-
-    /**
-     * Returns the absolute maximum value of the range that has been set at construction time.
-     *
-     * @return The absolute maximum value of the range.
-     */
-    public T getAbsoluteMaxValue() {
-        return absoluteMaxValue;
-    }
-
-    /**
-     * Returns the currently selected min value.
-     *
-     * @return The currently selected min value.
-     */
-    public T getSelectedMinValue() {
-        return normalizedToValue(normalizedMinValue);
-    }
-
-    /**
-     * Sets the currently selected minimum value. The widget will be invalidated and redrawn.
-     *
-     * @param value The Number value to set the minimum value to.
-     *              Will be clamped to given absolute minimum/maximum range.
-     */
-    public void setSelectedMinValue(T value) {
-        // in case absoluteMinValue == absoluteMaxValue, avoid division by zero when normalizing
-        if (absMaxValuePrim == absMinValuePrim)
-            setNormalizedMinValue(0d);
-        else
-            setNormalizedMinValue(valueToNormalized(value));
-    }
-
-    /**
-     * Returns the currently selected max value.
-     *
-     * @return The currently selected max value.
-     */
-    public T getSelectedMaxValue() {
-        return normalizedToValue(normalizedMaxValue);
-    }
-
-    /**
-     * Sets the currently selected maximum value. The widget will be invalidated and redrawn.
-     *
-     * @param value The Number value to set the maximum value to.
-     *              Will be clamped to given absolute minimum/maximum range.
-     */
-    public void setSelectedMaxValue(T value) {
-        // in case absoluteMinValue == absoluteMaxValue, avoid division by zero when normalizing.
-        if (absMaxValuePrim == absMinValuePrim)
-            setNormalizedMaxValue(1d);
-        else
-            setNormalizedMaxValue(valueToNormalized(value));
-    }
-
-    /**
-     * Registers given listener callback to notify about changed selected values.
-     *
-     * @param listener The listener to notify about changed selected values.
-     */
-    @SuppressWarnings("unused")
-    public void setOnRangeSeekBarChangeListener(OnRangeSeekBarChangeListener<T> listener) {
-        this.listener = listener;
-    }
-
-    private ValueAnimator getMinThumbAnimator(boolean isTouching) {
-        final ValueAnimator anim = ValueAnimator.ofFloat(minThumbRadius,
-                isTouching ? thumbPressedRadius : thumbUnpressedRadius);
-        anim.setInterpolator(new AccelerateInterpolator());
+    private ValueAnimator getThumbAnimator(boolean isTouching, float thumbSize,
+                                           ValueAnimator.AnimatorUpdateListener listener) {
+        final ValueAnimator anim = ValueAnimator.ofFloat(thumbSize,
+                isTouching ? thumbPressedSize : thumbUnpressedSize);
+        anim.setInterpolator(THUMB_ANIM_INTERP);
         anim.setDuration(THUMB_ANIM_DURATION);
-
-        anim.addUpdateListener(animation -> {
-            minThumbRadius = (float) anim.getAnimatedValue();
-            invalidate();
-        });
-
-        anim.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                anim.removeAllListeners();
-                super.onAnimationEnd(animation);
-            }
-        });
+        anim.addUpdateListener(listener);
+        anim.addListener(ANIM_LISTENER_ADAPTER);
 
         return anim;
     }
 
-    private ValueAnimator getMaxThumbAnimator(boolean isTouching) {
-        final ValueAnimator anim = ValueAnimator.ofFloat(maxThumbRadius,
-                isTouching ? thumbPressedRadius : thumbUnpressedRadius);
-        anim.setInterpolator(new AccelerateInterpolator());
-        anim.setDuration(THUMB_ANIM_DURATION);
-
-        anim.addUpdateListener(animation -> {
-            maxThumbRadius = (float) anim.getAnimatedValue();
-            invalidate();
-        });
-
-        anim.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                anim.removeAllListeners();
-                super.onAnimationEnd(animation);
-            }
-        });
-
-        return anim;
+    private void setupBar(Canvas canvas) {
+        rect.right = getWidth() - (rect.left = barPadding);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(barColor);
+        paint.setAntiAlias(true);
+        canvas.drawRect(rect, paint);
     }
 
-    /**
-     * Handles thumb selection and movement. Notifies listener callback on certain events.
-     */
-    @Override
-    public boolean onTouchEvent(MotionEvent e) {
-        if (!isEnabled())
-            return false;
-
-        switch (e.getAction() & MotionEvent.ACTION_MASK) {
-            case MotionEvent.ACTION_DOWN:
-                // Remember where the motion event started
-                activePointerId = e.getPointerId(e.getPointerCount() - 1);
-                downMotionX = e.getX(e.findPointerIndex(activePointerId));
-                pressedThumb = evalPressedThumb(downMotionX);
-                break;
-
-            case MotionEvent.ACTION_MOVE:
-                if (pressedThumb == null)
-                    break;
-
-                if (isDragging)
-                    trackTouchEvent(e, false);
-                else if (Math.abs(e.getX(e.findPointerIndex(
-                        activePointerId)) - downMotionX) > scaledTouchSlop) {
-                    // Scroll to follow the motion event
-                    setPressed(true);
-                    invalidate();
-                    onStartTrackingTouch();
-                    trackTouchEvent(e, false);
-                    attemptClaimDrag();
-                }
-
-                if (notifyWhileDragging && listener != null)
-                    listener.onRangeSeekBarValuesChanged(this,
-                            getSelectedMinValue(), getSelectedMaxValue());
-
-                break;
-
-            case MotionEvent.ACTION_UP:
-                if (isDragging) {
-                    trackTouchEvent(e, true);
-                    onStopTrackingTouch();
-                    setPressed(false);
-                } else {
-                    // Touch up when we never crossed the touch slop threshold
-                    // should be interpreted as a tap-seek to that location
-                    onStartTrackingTouch();
-                    trackTouchEvent(e, true);
-                    onStopTrackingTouch();
-                }
-
-                pressedThumb = null;
-                invalidate();
-
-                if (listener != null)
-                    listener.onRangeSeekBarValuesChanged(this,
-                            getSelectedMinValue(), getSelectedMaxValue());
-
-                break;
-
-            case MotionEvent.ACTION_POINTER_DOWN:
-                final int index = e.getPointerCount() - 1;
-                downMotionX = e.getX(index);
-                activePointerId = e.getPointerId(index);
-                invalidate();
-                break;
-
-            case MotionEvent.ACTION_POINTER_UP:
-                onSecondaryPointerUp(e);
-                invalidate();
-                break;
-
-            case MotionEvent.ACTION_CANCEL:
-                if (Thumb.MIN.equals(pressedThumb)) {
-                    minThumbAnimator.cancel();
-                    minThumbAnimator = getMinThumbAnimator(false);
-                    minThumbAnimator.start();
-                } else if (Thumb.MAX.equals(pressedThumb)) {
-                    maxThumbAnimator.cancel();
-                    maxThumbAnimator = getMaxThumbAnimator(false);
-                    maxThumbAnimator.start();
-                }
-
-                if (isDragging) {
-                    onStopTrackingTouch();
-                    setPressed(false);
-                    invalidate();
-                }
-
-                break;
-        }
-
-        return true;
+    private void setupHighlightBar(Canvas canvas) {
+        rect.left = normalizedToScreen(normMinVal);
+        rect.right = normalizedToScreen(normMaxVal);
+        paint.setColor(barHighlightColor);
+        canvas.drawRect(rect, paint);
     }
 
-    private void onSecondaryPointerUp(MotionEvent e) {
-        final int pointerIndex =
-                (e.getAction() & ACTION_POINTER_INDEX_MASK) >> ACTION_POINTER_INDEX_SHIFT;
+    private void setupThumbs(Canvas canvas) {
+        paint.setColor(thumbColor);
 
-        if (e.getPointerId(pointerIndex) == activePointerId) {
-            // This was our active pointer going up. Choose
-            // a new active pointer and adjust accordingly.
-            final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
-            downMotionX = e.getX(newPointerIndex);
-            activePointerId = e.getPointerId(newPointerIndex);
-        }
+        if (!singleThumb)
+            canvas.drawCircle(normalizedToScreen(normMinVal), barPadding, leftThumbSize / 2, paint);
+
+        canvas.drawCircle(normalizedToScreen(normMaxVal), barPadding, rightThumbSize / 2, paint);
     }
 
-    private void trackTouchEvent(MotionEvent e, boolean isEnding) {
-        final double normX = screenToNormalized(e.getX(e.findPointerIndex(activePointerId)));
+    private void trackTouchEvent(MotionEvent event, boolean isEnding) {
+        final float x = event.getX(event.findPointerIndex(activePointerId));
 
-        if (!singleThumb && Thumb.MIN.equals(pressedThumb)) {
-            setNormalizedMinValue(normX);
+        if (Thumb.MAX.equals(pressedThumb)) {
+            setNormalizedMaxValue(screenToNormalized(x));
 
             if (!isEnding) {
-                if (!minThumbAnimator.isRunning()) {
-                    minThumbAnimator = getMinThumbAnimator(true);
-                    minThumbAnimator.start();
+                if (!rightThumbAnimator.isRunning()) {
+                    rightThumbAnimator =
+                            getThumbAnimator(true, rightThumbSize, rightThumbAnimUpdateListener);
+                    rightThumbAnimator.start();
                 }
             } else {
-                minThumbAnimator.cancel();
-                minThumbAnimator = getMinThumbAnimator(false);
-                minThumbAnimator.start();
+                rightThumbAnimator.cancel();
+                rightThumbAnimator =
+                        getThumbAnimator(false, rightThumbSize, rightThumbAnimUpdateListener);
+                rightThumbAnimator.start();
             }
-        } else if (Thumb.MAX.equals(pressedThumb)) {
-            setNormalizedMaxValue(normX);
+        } else if (!singleThumb && Thumb.MIN.equals(pressedThumb)) {
+            setNormalizedMinValue(screenToNormalized(x));
 
             if (!isEnding) {
-                if (!maxThumbAnimator.isRunning()) {
-                    maxThumbAnimator = getMaxThumbAnimator(true);
-                    maxThumbAnimator.start();
+                if (!leftThumbAnimator.isRunning()) {
+                    leftThumbAnimator =
+                            getThumbAnimator(true, leftThumbSize, leftThumbAnimUpdateListener);
+                    leftThumbAnimator.start();
                 }
             } else {
-                maxThumbAnimator.cancel();
-                maxThumbAnimator = getMaxThumbAnimator(false);
-                maxThumbAnimator.start();
+                leftThumbAnimator.cancel();
+                leftThumbAnimator =
+                        getThumbAnimator(false, leftThumbSize, leftThumbAnimUpdateListener);
+                leftThumbAnimator.start();
             }
         }
     }
 
-    /**
-     * Tries to claim the user's drag motion;
-     * requests disallowing any ancestors from stealing events in the drag.
-     */
+    private Thumb evalPressedThumb(float touchX) {
+        final boolean minThumbPressed = isInThumbRange(touchX, normMinVal);
+        final boolean maxThumbPressed = isInThumbRange(touchX, normMaxVal);
+
+        return minThumbPressed && maxThumbPressed ? // Chooses the thumb with more room to drag
+                touchX / getWidth() > 0.5f ? Thumb.MIN : Thumb.MAX :
+                minThumbPressed ? Thumb.MIN : maxThumbPressed ? Thumb.MAX : null;
+    }
+
+    private boolean isInThumbRange(float x, double normalizedThumbValue) {
+        return Math.abs(x - normalizedToScreen(normalizedThumbValue)) <= thumbPressedSize * 2;
+    }
+
+    private void onStartTrackingTouch() {
+        isDragging = true;
+    }
+
+    private void onStopTrackingTouch() {
+        isDragging = false;
+    }
+
+    private float normalizedToScreen(double normalizedCoord) {
+        return (float) (barPadding + normalizedCoord / 100f * (getWidth() - 2 * barPadding));
+    }
+
+    private double screenToNormalized(float screenCoord) {
+        final int width = getWidth();
+
+        if (width <= thumbPressedSize)
+            return 0d; // Prevents division by zero
+
+        return Math.min(
+                100d,
+                Math.max(0d, (screenCoord - barPadding) / (width - 2 * barPadding) * 100d));
+    }
+
+    private void setNormalizedMinValue(double value) {
+        normMinVal = Math.max(0d, Math.min(100d, Math.min(value, normMaxVal)));
+        invalidate();
+    }
+
+    private void setNormalizedMaxValue(double value) {
+        normMaxVal = Math.max(0d, Math.min(100d, Math.max(value, normMinVal)));
+        invalidate();
+    }
+
+    private double normalizedToValue(double normalized) {
+        return normalized / 100 * (maxValue - minValue) + minValue;
+    }
+
     private void attemptClaimDrag() {
         if (getParent() != null)
             getParent().requestDisallowInterceptTouchEvent(true);
     }
 
-    /**
-     * This is called when the user has started touching this widget.
-     */
-    void onStartTrackingTouch() {
-        isDragging = true;
+    private <T extends Number> Number formatValue(T value) throws IllegalArgumentException {
+        final Double v = (Double) value;
+
+        switch (dataType) {
+            case DataType.LONG:
+                return v.longValue();
+
+            case DataType.DOUBLE:
+                return v;
+
+            case DataType.INTEGER:
+                return Math.round(v);
+
+            case DataType.FLOAT:
+                return v.floatValue();
+
+            case DataType.SHORT:
+                return v.shortValue();
+
+            case DataType.BYTE:
+                return v.byteValue();
+
+            default:
+                throw new IllegalArgumentException(
+                        "Number class '" + value.getClass().getName() + "' is not supported");
+        }
     }
 
-    /**
-     * This is called when the user either releases his touch or the touch is canceled.
-     */
-    void onStopTrackingTouch() {
-        isDragging = false;
+    private void notifyValueChange() {
+        if (onValueChangeListener != null)
+            onValueChangeListener.valueChanged(getSelectedMinValue(), getSelectedMaxValue());
     }
 
-    /**
-     * Ensures correct size of the widget.
-     */
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+
+        setupBar(canvas);
+        setupHighlightBar(canvas);
+        setupThumbs(canvas);
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int width = 200, height = (int) thumbPressedRadius * 2;
+        int width = DEFAULT_MEASURE_WIDTH, height = (int) thumbPressedSize;
 
         if (MeasureSpec.UNSPECIFIED != MeasureSpec.getMode(widthMeasureSpec))
             width = MeasureSpec.getSize(widthMeasureSpec);
-
         if (MeasureSpec.UNSPECIFIED != MeasureSpec.getMode(heightMeasureSpec))
             height = Math.min(height, MeasureSpec.getSize(heightMeasureSpec));
 
@@ -484,263 +332,80 @@ public class RangeSeekBar<T extends Number> extends View {
     }
 
     /**
-     * Draws the widget on the given canvas.
+     * Handles thumb selection and movement. Notifies listener callback on certain events.
      */
     @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
+    public boolean onTouchEvent(MotionEvent event) {
+        if (!isEnabled())
+            return false;
 
-        paint.setStyle(Paint.Style.FILL);
-        paint.setColor(defaultColor);
-        paint.setAntiAlias(true);
+        switch (event.getAction() & MotionEvent.ACTION_MASK) {
+            case MotionEvent.ACTION_DOWN:
+                activePointerId = event.getPointerId(event.getPointerCount() - 1);
+                pressedThumb = evalPressedThumb(
+                        event.getX(event.findPointerIndex(activePointerId)));
 
-        // draw seek bar background line
-        rect.left = internalPad;
-        rect.right = getWidth() - internalPad;
-        canvas.drawRect(rect, paint);
+                if (pressedThumb == null)
+                    return super.onTouchEvent(event);
 
-        final boolean selectedValuesAreDefault =
-                getSelectedMinValue().equals(getAbsoluteMinValue()) &&
-                        getSelectedMaxValue().equals(getAbsoluteMaxValue());
+                setPressed(true);
+                invalidate();
+                onStartTrackingTouch();
+                trackTouchEvent(event, false);
+                attemptClaimDrag();
+                break;
 
-        final int colorToUseForButtonsAndHighlightedLine = !alwaysActive &&
-                selectedValuesAreDefault ?
-                defaultColor : // default values
-                activeColor;   // non default, filter is active
+            case MotionEvent.ACTION_MOVE:
+                if (pressedThumb != null) {
+                    if (isDragging)
+                        trackTouchEvent(event, false);
 
-        // draw seek bar active range line
-        rect.left = normalizedToScreen(normalizedMinValue);
-        rect.right = normalizedToScreen(normalizedMaxValue);
+                    notifyValueChange();
+                }
+                break;
 
-        paint.setColor(colorToUseForButtonsAndHighlightedLine);
-        canvas.drawRect(rect, paint);
+            case MotionEvent.ACTION_UP:
+                trackTouchEvent(event, true);
+                onStopTrackingTouch();
+                setPressed(false);
+                pressedThumb = null;
+                invalidate();
+                notifyValueChange();
+                break;
 
-        // draw minimum thumb if not a single thumb control
-        if (!singleThumb)
-            drawThumb(normalizedToScreen(normalizedMinValue), minThumbRadius, canvas);
+            case MotionEvent.ACTION_CANCEL:
+                if (pressedThumb.equals(Thumb.MIN)) {
+                    leftThumbAnimator.cancel();
+                    leftThumbAnimator =
+                            getThumbAnimator(false, leftThumbSize, leftThumbAnimUpdateListener);
+                    leftThumbAnimator.start();
+                } else if (pressedThumb.equals(Thumb.MAX)) {
+                    rightThumbAnimator.cancel();
+                    rightThumbAnimator =
+                            getThumbAnimator(false, rightThumbSize, rightThumbAnimUpdateListener);
+                    rightThumbAnimator.start();
+                }
 
-        drawThumb(normalizedToScreen(normalizedMaxValue), maxThumbRadius, canvas);
-    }
+                if (isDragging) {
+                    onStopTrackingTouch();
+                    setPressed(false);
+                }
 
-    /**
-     * Overridden to save instance state when device orientation changes.
-     * This method is called automatically if you assign an id to the RangeSeekBar widget using the
-     * {@link #setId(int)} method.
-     * Other members of this class than the normalized min and max values don't need to be saved.
-     */
-    @Override
-    protected Parcelable onSaveInstanceState() {
-        final Bundle bundle = new Bundle();
-        bundle.putParcelable("SUPER", super.onSaveInstanceState());
-        bundle.putDouble("MIN", normalizedMinValue);
-        bundle.putDouble("MAX", normalizedMaxValue);
-        return bundle;
-    }
-
-    /**
-     * Overridden to restore instance state when device orientation changes.
-     * This method is called automatically if you assign an id to the RangeSeekBar widget using the
-     * {@link #setId(int)} method.
-     */
-    @Override
-    protected void onRestoreInstanceState(Parcelable parcel) {
-        final Bundle bundle = (Bundle) parcel;
-        super.onRestoreInstanceState(bundle.getParcelable("SUPER"));
-        normalizedMinValue = bundle.getDouble("MIN");
-        normalizedMaxValue = bundle.getDouble("MAX");
-    }
-
-    /**
-     * Draws the "normal" resp. "pressed" thumb image on specified x-coordinate.
-     *
-     * @param screenX The x-coordinate in screen space where to draw the image.
-     * @param radius  The radius of the thumb to draw.
-     * @param canvas  The canvas to draw upon.
-     */
-    private void drawThumb(float screenX, float radius, Canvas canvas) {
-        canvas.drawCircle(screenX, thumbPressedRadius, radius, paint);
-    }
-
-    /**
-     * Decides which (if any) thumb is touched by the given x-coordinate.
-     *
-     * @param touchX The x-coordinate of a touch event in screen space.
-     * @return The pressed thumb or null if none has been touched.
-     */
-    private Thumb evalPressedThumb(float touchX) {
-        Thumb result = null;
-        final boolean minThumbPressed = isInThumbRange(touchX, normalizedMinValue);
-        final boolean maxThumbPressed = isInThumbRange(touchX, normalizedMaxValue);
-
-        if (minThumbPressed && maxThumbPressed)
-            // if both thumbs are pressed (they lie on top of each other),
-            // choose the one with more room to drag. this avoids "stalling" the thumbs in a corner,
-            // not being able to drag them apart anymore.
-            result = (touchX / getWidth() > 0.5f) ? Thumb.MIN : Thumb.MAX;
-        else if (minThumbPressed)
-            result = Thumb.MIN;
-        else if (maxThumbPressed)
-            result = Thumb.MAX;
-
-        return result;
-    }
-
-    /**
-     * Decides if given x-coordinate in screen space needs to be interpreted
-     * as "within" the normalized thumb x-coordinate.
-     *
-     * @param x                    The x-coordinate in screen space to check.
-     * @param normalizedThumbValue The normalized x-coordinate of the thumb to check.
-     * @return true if x-coordinate is in thumb range, false otherwise.
-     */
-    private boolean isInThumbRange(float x, double normalizedThumbValue) {
-        return Math.abs(x - normalizedToScreen(normalizedThumbValue)) <= thumbPressedRadius * 2;
-    }
-
-    /**
-     * Sets normalized min value to value so that 0 <= value <= normalized max value <= 1.
-     * The View will get invalidated when calling this method.
-     *
-     * @param value The new normalized min value to set.
-     */
-    private void setNormalizedMinValue(double value) {
-        normalizedMinValue = Math.max(0d, Math.min(1d, Math.min(value, normalizedMaxValue)));
-    }
-
-    /**
-     * Sets normalized max value to value so that 0 <= normalized min value <= value <= 1.
-     * The View will get invalidated when calling this method.
-     *
-     * @param value The new normalized max value to set.
-     */
-    private void setNormalizedMaxValue(double value) {
-        normalizedMaxValue = Math.max(0d, Math.min(1d, Math.max(value, normalizedMinValue)));
-    }
-
-    /**
-     * Converts a normalized value to a Number object in the value space between
-     * absolute minimum and maximum.
-     */
-    @SuppressWarnings("unchecked")
-    private T normalizedToValue(double normalized) {
-        return (T) numberType.toNumber(Math.round(
-                (absMinValuePrim + normalized * (absMaxValuePrim - absMinValuePrim)) * 100) / 100d);
-    }
-
-    /**
-     * Converts the given Number value to a normalized double.
-     *
-     * @param value The Number value to normalize.
-     * @return The normalized double.
-     */
-    private double valueToNormalized(T value) {
-        if (absMaxValuePrim == absMinValuePrim)
-            // prevent division by zero, simply return 0
-            return 0d;
-
-        return (value.doubleValue() - absMinValuePrim) / (absMaxValuePrim - absMinValuePrim);
-    }
-
-    /**
-     * Converts a normalized value into screen space.
-     *
-     * @param normalizedCoord The normalized value to convert.
-     * @return The converted value in screen space.
-     */
-    private float normalizedToScreen(double normalizedCoord) {
-        return (float) (internalPad + normalizedCoord * (getWidth() - 2 * internalPad));
-    }
-
-    /**
-     * Converts screen space x-coordinates into normalized values.
-     *
-     * @param screenCoord The x-coordinate in screen space to convert.
-     * @return The normalized value.
-     */
-    private double screenToNormalized(float screenCoord) {
-        final int width = getWidth();
-
-        if (width <= 2 * internalPad)
-            // prevent division by zero, simply return 0
-            return 0d;
-
-        return Math.min(1d, Math.max(0d, (screenCoord - internalPad) / (width - 2 * internalPad)));
-    }
-
-    /**
-     * Thumb constants (min and max).
-     */
-    private enum Thumb {
-        MIN, MAX
-    }
-
-    /**
-     * Utility enumeration used to convert between Numbers and doubles.
-     */
-    private enum NumberType {
-        LONG, DOUBLE, INTEGER, FLOAT, SHORT, BYTE, BIG_DECIMAL;
-
-        public static <E extends Number> NumberType fromNumber(E value)
-                throws IllegalArgumentException {
-            if (value instanceof Long)
-                return LONG;
-
-            if (value instanceof Double)
-                return DOUBLE;
-
-            if (value instanceof Integer)
-                return INTEGER;
-
-            if (value instanceof Float)
-                return FLOAT;
-
-            if (value instanceof Short)
-                return SHORT;
-
-            if (value instanceof Byte)
-                return BYTE;
-
-            if (value instanceof BigDecimal)
-                return BIG_DECIMAL;
-
-            throw new IllegalArgumentException(
-                    "Number class '" + value.getClass().getName() + "' is not supported");
+                invalidate();
+                break;
         }
 
-        public Number toNumber(double value) {
-            switch (this) {
-                case LONG:
-                    return (long) value;
-
-                case DOUBLE:
-                    return value;
-
-                case INTEGER:
-                    return (int) value;
-
-                case FLOAT:
-                    return (float) value;
-
-                case SHORT:
-                    return (short) value;
-
-                case BYTE:
-                    return (byte) value;
-
-                case BIG_DECIMAL:
-                    return BigDecimal.valueOf(value);
-            }
-
-            throw new InstantiationError("Can't convert " + this + " to a Number object");
-        }
+        return true;
     }
 
-    /**
-     * Callback listener interface to notify about changed range values.
-     *
-     * @param <T> The Number type the RangeSeekBar has been declared with.
-     */
-    public interface OnRangeSeekBarChangeListener<T> {
-        void onRangeSeekBarValuesChanged(RangeSeekBar<?> bar, T minValue, T maxValue);
+    protected enum Thumb {MIN, MAX}
+
+    @FunctionalInterface
+    public interface OnRangeSeekBarChangeListener {
+        void valueChanged(Number minValue, Number maxValue);
+    }
+
+    public static final class DataType {
+        static final int LONG = 0, DOUBLE = 1, INTEGER = 2, FLOAT = 3, SHORT = 4, BYTE = 5;
     }
 }

@@ -1,19 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <declare-styleable name="CustomPreference">
+    <declare-styleable name="SeekBarPreference">
         <attr name="summaryTextColor" format="color" />
     </declare-styleable>
 
     <declare-styleable name="RangeSeekBar">
-        <attr name="absoluteMinValue" format="integer|float" />
-        <attr name="absoluteMaxValue" format="integer|float" />
         <attr name="singleThumb" format="boolean" />
-        <attr name="alwaysActive" format="boolean" />
-        <attr name="internalPadding" format="dimension" />
-        <attr name="barHeight" format="dimension" />
-        <attr name="defaultColor" format="color" />
-        <attr name="activeColor" format="color" />
-        <attr name="thumbUnpressedRadius" format="dimension" />
-        <attr name="thumbPressedRadius" format="dimension" />
+        <attr name="steps" format="integer|float" />
+        <attr name="dataType" format="integer" />
     </declare-styleable>
 </resources>
