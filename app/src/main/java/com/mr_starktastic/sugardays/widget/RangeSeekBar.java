@@ -23,9 +23,10 @@ import com.mr_starktastic.sugardays.R;
  * Resembles the stock SeekBar widget.
  */
 public class RangeSeekBar extends View {
+    protected static final double DEFAULT_NORM_MIN_VAL = 0d, DEFAULT_NORM_MAX_VAL = 100d;
+
     private static final int INVALID_POINTER_ID = 255;
     private static final float NO_STEP = -1f;
-    private static final double DEFAULT_NORM_MIN_VAL = 0d, DEFAULT_NORM_MAX_VAL = 100d;
     private static final int DEFAULT_MEASURE_WIDTH = 200;
     private static final int THUMB_ANIM_DURATION = 125;
     private static final AccelerateInterpolator THUMB_ANIM_INTERP = new AccelerateInterpolator();
@@ -37,8 +38,12 @@ public class RangeSeekBar extends View {
                     super.onAnimationEnd(animation);
                 }
             };
-    private OnRangeSeekBarChangeListener onValueChangeListener;
-    private float absoluteMinValue, absoluteMaxValue, minValue, maxValue, steps;
+
+    protected double normMinVal = DEFAULT_NORM_MIN_VAL, normMaxVal = DEFAULT_NORM_MAX_VAL;
+    protected float absoluteMinValue, absoluteMaxValue, minValue, maxValue, steps;
+    protected OnRangeSeekBarChangeListener onValueChangeListener;
+    protected RangeSeekBar lowerBoundSeekBar, upperBoundSeekBar;
+
     private boolean singleThumb;
     private int activePointerId = INVALID_POINTER_ID;
     private int dataType;
@@ -52,7 +57,6 @@ public class RangeSeekBar extends View {
         rightThumbSize = (float) animation.getAnimatedValue();
         invalidate();
     };
-    private double normMinVal = DEFAULT_NORM_MIN_VAL, normMaxVal = DEFAULT_NORM_MAX_VAL;
     private RectF rect;
     private Paint paint;
     private ValueAnimator leftThumbAnimator, rightThumbAnimator;
@@ -62,6 +66,7 @@ public class RangeSeekBar extends View {
     public RangeSeekBar(Context context) {
         this(context, null, 0);
     }
+
     public RangeSeekBar(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
     }
@@ -79,6 +84,8 @@ public class RangeSeekBar extends View {
         final TypedArray array = context.obtainStyledAttributes(attrs, R.styleable.RangeSeekBar);
 
         try {
+            minValue = array.getFloat(R.styleable.RangeSeekBar_minValue, 0f);
+            maxValue = array.getFloat(R.styleable.RangeSeekBar_maxValue, 100f);
             singleThumb = array.getBoolean(R.styleable.RangeSeekBar_singleThumb, false);
             steps = array.getFloat(R.styleable.RangeSeekBar_steps, NO_STEP);
             dataType = array.getInt(R.styleable.RangeSeekBar_dataType, DataType.INTEGER);
@@ -105,13 +112,11 @@ public class RangeSeekBar extends View {
     }
 
     public void setMinValue(float minValue) {
-        this.minValue = minValue;
-        this.absoluteMinValue = minValue;
+        this.minValue = absoluteMinValue = minValue;
     }
 
     public void setMaxValue(float maxValue) {
-        this.maxValue = maxValue;
-        this.absoluteMaxValue = maxValue;
+        this.maxValue = absoluteMaxValue = maxValue;
     }
 
     public void setSingleThumb(boolean singleThumb) {
@@ -131,7 +136,7 @@ public class RangeSeekBar extends View {
         notifyValueChange();
     }
 
-    private Number getSelectedValue(double normVal) {
+    protected Number getSelectedValue(double normVal) {
         if (steps > 0 && steps <= absoluteMaxValue / 2) {
             final float stp = steps / (absoluteMaxValue - absoluteMinValue) * 100;
             final double mod = normVal % stp;
@@ -258,14 +263,32 @@ public class RangeSeekBar extends View {
                 Math.max(0d, (screenCoord - barPadding) / (width - 2 * barPadding) * 100d));
     }
 
-    private void setNormalizedMinValue(double value) {
-        normMinVal = Math.max(0d, Math.min(100d, Math.min(value, normMaxVal)));
-        invalidate();
+    protected double getNormMaxBound() {
+        return normMaxVal;
     }
 
-    private void setNormalizedMaxValue(double value) {
-        normMaxVal = Math.max(0d, Math.min(100d, Math.max(value, normMinVal)));
-        invalidate();
+    protected double getNormMin() {
+        return normMinVal;
+    }
+
+    public void setLowerBoundSeekBar(RangeSeekBar lowerBoundSeekBar) {
+        this.lowerBoundSeekBar = lowerBoundSeekBar;
+    }
+
+    public void setUpperBoundSeekBar(RangeSeekBar upperBoundSeekBar) {
+        this.upperBoundSeekBar = upperBoundSeekBar;
+    }
+
+    protected void setNormalizedMinValue(double value) {
+        if (lowerBoundSeekBar == null || value > lowerBoundSeekBar.getNormMaxBound())
+            normMinVal = Math.max(0d, Math.min(100d, Math.min(value, normMaxVal)));
+        else normMinVal = lowerBoundSeekBar.getNormMaxBound();
+    }
+
+    protected void setNormalizedMaxValue(double value) {
+        if (upperBoundSeekBar == null || value < upperBoundSeekBar.getNormMin())
+            normMaxVal = Math.max(0d, Math.min(100d, Math.max(value, normMinVal)));
+        else normMaxVal = upperBoundSeekBar.getNormMin();
     }
 
     private double normalizedToValue(double normalized) {
@@ -305,7 +328,7 @@ public class RangeSeekBar extends View {
         }
     }
 
-    private void notifyValueChange() {
+    protected void notifyValueChange() {
         if (onValueChangeListener != null)
             onValueChangeListener.valueChanged(getSelectedMinValue(), getSelectedMaxValue());
     }
@@ -396,6 +419,10 @@ public class RangeSeekBar extends View {
         }
 
         return true;
+    }
+
+    public String toString(Number minValue, Number maxValue) {
+        return minValue + "-" + maxValue;
     }
 
     protected enum Thumb {MIN, MAX}

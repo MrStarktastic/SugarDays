@@ -31,9 +31,32 @@ public class ReversedSeekBar extends SingleSeekBar {
         event.setLocation(getWidth() - event.getX(), event.getY());
         return super.onTouchEvent(event);
     }
-/*
+
     @Override
-    public Number getSelectedMinValue() {
-        return normalizedToValue(1 - normalizedMaxValue);
-    }*/
+    public Number getSelectedMaxValue() {
+        return getSelectedValue(getNormMin());
+    }
+
+    @Override
+    protected double getNormMin() {
+        return DEFAULT_NORM_MAX_VAL - normMaxVal;
+    }
+
+    @Override
+    protected void setNormalizedMaxValue(double val) {
+        if (lowerBoundSeekBar == null || DEFAULT_NORM_MAX_VAL - val > lowerBoundSeekBar.normMaxVal)
+            normMaxVal = Math.max(0d, Math.min(100d, val));
+        else normMaxVal = DEFAULT_NORM_MAX_VAL - lowerBoundSeekBar.normMaxVal;
+    }
+
+    @Override
+    protected void notifyValueChange() {
+        if (onValueChangeListener != null)
+            onValueChangeListener.valueChanged(getSelectedMaxValue(), absoluteMaxValue);
+    }
+
+    @Override
+    public String toString(Number minValue, Number maxValue) {
+        return super.toString(maxValue, minValue);
+    }
 }

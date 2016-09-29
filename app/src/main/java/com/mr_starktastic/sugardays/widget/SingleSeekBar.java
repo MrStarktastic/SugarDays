@@ -21,4 +21,9 @@ public class SingleSeekBar extends RangeSeekBar {
         super(context, attrs, defStyle);
         setSingleThumb(true);
     }
+
+    @Override
+    public String toString(Number minValue, Number maxValue) {
+        return String.valueOf(maxValue);
+    }
 }

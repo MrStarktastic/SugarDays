@@ -14,23 +14,26 @@ import com.mr_starktastic.sugardays.widget.RangeSeekBar;
  * Preference with a custom layout where the title is at the start, summary is at the end
  * and the seekBar frame is below them
  */
-public class SeekBarPreference extends Preference implements RangeSeekBar.OnRangeSeekBarChangeListener {
+public class SeekBarPreference extends Preference
+        implements RangeSeekBar.OnRangeSeekBarChangeListener {
     private int summaryTextColor;
+
+    private TextView summaryText;
     private RangeSeekBar seekBar;
 
-    public SeekBarPreference(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init(attrs);
+    public SeekBarPreference(Context context) {
+        super(context);
+        init(context, null);
     }
 
     public SeekBarPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init(attrs);
+        init(context, attrs);
     }
 
-    public SeekBarPreference(Context context) {
-        super(context);
-        init(null);
+    public SeekBarPreference(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        init(context, attrs);
     }
 
     /**
@@ -38,32 +41,37 @@ public class SeekBarPreference extends Preference implements RangeSeekBar.OnRang
      *
      * @param attrs Set of attributes
      */
-    private void init(AttributeSet attrs) {
+    private void init(Context context, AttributeSet attrs) {
         setLayoutResource(R.layout.preference_custom);
+        final TypedArray arr = context.obtainStyledAttributes(attrs, R.styleable.SeekBarPreference);
 
-        if (attrs != null) {
-            final TypedArray styledAttrs = getContext().obtainStyledAttributes(attrs,
-                    R.styleable.SeekBarPreference, 0, 0);
-            summaryTextColor = styledAttrs
-                    .getColor(R.styleable.SeekBarPreference_summaryTextColor, 0);
-            styledAttrs.recycle();
+        try {
+            summaryTextColor = arr.getColor(R.styleable.SeekBarPreference_summaryTextColor, 0);
+        } finally {
+            arr.recycle();
         }
     }
 
-    @SuppressWarnings("unchecked")
+    public void setLowerBound(SeekBarPreference lowerBound) {
+        seekBar.setLowerBoundSeekBar(lowerBound.seekBar);
+    }
+
+    public void setUpperBound(SeekBarPreference upperBound) {
+        seekBar.setUpperBoundSeekBar(upperBound.seekBar);
+    }
+
     @Override
     public void onBindViewHolder(PreferenceViewHolder holder) {
         super.onBindViewHolder(holder);
 
-        ((TextView) holder.findViewById(android.R.id.summary)).setTextColor(summaryTextColor);
-        seekBar = (RangeSeekBar) ((ViewGroup) holder.findViewById(android.R.id.widget_frame))
-                .getChildAt(0);
-        seekBar.setOnRangeSeekBarChangeListener(this);
+        (summaryText = (TextView) holder.findViewById(android.R.id.summary))
+                .setTextColor(summaryTextColor);
+        (seekBar = (RangeSeekBar) ((ViewGroup) holder.findViewById(android.R.id.widget_frame))
+                .getChildAt(0)).setOnRangeSeekBarChangeListener(this);
     }
 
     @Override
     public void valueChanged(Number minValue, Number maxValue) {
-        //Log.d("Min", String.valueOf(minValue));
-        //Log.d("Max", String.valueOf(maxValue));
+        summaryText.setText(seekBar.toString(minValue, maxValue));
     }
 }
