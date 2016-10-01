@@ -10,14 +10,15 @@ import android.widget.TextView;
 
 import com.mr_starktastic.sugardays.widget.RangeSeekBar;
 
+import java.text.DecimalFormat;
+
 /**
  * Preference with a custom layout where the title is at the start, summary is at the end
- * and the seekBar frame is below them
+ * and the seekBar frame is below them.
  */
 public class SeekBarPreference extends Preference
         implements RangeSeekBar.OnRangeSeekBarChangeListener {
     private int summaryTextColor;
-
     private TextView summaryText;
     private RangeSeekBar seekBar;
 
@@ -58,6 +59,15 @@ public class SeekBarPreference extends Preference
 
     public void setUpperBound(SeekBarPreference upperBound) {
         seekBar.setUpperBoundSeekBar(upperBound.seekBar);
+    }
+
+    public void initSeekBar(int dataType, DecimalFormat format, float steps, float min, float max) {
+        seekBar.setDataType(dataType, format);
+        seekBar.setSteps(steps);
+        seekBar.setMinValue(min);
+        seekBar.setMaxValue(max);
+        seekBar.invalidate();
+        seekBar.notifyValueChange();
     }
 
     @Override

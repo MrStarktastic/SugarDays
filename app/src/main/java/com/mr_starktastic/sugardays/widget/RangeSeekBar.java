@@ -17,10 +17,12 @@ import android.view.animation.AccelerateInterpolator;
 
 import com.mr_starktastic.sugardays.R;
 
+import java.text.DecimalFormat;
+
 /**
  * Widget that lets users select a minimum and maximum value on a given numerical range.
  * The range value types can be one of Long, Double, Integer, Float, Short, Byte or BigDecimal.
- * Resembles the stock SeekBar widget.
+ * Resembles {@link android.widget.SeekBar}.
  */
 public class RangeSeekBar extends View {
     protected static final double DEFAULT_NORM_MIN_VAL = 0d, DEFAULT_NORM_MAX_VAL = 100d;
@@ -39,8 +41,9 @@ public class RangeSeekBar extends View {
                 }
             };
 
+    protected DecimalFormat numberFormat;
     protected double normMinVal = DEFAULT_NORM_MIN_VAL, normMaxVal = DEFAULT_NORM_MAX_VAL;
-    protected float absoluteMinValue, absoluteMaxValue, minValue, maxValue, steps;
+    protected float minValue, maxValue, steps;
     protected OnRangeSeekBarChangeListener onValueChangeListener;
     protected RangeSeekBar lowerBoundSeekBar, upperBoundSeekBar;
 
@@ -81,25 +84,22 @@ public class RangeSeekBar extends View {
         barPadding = (thumbPressedSize = res.getDimensionPixelSize(R.dimen.pressed_size)) / 2;
         barHeight = res.getDimensionPixelSize(R.dimen.bar_height);
 
-        final TypedArray array = context.obtainStyledAttributes(attrs, R.styleable.RangeSeekBar);
+        final TypedArray arr = context.obtainStyledAttributes(attrs, R.styleable.RangeSeekBar);
 
         try {
-            minValue = array.getFloat(R.styleable.RangeSeekBar_minValue, 0f);
-            maxValue = array.getFloat(R.styleable.RangeSeekBar_maxValue, 100f);
-            singleThumb = array.getBoolean(R.styleable.RangeSeekBar_singleThumb, false);
-            steps = array.getFloat(R.styleable.RangeSeekBar_steps, NO_STEP);
-            dataType = array.getInt(R.styleable.RangeSeekBar_dataType, DataType.INTEGER);
+            minValue = arr.getFloat(R.styleable.RangeSeekBar_minValue, 0f);
+            maxValue = arr.getFloat(R.styleable.RangeSeekBar_maxValue, 100f);
+            singleThumb = arr.getBoolean(R.styleable.RangeSeekBar_singleThumb, false);
+            steps = arr.getFloat(R.styleable.RangeSeekBar_steps, NO_STEP);
+            dataType = arr.getInt(R.styleable.RangeSeekBar_dataType, DataType.INTEGER);
         } finally {
-            array.recycle();
+            arr.recycle();
         }
 
         init();
     }
 
     private void init() {
-        absoluteMaxValue = maxValue;
-        absoluteMinValue = minValue;
-
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         rect = new RectF(0, (thumbPressedSize - barHeight) / 2,
                 getWidth(), (thumbPressedSize + barHeight) / 2);
@@ -109,14 +109,16 @@ public class RangeSeekBar extends View {
         leftThumbSize = rightThumbSize = thumbUnpressedSize;
         leftThumbAnimator = getThumbAnimator(true, leftThumbSize, leftThumbAnimUpdateListener);
         rightThumbAnimator = getThumbAnimator(true, rightThumbSize, rightThumbAnimUpdateListener);
+
+        numberFormat = new DecimalFormat();
     }
 
     public void setMinValue(float minValue) {
-        this.minValue = absoluteMinValue = minValue;
+        this.minValue = minValue;
     }
 
     public void setMaxValue(float maxValue) {
-        this.maxValue = absoluteMaxValue = maxValue;
+        this.maxValue = maxValue;
     }
 
     public void setSingleThumb(boolean singleThumb) {
@@ -127,18 +129,18 @@ public class RangeSeekBar extends View {
         this.steps = steps;
     }
 
-    public void setDataType(int dataType) {
+    public void setDataType(int dataType, DecimalFormat numberFormat) {
         this.dataType = dataType;
+        this.numberFormat = numberFormat;
     }
 
     public void setOnRangeSeekBarChangeListener(OnRangeSeekBarChangeListener listener) {
         onValueChangeListener = listener;
-        notifyValueChange();
     }
 
     protected Number getSelectedValue(double normVal) {
-        if (steps > 0 && steps <= absoluteMaxValue / 2) {
-            final float stp = steps / (absoluteMaxValue - absoluteMinValue) * 100;
+        if (steps > 0 && steps <= maxValue / 2) {
+            final float stp = steps / (maxValue - minValue) * 100;
             final double mod = normVal % stp;
             normVal -= mod > stp / 2 ? mod - stp : mod;
         } else if (steps != NO_STEP)
@@ -263,7 +265,7 @@ public class RangeSeekBar extends View {
                 Math.max(0d, (screenCoord - barPadding) / (width - 2 * barPadding) * 100d));
     }
 
-    protected double getNormMaxBound() {
+    protected double getNormMax() {
         return normMaxVal;
     }
 
@@ -280,9 +282,9 @@ public class RangeSeekBar extends View {
     }
 
     protected void setNormalizedMinValue(double value) {
-        if (lowerBoundSeekBar == null || value > lowerBoundSeekBar.getNormMaxBound())
+        if (lowerBoundSeekBar == null || value > lowerBoundSeekBar.getNormMax())
             normMinVal = Math.max(0d, Math.min(100d, Math.min(value, normMaxVal)));
-        else normMinVal = lowerBoundSeekBar.getNormMaxBound();
+        else normMinVal = lowerBoundSeekBar.getNormMax();
     }
 
     protected void setNormalizedMaxValue(double value) {
@@ -328,7 +330,7 @@ public class RangeSeekBar extends View {
         }
     }
 
-    protected void notifyValueChange() {
+    public void notifyValueChange() {
         if (onValueChangeListener != null)
             onValueChangeListener.valueChanged(getSelectedMinValue(), getSelectedMaxValue());
     }
@@ -422,7 +424,7 @@ public class RangeSeekBar extends View {
     }
 
     public String toString(Number minValue, Number maxValue) {
-        return minValue + "-" + maxValue;
+        return numberFormat.format(minValue) + " - " + numberFormat.format(maxValue);
     }
 
     protected enum Thumb {MIN, MAX}
@@ -433,6 +435,7 @@ public class RangeSeekBar extends View {
     }
 
     public static final class DataType {
-        static final int LONG = 0, DOUBLE = 1, INTEGER = 2, FLOAT = 3, SHORT = 4, BYTE = 5;
+        @SuppressWarnings("all")
+        public static final int LONG = 0, DOUBLE = 1, INTEGER = 2, FLOAT = 3, SHORT = 4, BYTE = 5;
     }
 }

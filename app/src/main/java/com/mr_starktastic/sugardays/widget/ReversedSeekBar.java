@@ -43,16 +43,17 @@ public class ReversedSeekBar extends SingleSeekBar {
     }
 
     @Override
-    protected void setNormalizedMaxValue(double val) {
-        if (lowerBoundSeekBar == null || DEFAULT_NORM_MAX_VAL - val > lowerBoundSeekBar.normMaxVal)
-            normMaxVal = Math.max(0d, Math.min(100d, val));
-        else normMaxVal = DEFAULT_NORM_MAX_VAL - lowerBoundSeekBar.normMaxVal;
+    protected void setNormalizedMaxValue(double value) {
+        if (lowerBoundSeekBar == null ||
+                DEFAULT_NORM_MAX_VAL - value > lowerBoundSeekBar.getNormMax())
+            normMaxVal = Math.max(0d, Math.min(100d, value));
+        else normMaxVal = DEFAULT_NORM_MAX_VAL - lowerBoundSeekBar.getNormMax();
     }
 
     @Override
-    protected void notifyValueChange() {
+    public void notifyValueChange() {
         if (onValueChangeListener != null)
-            onValueChangeListener.valueChanged(getSelectedMaxValue(), absoluteMaxValue);
+            onValueChangeListener.valueChanged(getSelectedMaxValue(), maxValue);
     }
 
     @Override

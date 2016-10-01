@@ -18,7 +18,7 @@
             android:layout_gravity="start"
             android:ellipsize="marquee"
             android:fadingEdge="horizontal"
-            android:singleLine="true"
+            android:maxLines="1"
             android:textAppearance="?android:attr/textAppearanceListItem" />
 
         <TextView

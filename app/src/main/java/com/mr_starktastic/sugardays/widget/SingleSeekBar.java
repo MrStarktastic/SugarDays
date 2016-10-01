@@ -24,6 +24,6 @@ public class SingleSeekBar extends RangeSeekBar {
 
     @Override
     public String toString(Number minValue, Number maxValue) {
-        return String.valueOf(maxValue);
+        return numberFormat.format(maxValue);
     }
 }
