@@ -5,8 +5,15 @@ import java.text.DecimalFormat;
 public class BloodSugar {
     public static final DecimalFormat mgdlFormat = new DecimalFormat("0");
     public static final DecimalFormat mmollFormat = new DecimalFormat("0.0");
-    private static final int MGDL_IDX = 0, MMOLL_IDX = 1;
-    private static final int CONVERSION_FACTOR = 18;
+
+    public static final BloodSugar DEFAULT_HYPO = new BloodSugar(3.9f);
+    public static final BloodSugar[] DEFAULT_TARGET_RNG = {new BloodSugar(90), new BloodSugar(130)};
+    public static final BloodSugar DEFAULT_HYPER = new BloodSugar(200);
+
+    public static final int MGDL_IDX = 0, MMOLL_IDX = 1;
+    private static final float CONVERSION_FACTOR = 18f;
+
+    // Contains 2 BloodSugar values: mg/dL at 0 and the corresponding mmol/L at 1
     private Number[] arr;
 
     private BloodSugar() {

@@ -22,16 +22,19 @@ public class SeekBarPreference extends Preference
     private TextView summaryText;
     private RangeSeekBar seekBar;
 
+    @SuppressWarnings("unused")
     public SeekBarPreference(Context context) {
         super(context);
         init(context, null);
     }
 
+    @SuppressWarnings("unused")
     public SeekBarPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
         init(context, attrs);
     }
 
+    @SuppressWarnings("unused")
     public SeekBarPreference(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context, attrs);
@@ -61,13 +64,25 @@ public class SeekBarPreference extends Preference
         seekBar.setUpperBoundSeekBar(upperBound.seekBar);
     }
 
-    public void initSeekBar(int dataType, DecimalFormat format, float steps, float min, float max) {
+    public void initSeekBar(int dataType, DecimalFormat format, float steps,
+                            float min, float max, float selectedMin, float selectedMax) {
         seekBar.setDataType(dataType, format);
         seekBar.setSteps(steps);
         seekBar.setMinValue(min);
         seekBar.setMaxValue(max);
+        seekBar.setSelectedMinValue(selectedMin);
+        seekBar.setSelectedMaxValue(selectedMax);
+
         seekBar.invalidate();
         seekBar.notifyValueChange();
+    }
+
+    public Number getSelectedMinValue() {
+        return seekBar.getSelectedMinValue();
+    }
+
+    public Number getSelectedMaxValue() {
+        return seekBar.getSelectedMaxValue();
     }
 
     @Override

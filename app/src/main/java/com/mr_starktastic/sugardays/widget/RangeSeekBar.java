@@ -153,8 +153,16 @@ public class RangeSeekBar extends View {
         return getSelectedValue(normMinVal);
     }
 
+    public void setSelectedMinValue(float value) {
+        normMinVal = 100 * (value - minValue) / (maxValue - minValue);
+    }
+
     public Number getSelectedMaxValue() {
         return getSelectedValue(normMaxVal);
+    }
+
+    public void setSelectedMaxValue(float value) {
+        normMaxVal = 100 * (value - minValue) / (maxValue - minValue);
     }
 
     private ValueAnimator getThumbAnimator(boolean isTouching, float thumbSize,
@@ -265,12 +273,12 @@ public class RangeSeekBar extends View {
                 Math.max(0d, (screenCoord - barPadding) / (width - 2 * barPadding) * 100d));
     }
 
-    protected double getNormMax() {
-        return normMaxVal;
-    }
-
     protected double getNormMin() {
         return normMinVal;
+    }
+
+    protected double getNormMax() {
+        return normMaxVal;
     }
 
     public void setLowerBoundSeekBar(RangeSeekBar lowerBoundSeekBar) {
@@ -303,26 +311,24 @@ public class RangeSeekBar extends View {
     }
 
     private <T extends Number> Number formatValue(T value) throws IllegalArgumentException {
-        final Double v = (Double) value;
-
         switch (dataType) {
-            case DataType.LONG:
-                return v.longValue();
-
-            case DataType.DOUBLE:
-                return v;
-
             case DataType.INTEGER:
-                return Math.round(v);
+                return Math.round(value.doubleValue());
 
             case DataType.FLOAT:
-                return v.floatValue();
+                return value.floatValue();
+
+            case DataType.LONG:
+                return value.longValue();
+
+            case DataType.DOUBLE:
+                return value;
 
             case DataType.SHORT:
-                return v.shortValue();
+                return value.shortValue();
 
             case DataType.BYTE:
-                return v.byteValue();
+                return value.byteValue();
 
             default:
                 throw new IllegalArgumentException(

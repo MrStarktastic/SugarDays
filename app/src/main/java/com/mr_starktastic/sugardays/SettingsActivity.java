@@ -17,31 +17,29 @@ public class SettingsActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        final ActionBar actionBar;
-        if ((actionBar = getSupportActionBar()) != null)
+        final ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null)
             actionBar.setDisplayHomeAsUpEnabled(true);
 
-        if (savedInstanceState != null)
-            return;
+        if (savedInstanceState == null) {
+            final Fragment fragment = new SettingsFragment();
+            final String key = getIntent().getStringExtra(KEY);
 
-        final Fragment fragment = new SettingsFragment();
-        final String key = getIntent().getStringExtra(KEY);
+            if (key != null) {
+                Bundle args = new Bundle();
+                args.putString(PreferenceFragmentCompat.ARG_PREFERENCE_ROOT, key);
+                fragment.setArguments(args);
+            }
 
-        if (key != null) {
-            Bundle args = new Bundle();
-            args.putString(PreferenceFragmentCompat.ARG_PREFERENCE_ROOT, key);
-            fragment.setArguments(args);
+            getSupportFragmentManager().beginTransaction()
+                    .add(android.R.id.content, fragment, null)
+                    .commit();
         }
-
-        getSupportFragmentManager().beginTransaction()
-                .add(android.R.id.content, fragment, null)
-                .commit();
     }
 
     @Override
     public boolean onPreferenceStartScreen(PreferenceFragmentCompat caller, PreferenceScreen pref) {
         startActivity(new Intent(this, SettingsActivity.class).putExtra(KEY, pref.getKey()));
-
         return true;
 
     }
