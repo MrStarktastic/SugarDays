@@ -1,4 +1,4 @@
-package com.mr_starktastic.sugardays;
+package com.mr_starktastic.sugardays.fragment;
 
 import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
@@ -15,6 +15,10 @@ import android.view.View;
 import android.view.ViewTreeObserver;
 
 import com.google.gson.Gson;
+import com.mr_starktastic.sugardays.R;
+import com.mr_starktastic.sugardays.data.BloodSugar;
+import com.mr_starktastic.sugardays.preference.PrefKeys;
+import com.mr_starktastic.sugardays.preference.SeekBarPreference;
 import com.mr_starktastic.sugardays.widget.RangeSeekBar;
 
 import java.text.DecimalFormat;

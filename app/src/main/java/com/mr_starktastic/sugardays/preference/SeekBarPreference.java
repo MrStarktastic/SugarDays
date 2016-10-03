@@ -1,4 +1,4 @@
-package com.mr_starktastic.sugardays;
+package com.mr_starktastic.sugardays.preference;
 
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -8,6 +8,7 @@ import android.util.AttributeSet;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.widget.RangeSeekBar;
 
 import java.text.DecimalFormat;

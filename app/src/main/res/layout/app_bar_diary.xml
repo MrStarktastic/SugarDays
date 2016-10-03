@@ -8,7 +8,7 @@
     android:orientation="vertical"
     android:theme="@style/AppTheme.AppBarOverlay"
     app:expanded="false"
-    tools:context=".DiaryActivity"
+    tools:context=".activity.DiaryActivity"
     tools:showIn="@layout/activity_diary">
 
     <android.support.design.widget.CollapsingToolbarLayout

@@ -1,4 +1,4 @@
-package com.mr_starktastic.sugardays;
+package com.mr_starktastic.sugardays.activity;
 
 import android.animation.LayoutTransition;
 import android.animation.ValueAnimator;
@@ -30,6 +30,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.mr_starktastic.sugardays.R;
+import com.mr_starktastic.sugardays.fragment.DayPageFragment;
 import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import com.prolificinteractive.materialcalendarview.OnDateSelectedListener;

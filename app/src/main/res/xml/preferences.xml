@@ -26,21 +26,21 @@
             android:summary="%s"
             android:title="@string/pref_bgUnits_title" />
 
-        <com.mr_starktastic.sugardays.SeekBarPreference
+        <com.mr_starktastic.sugardays.preference.SeekBarPreference
             android:key="pref_hypo"
             android:summary="%s"
             android:title="@string/pref_hypo_title"
             android:widgetLayout="@layout/preference_seek_bar_widget"
             app:summaryTextColor="@color/colorBadBloodGlucose" />
 
-        <com.mr_starktastic.sugardays.SeekBarPreference
+        <com.mr_starktastic.sugardays.preference.SeekBarPreference
             android:key="pref_targetRange"
             android:summary="%s"
             android:title="@string/pref_targetRange_title"
             android:widgetLayout="@layout/preference_range_seek_bar_widget"
             app:summaryTextColor="@color/colorGoodBloodGlucose" />
 
-        <com.mr_starktastic.sugardays.SeekBarPreference
+        <com.mr_starktastic.sugardays.preference.SeekBarPreference
             android:key="pref_hyper"
             android:summary="%s"
             android:title="@string/pref_hyper_title"

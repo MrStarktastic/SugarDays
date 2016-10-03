@@ -1,4 +1,4 @@
-package com.mr_starktastic.sugardays;
+package com.mr_starktastic.sugardays.data;
 
 import java.text.DecimalFormat;
 

@@ -10,7 +10,7 @@
         android:theme="@style/AppTheme">
 
         <activity
-            android:name=".DiaryActivity"
+            android:name=".activity.DiaryActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
@@ -20,7 +20,7 @@
         </activity>
 
         <activity
-            android:name=".SettingsActivity"
+            android:name=".activity.SettingsActivity"
             android:screenOrientation="portrait" />
     </application>
 

@@ -1,4 +1,4 @@
-package com.mr_starktastic.sugardays;
+package com.mr_starktastic.sugardays.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -8,6 +8,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceScreen;
 import android.view.MenuItem;
+
+import com.mr_starktastic.sugardays.fragment.SettingsFragment;
 
 public class SettingsActivity extends AppCompatActivity
         implements PreferenceFragmentCompat.OnPreferenceStartScreenCallback {

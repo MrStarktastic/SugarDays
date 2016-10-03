@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/normal_margin"
-    tools:context="com.mr_starktastic.sugardays.DayPageFragment">
+    tools:context="com.mr_starktastic.sugardays.fragment.DayPageFragment">
 
     <!-- TODO: Update blank fragment layout -->
     <TextView
