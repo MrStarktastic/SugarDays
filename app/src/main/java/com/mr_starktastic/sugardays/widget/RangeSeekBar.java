@@ -41,6 +41,7 @@ public class RangeSeekBar extends View {
                 }
             };
 
+    protected int barColor, barHighlightColor, thumbColor;
     protected DecimalFormat numberFormat;
     protected double normMinVal = DEFAULT_NORM_MIN_VAL, normMaxVal = DEFAULT_NORM_MAX_VAL;
     protected float minValue, maxValue, steps;
@@ -50,7 +51,6 @@ public class RangeSeekBar extends View {
     private boolean singleThumb;
     private int activePointerId = INVALID_POINTER_ID;
     private int dataType;
-    private int barColor, barHighlightColor, thumbColor;
     private float barPadding, barHeight, thumbUnpressedSize, thumbPressedSize;
     private float leftThumbSize, rightThumbSize;
     private final ValueAnimator.AnimatorUpdateListener leftThumbAnimUpdateListener = animation -> {

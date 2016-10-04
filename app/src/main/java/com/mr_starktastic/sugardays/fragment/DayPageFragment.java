@@ -11,7 +11,6 @@ import android.widget.TextView;
 
 import com.mr_starktastic.sugardays.R;
 
-
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the

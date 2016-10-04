@@ -52,7 +52,12 @@
             android:summary="Off"
             android:title="@string/pref_scr_bolus_predict_title">
 
-            <android.support.v7.preference.Preference android:title="Placeholder" />
+            <com.mr_starktastic.sugardays.preference.SeekBarPreference
+                android:key="pref_optimal_bg"
+                android:summary="%s"
+                android:title="@string/pref_optimal_bg_title"
+                android:widgetLayout="@layout/preference_point_seek_bar_widget"
+                app:summaryTextColor="@color/colorGoodBloodGlucose" />
 
         </android.support.v7.preference.PreferenceScreen>
 

@@ -51,9 +51,12 @@
     <string name="pref_hyper_title">Hyper</string>
 
     <string name="pref_scr_bolus_predict_title">Bolus prediction</string>
+    <string name="pref_optimal_bg_title">Optimal blood glucose</string>
 
     <string name="pref_cat_extras_title">Extras</string>
 
     <string name="pref_save_photos_title">Save photos to gallery</string>
     <string name="pref_auto_location_title">Automatically register location</string>
+
+    <string name="content_desc_photo">Photo</string>
 </resources>

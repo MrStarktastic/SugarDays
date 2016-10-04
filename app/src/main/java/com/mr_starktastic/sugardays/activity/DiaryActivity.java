@@ -4,6 +4,7 @@ import android.animation.LayoutTransition;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
@@ -12,7 +13,6 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -40,6 +40,7 @@ import com.prolificinteractive.materialcalendarview.OnMonthChangedListener;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.Locale;
 
 /**
@@ -50,6 +51,11 @@ public class DiaryActivity extends AppCompatActivity
         AppBarLayout.OnOffsetChangedListener, OnMonthChangedListener, OnDateSelectedListener,
         ViewPager.OnPageChangeListener, DayPageFragment.OnFragmentInteractionListener {
     /**
+     * Extra keys
+     */
+    public static final String EXTRA_DATE = "DATE";
+
+    /**
      * Constants
      */
     private static final Calendar TODAY_CAL = CalendarDay.today().getCalendar(),
@@ -57,6 +63,7 @@ public class DiaryActivity extends AppCompatActivity
     private static final int TODAY_IDX = daysBetween(TODAY_CAL, MIN_CAL),
             ARROW_START_ANGLE = 0, ARROW_END_ANGLE = -180;
     private static final long CALENDAR_RESIZE_ANIM_DURATION = 200;
+
     /**
      * Date formats for setting title & subtitle texts
      */
@@ -66,14 +73,17 @@ public class DiaryActivity extends AppCompatActivity
             DAY_NUMBER_FORMAT = new SimpleDateFormat("d", DEFAULT_LOCALE),
             MONTH_FORMAT = new SimpleDateFormat("MMMM", DEFAULT_LOCALE),
             YEAR_FORMAT = new SimpleDateFormat("y", DEFAULT_LOCALE);
+
     /**
-     * Major layouts & views of this activity
+     * GUI related variables
      */
     private DrawerLayout drawerLayout;
     private AppBarLayout appBar;
     private MaterialCalendarView calendarView;
     private final ValueAnimator.AnimatorUpdateListener calendarResizeAnimListener =
             valueAnimator -> setCalendarHeight((int) valueAnimator.getAnimatedValue());
+    private int calBottomPad;
+    private int calTileHeight;
     private TextView title, subtitle;
     private ImageView dropDownArrow;
     private ViewPager pager;
@@ -124,6 +134,7 @@ public class DiaryActivity extends AppCompatActivity
         final LayoutTransition dropDownTransition = dropDownLayout.getLayoutTransition();
         dropDownTransition.setAnimateParentHierarchy(false);
         dropDownTransition.enableTransitionType(LayoutTransition.CHANGING);
+
         // Displays the date
         title = (TextView) dropDownLayout.findViewById(R.id.toolbar_title);
         /*
@@ -131,28 +142,34 @@ public class DiaryActivity extends AppCompatActivity
         or is simply not shown (gone)
          */
         subtitle = (TextView) dropDownLayout.findViewById(R.id.toolbar_subtitle);
+
         // Indicates that the layout can be clicked for a dropdown
         dropDownArrow = (ImageView) dropDownLayout.findViewById(R.id.dropdown_arrow);
 
         calendarView = (MaterialCalendarView) appBar.findViewById(R.id.calendar_view);
+
         // Sets the min (Jan 1st, 1900) & max (today) dates
         calendarView.state().edit().setMinimumDate(MIN_CAL).setMaximumDate(TODAY_CAL).commit();
+
         // The date string will be shown in the toolbar instead
         calendarView.setTopbarVisible(false);
+
         // Properly sets the width of each tile to fill the app bar
         final DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         calendarView.setTileWidth((int) (displayMetrics.widthPixels / 7 + 0.5f));
+
         // Sets proper height according to the current month's rows
+        final Resources resources = getResources();
+        calBottomPad = resources.getDimensionPixelSize(R.dimen.tiny_margin);
+        calTileHeight = resources.getDimensionPixelSize(R.dimen.calendar_view_tile_height);
         setCalendarHeight(calcCalendarHeight(TODAY_CAL));
 
         calendarView.setOnMonthChangedListener(this);
         calendarView.setOnDateChangedListener(this);
 
         final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(v ->
-                Snackbar.make(v, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show());
+        fab.setOnClickListener(v -> addLog());
 
         dropDownLayout.setOnClickListener(v -> appBar.setExpanded(isCalendarHidden()));
 
@@ -169,6 +186,14 @@ public class DiaryActivity extends AppCompatActivity
         pager.setAdapter(new DayAdapter(getSupportFragmentManager()));
         pager.addOnPageChangeListener(this);
         pager.setCurrentItem(TODAY_IDX);
+    }
+
+    private void addLog() {
+        final CalendarDay day = calendarView.getSelectedDate();
+        final Calendar currTime = Calendar.getInstance();
+        startActivity(new Intent(this, EditLogActivity.class).putExtra(EXTRA_DATE,
+                new GregorianCalendar(day.getYear(), day.getMonth(), day.getDay(),
+                        currTime.get(Calendar.HOUR_OF_DAY), currTime.get(Calendar.MINUTE))));
     }
 
     /**
@@ -191,7 +216,8 @@ public class DiaryActivity extends AppCompatActivity
      */
     private int calcCalendarHeight(Calendar date) {
         // Adds 1 because the day labels header is also considered a tile
-        return (date.getActualMaximum(Calendar.WEEK_OF_MONTH) + 1) * calendarView.getTileHeight();
+        return (date.getActualMaximum(Calendar.WEEK_OF_MONTH) + 1) * calTileHeight +
+                calBottomPad;
     }
 
     /**
@@ -217,6 +243,7 @@ public class DiaryActivity extends AppCompatActivity
      *
      * @param date Date to set as text
      */
+    @SuppressWarnings("WrongConstant")
     private void setFullDateText(CalendarDay date) {
         final Date d = date.getDate();
         title.setText(DAY_MONTH_FORMAT.format(d));
@@ -236,6 +263,7 @@ public class DiaryActivity extends AppCompatActivity
      *
      * @param date Date to set as text
      */
+    @SuppressWarnings("WrongConstant")
     private void setCondensedDateText(CalendarDay date) {
         final Date d = date.getDate();
         title.setText(MONTH_FORMAT.format(d));
@@ -250,8 +278,7 @@ public class DiaryActivity extends AppCompatActivity
     public void onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START))
             drawerLayout.closeDrawer(GravityCompat.START);
-        else
-            super.onBackPressed();
+        else super.onBackPressed();
     }
 
     @SuppressLint("InflateParams")
@@ -298,7 +325,6 @@ public class DiaryActivity extends AppCompatActivity
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);
-
         return true;
     }
 
