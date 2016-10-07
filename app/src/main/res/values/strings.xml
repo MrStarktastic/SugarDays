@@ -9,7 +9,7 @@
     <string name="today">Today</string>
     <string name="calendar_dropdown_arrow_desc">Calendar dropdown arrow</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
+    <!-- TODO: Remove this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
     <!-- Preferences -->
@@ -33,7 +33,7 @@
     <string name="pref_insulin_default">0</string>
 
     <string name="pref_pills_title">Pills</string>
-    <string name="pref_pills_null_summary">N/A</string>
+    <string name="pref_pills_default_summary">N/A</string>
 
     <string name="pref_bgUnits_title">Blood glucose unit</string>
     <string-array name="pref_bgUnits_entries">
@@ -45,6 +45,8 @@
         <item>1</item>
     </string-array>
     <string name="pref_bgUnits_default">0</string>
+
+    <string name="pref_pills_edit_text_hint">"Name"</string>
 
     <string name="pref_hypo_title">Hypo</string>
     <string name="pref_targetRange_title">Target range</string>
@@ -59,4 +61,5 @@
     <string name="pref_auto_location_title">Automatically register location</string>
 
     <string name="content_desc_photo">Photo</string>
+    <string name="content_desc_clear">Remove this item</string>
 </resources>

@@ -21,7 +21,16 @@
         <activity
             android:name=".activity.SettingsActivity"
             android:screenOrientation="portrait" />
-        <activity android:name=".activity.EditLogActivity"></activity>
+        <activity android:name=".activity.EditLogActivity" />
+        <activity
+            android:name=".activity.PillManagerActivity"
+            android:label="@string/pref_pills_title"
+            android:parentActivityName=".activity.SettingsActivity"
+            android:screenOrientation="portrait">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.mr_starktastic.sugardays.activity.SettingsActivity" />
+        </activity>
     </application>
 
 </manifest>

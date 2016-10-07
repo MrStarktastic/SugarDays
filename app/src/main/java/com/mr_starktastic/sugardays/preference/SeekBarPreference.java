@@ -47,7 +47,7 @@ public class SeekBarPreference extends Preference
      * @param attrs Set of attributes
      */
     private void init(Context context, AttributeSet attrs) {
-        setLayoutResource(R.layout.preference_custom);
+        setLayoutResource(R.layout.preference_wide_widget);
         final TypedArray arr = context.obtainStyledAttributes(attrs, R.styleable.SeekBarPreference);
 
         try {

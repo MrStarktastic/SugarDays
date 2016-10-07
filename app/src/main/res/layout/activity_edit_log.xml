@@ -10,9 +10,5 @@
     android:paddingTop="@dimen/normal_margin"
     tools:context="com.mr_starktastic.sugardays.activity.EditLogActivity">
 
-    <TextView
-        android:id="@+id/date_test_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
 
 </RelativeLayout>

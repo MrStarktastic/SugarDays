@@ -1,6 +1,7 @@
 package com.mr_starktastic.sugardays.fragment;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
@@ -9,6 +10,7 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.CheckBoxPreference;
 import android.support.v7.preference.ListPreference;
+import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceScreen;
 import android.view.View;
@@ -16,6 +18,7 @@ import android.view.ViewTreeObserver;
 
 import com.google.gson.Gson;
 import com.mr_starktastic.sugardays.R;
+import com.mr_starktastic.sugardays.activity.PillManagerActivity;
 import com.mr_starktastic.sugardays.data.BloodSugar;
 import com.mr_starktastic.sugardays.preference.PrefKeys;
 import com.mr_starktastic.sugardays.preference.SeekBarPreference;
@@ -28,13 +31,15 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     private static final float[] bgSeekBarSteps = {10, 0.5f};
     private static final int[] bgDataTypes =
             {RangeSeekBar.DataType.INTEGER, RangeSeekBar.DataType.FLOAT};
-    private static final Gson gson = new Gson();
-    private static final String DEFAULT_HYPO_STR = gson.toJson(BloodSugar.DEFAULT_HYPO);
-    private static final String DEFAULT_TARGET_RNG_STR = gson.toJson(BloodSugar.DEFAULT_TARGET_RNG);
-    private static final String DEFAULT_HYPER_STR = gson.toJson(BloodSugar.DEFAULT_HYPER);
+    private static final Gson GSON = new Gson();
+    private static final String DEFAULT_HYPO_STR = GSON.toJson(BloodSugar.DEFAULT_HYPO);
+    private static final String DEFAULT_TARGET_RNG_STR = GSON.toJson(BloodSugar.DEFAULT_TARGET_RNG);
+    private static final String DEFAULT_HYPER_STR = GSON.toJson(BloodSugar.DEFAULT_HYPER);
 
     private String prefScrKey;
-    private ListPreference insulinListPref, bgUnitsListPref;
+    private ListPreference insulinListPref;
+    private Preference pillPref;
+    private ListPreference bgUnitListPref;
     private SeekBarPreference hypoPref, targetRangePref, hyperPref;
     private PreferenceScreen bolusPredictPrefScr;
     private CheckBoxPreference savePhotosPref, autoLocationPref;
@@ -54,10 +59,14 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             insulinListPref.setOnPreferenceChangeListener(
                     (preference, newValue) -> enableBolusPredict((String) newValue));
 
-            // TODO: Pills preference stuff goes here
+            (pillPref = findPreference(PrefKeys.PILLS)).setOnPreferenceClickListener(
+                    preference -> {
+                        startActivity(new Intent(getActivity(), PillManagerActivity.class));
+                        return true;
+                    });
 
-            bgUnitsListPref = (ListPreference) findPreference(PrefKeys.BG_UNITS);
-            bgUnitsListPref.setOnPreferenceChangeListener((preference, newValue) -> {
+            bgUnitListPref = (ListPreference) findPreference(PrefKeys.BG_UNITS);
+            bgUnitListPref.setOnPreferenceChangeListener((preference, newValue) -> {
                 saveBgPrefs();
                 bgUnitIdx = Integer.parseInt((String) newValue);
                 initBgPrefs();
@@ -73,8 +82,11 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             savePhotosPref = (CheckBoxPreference) findPreference(PrefKeys.SAVE_PHOTOS);
             autoLocationPref = (CheckBoxPreference) findPreference(PrefKeys.AUTO_LOCATION);
 
+            initPills();
             bindSeekBars(view);
             enableBolusPredict(insulinListPref.getValue());
+        } else if (prefScrKey.equals(PrefKeys.SCR_BOLUS_PREDICT)) {
+            // TODO: Bolus prediction preference stuff goes here
         }
     }
 
@@ -100,6 +112,17 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     }
 
     /**
+     * When resuming, the Pills {@link Preference}'s summary is set
+     * to display the saved pill names.
+     */
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        initPills();
+    }
+
+    /**
      * Binds the 3 blood sugar {@link SeekBarPreference} such that every
      * {@link com.mr_starktastic.sugardays.widget.RangeSeekBar} is bounded by the min value of the
      * next one and vice versa by the max value.
@@ -120,7 +143,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                         targetRangePref.setLowerBound(hypoPref);
                         targetRangePref.setUpperBound(hyperPref);
                         hyperPref.setLowerBound(targetRangePref);
-                        bgUnitIdx = Integer.parseInt(bgUnitsListPref.getValue());
+                        bgUnitIdx = Integer.parseInt(bgUnitListPref.getValue());
                         initBgPrefs();
                     }
                 });
@@ -144,6 +167,27 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     }
 
     /**
+     * Sets the summary of the Pills {@link Preference} to the names of saved pills.
+     * Format: "pillName1, pillName2, pillName3".
+     */
+    private void initPills() {
+        final String[] pillNames = GSON.fromJson(
+                getPreferenceManager().getSharedPreferences()
+                        .getString(PrefKeys.PILLS, null), String[].class);
+
+        if (pillNames == null)
+            pillPref.setSummary(getString(R.string.pref_pills_default_summary));
+        else {
+            final StringBuilder strBuilder = new StringBuilder(pillNames[0]);
+
+            for (int i = 1; i < pillNames.length; ++i)
+                strBuilder.append(", ").append(pillNames[i]);
+
+            pillPref.setSummary(strBuilder.toString());
+        }
+    }
+
+    /**
      * Initializes the blood glucose {@link SeekBarPreference}s.
      */
     private void initBgPrefs() {
@@ -157,14 +201,14 @@ public class SettingsFragment extends PreferenceFragmentCompat {
          * Gets saved {@link BloodSugar} values from {@link SharedPreferences}.
          */
         final SharedPreferences preferences = getPreferenceManager().getSharedPreferences();
-        final float hypo = gson.fromJson(
+        final float hypo = GSON.fromJson(
                 preferences.getString(PrefKeys.HYPO, DEFAULT_HYPO_STR),
                 BloodSugar.class).get(bgUnitIdx);
-        final BloodSugar[] targetRange = gson.fromJson(
+        final BloodSugar[] targetRange = GSON.fromJson(
                 preferences.getString(PrefKeys.TARGET_RANGE, DEFAULT_TARGET_RNG_STR),
                 BloodSugar[].class);
         final float rngMin = targetRange[0].get(bgUnitIdx), rngMax = targetRange[1].get(bgUnitIdx);
-        final float hyper = gson.fromJson(
+        final float hyper = GSON.fromJson(
                 preferences.getString(PrefKeys.HYPER, DEFAULT_HYPER_STR),
                 BloodSugar.class).get(bgUnitIdx);
 
@@ -197,8 +241,8 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             hyperBG = new BloodSugar(hyper.floatValue());
         }
 
-        final String hypoJson = gson.toJson(hypoBG), hyperJson = gson.toJson(hyperBG);
-        final String targetRangeJson = gson.toJson(targetRangeBG);
+        final String hypoJson = GSON.toJson(hypoBG), hyperJson = GSON.toJson(hyperBG);
+        final String targetRangeJson = GSON.toJson(targetRangeBG);
         getPreferenceManager().getSharedPreferences().edit()
                 .putString(PrefKeys.HYPO, hypoJson)
                 .putString(PrefKeys.TARGET_RANGE, targetRangeJson)

@@ -37,11 +37,11 @@ import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import com.prolificinteractive.materialcalendarview.OnDateSelectedListener;
 import com.prolificinteractive.materialcalendarview.OnMonthChangedListener;
 
-import java.text.SimpleDateFormat;
+import org.apache.commons.lang3.time.FastDateFormat;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.Locale;
 
 /**
  * Main activity where the user can navigate between days and view his logs
@@ -67,12 +67,11 @@ public class DiaryActivity extends AppCompatActivity
     /**
      * Date formats for setting title & subtitle texts
      */
-    private static final Locale DEFAULT_LOCALE = Locale.getDefault();
-    private static final SimpleDateFormat DAY_MONTH_FORMAT = new SimpleDateFormat(
-            "EEE, MMM d", DEFAULT_LOCALE),
-            DAY_NUMBER_FORMAT = new SimpleDateFormat("d", DEFAULT_LOCALE),
-            MONTH_FORMAT = new SimpleDateFormat("MMMM", DEFAULT_LOCALE),
-            YEAR_FORMAT = new SimpleDateFormat("y", DEFAULT_LOCALE);
+    private static final FastDateFormat DAY_MONTH_FORMAT =
+            FastDateFormat.getInstance(getDayMonthFormatPattern());
+    private static final FastDateFormat DAY_NUMBER_FORMAT = FastDateFormat.getInstance("d");
+    private static final FastDateFormat MONTH_FORMAT = FastDateFormat.getInstance("MMMM");
+    private static final FastDateFormat YEAR_FORMAT = FastDateFormat.getInstance("y");
 
     /**
      * GUI related variables
@@ -87,6 +86,21 @@ public class DiaryActivity extends AppCompatActivity
     private TextView title, subtitle;
     private ImageView dropDownArrow;
     private ViewPager pager;
+
+    /**
+     * Strips the FastDateFormat.MEDIUM style format pattern from the year at the end
+     * and adds a format specifier of a day's name in the beginning.
+     * This is done so that we would be able to get both "EEE, MMM d" & "EEE, d MMM"
+     * format patterns (perhaps there are more), which makes it localization proof.
+     *
+     * @return The new format pattern
+     */
+    private static String getDayMonthFormatPattern() {
+        final String monthAndDayNumFormat =
+                FastDateFormat.getDateInstance(FastDateFormat.MEDIUM).getPattern();
+        return FastDateFormat.getInstance("EEE, ").getPattern() +
+                monthAndDayNumFormat.substring(0, monthAndDayNumFormat.lastIndexOf(','));
+    }
 
     /**
      * Calculates the amount of days between one date and another

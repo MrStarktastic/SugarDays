@@ -14,6 +14,7 @@ public class EditLogActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_log);
+
         calendar = (GregorianCalendar) getIntent().getSerializableExtra(DiaryActivity.EXTRA_DATE);
     }
 }
