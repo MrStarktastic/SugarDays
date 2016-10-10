@@ -48,15 +48,12 @@
 
         <android.support.v7.preference.PreferenceScreen
             android:key="pref_scr_bolus_predict"
-            android:summary="Off"
             android:title="@string/pref_scr_bolus_predict_title">
 
-            <com.mr_starktastic.sugardays.preference.SeekBarPreference
-                android:key="pref_optimal_bg"
-                android:summary="%s"
-                android:title="@string/pref_optimal_bg_title"
-                android:widgetLayout="@layout/preference_point_seek_bar_widget"
-                app:summaryTextColor="@color/colorGoodBloodGlucose" />
+            <com.mr_starktastic.sugardays.preference.SwitchStripPreference
+                android:key="pref_bolus_predict_switch"
+                android:layout="@layout/preference_switch_strip"
+                android:summary="@string/pref_bolus_predict_off_summary" />
 
         </android.support.v7.preference.PreferenceScreen>
 
@@ -64,12 +61,12 @@
 
     <android.support.v7.preference.PreferenceCategory android:title="@string/pref_cat_extras_title">
 
-        <android.support.v7.preference.CheckBoxPreference
+        <android.support.v7.preference.SwitchPreferenceCompat
             android:defaultValue="true"
             android:key="pref_save_photos"
             android:title="@string/pref_save_photos_title" />
 
-        <android.support.v7.preference.CheckBoxPreference
+        <android.support.v7.preference.SwitchPreferenceCompat
             android:defaultValue="true"
             android:key="pref_auto_location"
             android:title="@string/pref_auto_location_title" />

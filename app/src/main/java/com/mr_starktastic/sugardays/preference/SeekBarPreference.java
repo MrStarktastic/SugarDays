@@ -21,6 +21,10 @@ public class SeekBarPreference extends Preference
         implements RangeSeekBar.OnRangeSeekBarChangeListener {
     private int summaryTextColor;
     private TextView summaryText;
+    private boolean lateInit = false;
+    private int bgDataType;
+    private DecimalFormat format;
+    private float steps, min, max, selectedMin, selectedMax;
     private RangeSeekBar seekBar;
 
     @SuppressWarnings("unused")
@@ -39,6 +43,23 @@ public class SeekBarPreference extends Preference
     public SeekBarPreference(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context, attrs);
+    }
+
+    public SeekBarPreference(Context context, int widgetResId, int summaryTextColor,
+                             int bgDataType, DecimalFormat format, float steps,
+                             float min, float max, float selectedMin, float selectedMax) {
+        super(context);
+        setLayoutResource(R.layout.preference_wide_widget);
+        setWidgetLayoutResource(widgetResId);
+        this.lateInit = true;
+        this.summaryTextColor = summaryTextColor;
+        this.bgDataType = bgDataType;
+        this.format = format;
+        this.steps = steps;
+        this.min = min;
+        this.max = max;
+        this.selectedMin = selectedMin;
+        this.selectedMax = selectedMax;
     }
 
     /**
@@ -94,6 +115,9 @@ public class SeekBarPreference extends Preference
                 .setTextColor(summaryTextColor);
         (seekBar = (RangeSeekBar) ((ViewGroup) holder.findViewById(android.R.id.widget_frame))
                 .getChildAt(0)).setOnRangeSeekBarChangeListener(this);
+
+        if (lateInit)
+            initSeekBar(bgDataType, format, steps, min, max, selectedMin, selectedMax);
     }
 
     @Override

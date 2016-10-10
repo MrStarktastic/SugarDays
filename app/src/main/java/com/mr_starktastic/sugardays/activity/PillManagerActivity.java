@@ -21,8 +21,13 @@ import com.google.gson.Gson;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.preference.PrefKeys;
 
-import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 
+/**
+ * An alternative to the planned {@link android.support.v7.preference.PreferenceScreen}
+ * due to the fact that it's easier to handle dynamic views in an {@link AppCompatActivity}.
+ */
 public class PillManagerActivity extends AppCompatActivity {
     private static final int LAYOUT_TRANSITION_DURATION = 100;
     private static final InputFilter[] INPUT_FILTERS = {
@@ -35,17 +40,19 @@ public class PillManagerActivity extends AppCompatActivity {
             }};
 
     private LinearLayout pillItemContainer;
-    private boolean isLoadingData;
+    private LinkedList<EditText> editTexts;
 
     /**
      * Listeners for the clear {@link android.widget.ImageButton}
      * and {@link EditText} which holds the name of a pill.
      */
     private View.OnClickListener onClearListener = v -> {
-        final View item = (View) v.getParent();
-        if (!TextUtils.isEmpty(((EditText) item.findViewById(R.id.pill_name_edit)).getText()) &&
-                pillItemContainer.getChildCount() > 1)
-            pillItemContainer.removeView(item);
+        final int index = pillItemContainer.indexOfChild((View) v.getParent());
+
+        if (!TextUtils.isEmpty(editTexts.get(index).getText()) && editTexts.size() > 1) {
+            editTexts.remove(index);
+            pillItemContainer.removeViewAt(index);
+        }
     };
     private TextWatcher textWatcher = new TextWatcher() {
         private boolean wasEmpty;
@@ -57,11 +64,10 @@ public class PillManagerActivity extends AppCompatActivity {
 
         @Override
         public void onTextChanged(CharSequence s, int start, int before, int count) {
-            if (!isLoadingData)
-                if (s.length() == 0 && pillItemContainer.getChildCount() > 1)
-                    pillItemContainer.removeViewAt(indexOfEmptyEditText());
-                else if (wasEmpty)
-                    addPillEntry();
+            if (s.length() == 0 && editTexts.size() > 1)
+                removeItemWithEmptyEditText();
+            else if (wasEmpty)
+                addPillEntry(null);
         }
 
         @Override
@@ -93,63 +99,62 @@ public class PillManagerActivity extends AppCompatActivity {
         scrollView.addView(pillItemContainer);
         setContentView(scrollView);
 
+        editTexts = new LinkedList<>();
         final String[] pillNames = new Gson().fromJson(PreferenceManager
                 .getDefaultSharedPreferences(this).getString(PrefKeys.PILLS, null), String[].class);
 
-        if (isLoadingData = (pillNames != null && pillNames.length > 0)) {
+        if (pillNames != null && pillNames.length > 0)
             for (String name : pillNames)
-                addPill(name);
+                addPillEntry(name);
 
-            isLoadingData = false;
-        }
-
-        addPillEntry(); // Empty entry in the end of the ScrollView
+        addPillEntry(null); // Empty entry in the end of the ScrollView
     }
 
     @Override
     @SuppressLint("CommitPrefEdits")
     protected void onPause() {
-        final int childCount = pillItemContainer.getChildCount();
-        ArrayList<String> pillNames = new ArrayList<>();
+        final LinkedHashSet<String> set = new LinkedHashSet<>();
 
-        for (int i = 0; i < childCount; ++i) {
-            final String text = ((EditText) pillItemContainer.getChildAt(i)
-                    .findViewById(R.id.pill_name_edit)).getText().toString().trim();
+        for (EditText e : editTexts) {
+            final String text = e.getText().toString().trim();
 
             if (!TextUtils.isEmpty(text))
-                pillNames.add(text);
+                set.add(text);
         }
 
         PreferenceManager.getDefaultSharedPreferences(this).edit().putString(PrefKeys.PILLS,
-                new Gson().toJson(!pillNames.isEmpty() ? pillNames.toArray() : null)).commit();
+                new Gson().toJson(set.size() != 0 ? set.toArray() : null)).commit();
 
         super.onPause();
     }
 
     @SuppressLint("InflateParams")
-    private EditText addPillEntry() {
+    private void addPillEntry(String pillName) {
         final View pillItem =
                 getLayoutInflater().inflate(R.layout.preference_pill_item, null, false);
         pillItem.findViewById(R.id.clear_button).setOnClickListener(onClearListener);
         final EditText pillNameEdit = (EditText) pillItem.findViewById(R.id.pill_name_edit);
+
+        if (pillName != null)
+            pillNameEdit.setText(pillName);
+
         pillNameEdit.addTextChangedListener(textWatcher);
         pillNameEdit.setFilters(INPUT_FILTERS);
+        editTexts.add(pillNameEdit);
         pillItemContainer.addView(pillItem);
-
-        return pillNameEdit;
     }
 
-    private void addPill(String pillName) {
-        addPillEntry().setText(pillName);
-    }
+    private void removeItemWithEmptyEditText() {
+        // The end of the pillItem is most likely where an empty EditText will be found
+        for (int i = editTexts.size() - 1; i >= 0; --i) {
+            final EditText pillNameEdit = editTexts.get(i);
 
-    private int indexOfEmptyEditText() {
-        // The end of the container is most likely where an empty EditText will be found
-        for (int i = pillItemContainer.getChildCount() - 1; i >= 0; --i)
-            if (TextUtils.isEmpty(((EditText) pillItemContainer.getChildAt(i)
-                    .findViewById(R.id.pill_name_edit)).getText()))
-                return i;
+            if (TextUtils.isEmpty(pillNameEdit.getText())) {
+                editTexts.remove(i);
+                pillItemContainer.removeViewAt(i);
 
-        return -1; // Not supposed to happen
+                return;
+            }
+        }
     }
 }

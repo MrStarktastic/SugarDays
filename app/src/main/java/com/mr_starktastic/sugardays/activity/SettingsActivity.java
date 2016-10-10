@@ -43,7 +43,6 @@ public class SettingsActivity extends AppCompatActivity
     public boolean onPreferenceStartScreen(PreferenceFragmentCompat caller, PreferenceScreen pref) {
         startActivity(new Intent(this, SettingsActivity.class).putExtra(KEY, pref.getKey()));
         return true;
-
     }
 
     @Override

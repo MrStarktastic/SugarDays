@@ -1,16 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/normal_margin"
     android:padding="@dimen/normal_margin">
 
-    <ImageView
+    <android.support.percent.PercentFrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:adjustViewBounds="true"
-        android:contentDescription="@string/content_desc_photo"
-        android:src="@drawable/bacon" />
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/photo"
+            android:contentDescription="@string/content_desc_photo"
+            app:layout_aspectRatio="178%"
+            app:layout_widthPercent="100%" />
+    </android.support.percent.PercentFrameLayout>
 
     <View
         android:layout_width="match_parent"
@@ -59,7 +64,7 @@
             android:drawablePadding="@dimen/tiny_margin"
             android:drawableStart="@drawable/ic_location_white_18dp"
             android:gravity="center_vertical"
-            android:text="Eiffel Tower"
+            android:text="Big Ben, London"
             android:textColor="@android:color/white" />
 
         <TextView

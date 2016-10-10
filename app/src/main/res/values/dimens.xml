@@ -6,6 +6,7 @@
     <dimen name="small_margin">8dp</dimen>
     <dimen name="normal_margin">16dp</dimen>
     <dimen name="big_margin">64dp</dimen>
+    <dimen name="huge_margin">72dp</dimen>
 
     <dimen name="nav_header_height">160dp</dimen>
 
@@ -20,4 +21,8 @@
     <dimen name="bar_height">2dp</dimen>
 
     <dimen name="normal_image_button_size">32dp</dimen>
+
+    <dimen name="preference_strip_height">56dp</dimen>
+
+    <dimen name="divider_height">1dp</dimen>
 </resources>

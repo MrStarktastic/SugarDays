@@ -53,7 +53,12 @@
     <string name="pref_hyper_title">Hyper</string>
 
     <string name="pref_scr_bolus_predict_title">Bolus prediction</string>
+    <string name="pref_bolus_predict_off_summary">When this feature is turned on, the app will automatically calculate your bolus intake using the following personalized factors:\n1) Optimal blood glucose.\n2) Correction factor (insulin sensitivity).\n3) Carb-to-insulin ratio.\n\nPlease note, user discretion is advised as the above factors are only estimates and variations may occur.</string>
     <string name="pref_optimal_bg_title">Optimal blood glucose</string>
+    <string name="pref_correction_factor_title">Correction factor</string>
+    <string name="pref_carb_to_insulin_title">Carb-to-insulin ratio</string>
+    <string name="per_insulin_unit">per insulin unit</string>
+    <string name="grams_of_carb">g of carb</string>
 
     <string name="pref_cat_extras_title">Extras</string>
 

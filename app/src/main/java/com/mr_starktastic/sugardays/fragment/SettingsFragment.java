@@ -1,18 +1,20 @@
 package com.mr_starktastic.sugardays.fragment;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.preference.CheckBoxPreference;
 import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceScreen;
+import android.support.v7.preference.SwitchPreferenceCompat;
 import android.view.View;
 import android.view.ViewTreeObserver;
 
@@ -20,8 +22,10 @@ import com.google.gson.Gson;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.activity.PillManagerActivity;
 import com.mr_starktastic.sugardays.data.BloodSugar;
+import com.mr_starktastic.sugardays.preference.InlineEditTextPreference;
 import com.mr_starktastic.sugardays.preference.PrefKeys;
 import com.mr_starktastic.sugardays.preference.SeekBarPreference;
+import com.mr_starktastic.sugardays.preference.SwitchStripPreference;
 import com.mr_starktastic.sugardays.widget.RangeSeekBar;
 
 import java.text.DecimalFormat;
@@ -36,14 +40,17 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     private static final String DEFAULT_TARGET_RNG_STR = GSON.toJson(BloodSugar.DEFAULT_TARGET_RNG);
     private static final String DEFAULT_HYPER_STR = GSON.toJson(BloodSugar.DEFAULT_HYPER);
 
+    private int bgUnitIdx;
     private String prefScrKey;
     private ListPreference insulinListPref;
     private Preference pillPref;
     private ListPreference bgUnitListPref;
     private SeekBarPreference hypoPref, targetRangePref, hyperPref;
     private PreferenceScreen bolusPredictPrefScr;
-    private CheckBoxPreference savePhotosPref, autoLocationPref;
-    private int bgUnitIdx;
+    private SwitchStripPreference bolusPredictSwitchPref;
+    private SeekBarPreference optimalPref;
+    private InlineEditTextPreference correctionFactorPref, carbToInsulinPref;
+    private SwitchPreferenceCompat savePhotosPref, autoLocationPref;
 
     @Override
     public void onCreatePreferences(Bundle bundle, String prefScrKey) {
@@ -54,6 +61,9 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        /**
+         * Wires-up all {@link Preference}s corresponding to the current {@link PreferenceScreen}.
+         */
         if (prefScrKey == null) {
             insulinListPref = (ListPreference) findPreference(PrefKeys.INSULIN);
             insulinListPref.setOnPreferenceChangeListener(
@@ -79,14 +89,25 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 
             bolusPredictPrefScr = (PreferenceScreen) findPreference(PrefKeys.SCR_BOLUS_PREDICT);
 
-            savePhotosPref = (CheckBoxPreference) findPreference(PrefKeys.SAVE_PHOTOS);
-            autoLocationPref = (CheckBoxPreference) findPreference(PrefKeys.AUTO_LOCATION);
-
-            initPills();
-            bindSeekBars(view);
-            enableBolusPredict(insulinListPref.getValue());
+            savePhotosPref = (SwitchPreferenceCompat) findPreference(PrefKeys.SAVE_PHOTOS);
+            autoLocationPref = (SwitchPreferenceCompat) findPreference(PrefKeys.AUTO_LOCATION);
         } else if (prefScrKey.equals(PrefKeys.SCR_BOLUS_PREDICT)) {
-            // TODO: Bolus prediction preference stuff goes here
+            final SharedPreferences preferences = getPreferenceManager().getSharedPreferences();
+            final Context context = getContext();
+
+            bolusPredictSwitchPref =
+                    (SwitchStripPreference) findPreference(PrefKeys.BOLUS_PREDICT_SWITCH);
+            bolusPredictSwitchPref.setTitle(
+                    preferences.getString(PrefKeys.SCR_BOLUS_PREDICT, getString(R.string.off)));
+            bolusPredictSwitchPref.setSummaries(
+                    getString(R.string.pref_bolus_predict_off_summary), null);
+            initOptimalPref();
+            final String perInsulinUnit = getString(R.string.per_insulin_unit);
+            correctionFactorPref = new InlineEditTextPreference(context, getResources()
+                    .getStringArray(R.array.pref_bgUnits_entries)[bgUnitIdx] + " " +
+                    perInsulinUnit);
+            carbToInsulinPref = new InlineEditTextPreference(context,
+                    getString(R.string.grams_of_carb) + " " + perInsulinUnit);
         }
     }
 
@@ -101,25 +122,48 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     }
 
     /**
-     * When pausing, {@link BloodSugar} preferences are saved into {@link SharedPreferences}.
+     * When pausing, all complex {@link Preference}s are saved into {@link SharedPreferences}.
      */
+    @SuppressLint("CommitPrefEdits")
     @Override
     public void onPause() {
         if (prefScrKey == null)
             saveBgPrefs();
+        else if (prefScrKey.equals(PrefKeys.SCR_BOLUS_PREDICT))
+            if (bolusPredictSwitchPref.isChecked()) {
+                final Number optimal = optimalPref.getSelectedMaxValue();
+                final float correctionFactor = correctionFactorPref.getValue();
+                final float carbToInsulin = carbToInsulinPref.getValue();
+
+                getPreferenceManager().getSharedPreferences().edit()
+                        .putString(PrefKeys.OPTIMAL_BG,
+                                GSON.toJson(bgUnitIdx == BloodSugar.MGDL_IDX ?
+                                        new BloodSugar(optimal.intValue()) :
+                                        new BloodSugar(optimal.floatValue())))
+                        .putFloat(PrefKeys.CORRECTION_FACTOR, correctionFactor)
+                        .putFloat(PrefKeys.CARB_TO_INSULIN, carbToInsulin)
+                        .commit();
+            }
 
         super.onPause();
     }
 
     /**
-     * When resuming, the Pills {@link Preference}'s summary is set
-     * to display the saved pill names.
+     * When resuming, all complex {@link Preference}s are set to their expected behavior
+     * while displaying their saved data.
      */
     @Override
     public void onResume() {
         super.onResume();
 
-        initPills();
+        if (prefScrKey == null) {
+            initPills();
+            bindSeekBars(getView());
+            enableBolusPredict(insulinListPref.getValue());
+            bolusPredictPrefScr.setSummary(getPreferenceManager().getSharedPreferences()
+                    .getString(PrefKeys.SCR_BOLUS_PREDICT, getString(R.string.off)));
+        } else if (prefScrKey.equals(PrefKeys.SCR_BOLUS_PREDICT))
+            initBolusPredictPrefs();
     }
 
     /**
@@ -150,6 +194,59 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     }
 
     /**
+     * The optimalPref {@link SeekBarPreference} is quite complex so better initialize it separately
+     */
+    private void initOptimalPref() {
+        final SharedPreferences preferences = getPreferenceManager().getSharedPreferences();
+        final Context context = getContext();
+
+        final BloodSugar optimalBG = GSON.fromJson(
+                preferences.getString(PrefKeys.OPTIMAL_BG, null), BloodSugar.class);
+        final BloodSugar[] targetRangeBG = GSON.fromJson(
+                preferences.getString(PrefKeys.TARGET_RANGE, DEFAULT_TARGET_RNG_STR),
+                BloodSugar[].class);
+        final float rngMin = targetRangeBG[0].get(bgUnitIdx);
+        final float rngMax = targetRangeBG[1].get(bgUnitIdx);
+        final DecimalFormat decimalFormat = BloodSugar.getFormat(bgUnitIdx);
+        final float optimal = optimalBG == null ? (rngMin + rngMax) / 2 : optimalBG.get(bgUnitIdx);
+
+        optimalPref = new SeekBarPreference(context, R.layout.preference_point_seek_bar_widget,
+                ContextCompat.getColor(context, R.color.colorGoodBloodGlucose),
+                bgDataTypes[bgUnitIdx], decimalFormat, bgSeekBarSteps[bgUnitIdx],
+                rngMin, rngMax, rngMin, optimal);
+        optimalPref.setSummary(decimalFormat.format(optimal));
+    }
+
+    private void initBolusPredictPrefs() {
+        final SharedPreferences preferences = getPreferenceManager().getSharedPreferences();
+        final PreferenceScreen screen = getPreferenceScreen();
+
+        optimalPref.setTitle(getString(R.string.pref_optimal_bg_title));
+        correctionFactorPref.setTitle(getString(R.string.pref_correction_factor_title));
+        correctionFactorPref.setValue(preferences.getFloat(PrefKeys.CORRECTION_FACTOR, 0));
+        carbToInsulinPref.setTitle(getString(R.string.pref_carb_to_insulin_title));
+        carbToInsulinPref.setValue(preferences.getFloat(PrefKeys.CARB_TO_INSULIN, 0));
+
+        if (preferences.getBoolean(PrefKeys.BOLUS_PREDICT_SWITCH, false)) {
+            screen.addPreference(optimalPref);
+            screen.addPreference(correctionFactorPref);
+            screen.addPreference(carbToInsulinPref);
+        }
+
+        bolusPredictSwitchPref.setOnCheckedChangeListener(isChecked -> {
+            if (isChecked) {
+                screen.addPreference(optimalPref);
+                screen.addPreference(correctionFactorPref);
+                screen.addPreference(carbToInsulinPref);
+            } else {
+                screen.removePreference(optimalPref);
+                screen.removePreference(correctionFactorPref);
+                screen.removePreference(carbToInsulinPref);
+            }
+        });
+    }
+
+    /**
      * Disables the "Bolus prediction" preference when selected "No insulin" as the value of
      * "Insulin therapy", enables it otherwise.
      *
@@ -160,8 +257,11 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         final boolean enabled = Integer.parseInt(insulinTherapy) != 0;
         bolusPredictPrefScr.setEnabled(enabled);
 
-        if (enabled)
+        if (!enabled)
             bolusPredictPrefScr.setSummary(getContext().getString(R.string.off));
+        else
+            bolusPredictPrefScr.setSummary(getPreferenceManager().getSharedPreferences()
+                    .getString(PrefKeys.SCR_BOLUS_PREDICT, getString(R.string.off)));
 
         return true;
     }
