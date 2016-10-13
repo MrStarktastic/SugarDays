@@ -5,6 +5,8 @@
     <dimen name="tiny_margin">4dp</dimen>
     <dimen name="small_margin">8dp</dimen>
     <dimen name="normal_margin">16dp</dimen>
+    <dimen name="icon_margin">24dp</dimen>
+    <dimen name="medium_margin">56dp</dimen>
     <dimen name="big_margin">64dp</dimen>
     <dimen name="huge_margin">72dp</dimen>
 

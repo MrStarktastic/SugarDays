@@ -21,10 +21,10 @@ public class SeekBarPreference extends Preference
         implements RangeSeekBar.OnRangeSeekBarChangeListener {
     private int summaryTextColor;
     private TextView summaryText;
-    private boolean lateInit = false;
-    private int bgDataType;
+    private int dataType;
     private DecimalFormat format;
     private float steps, min, max, selectedMin, selectedMax;
+    private float normMin = -1, normMax = -1;
     private RangeSeekBar seekBar;
 
     @SuppressWarnings("unused")
@@ -46,20 +46,13 @@ public class SeekBarPreference extends Preference
     }
 
     public SeekBarPreference(Context context, int widgetResId, int summaryTextColor,
-                             int bgDataType, DecimalFormat format, float steps,
+                             int dataType, DecimalFormat format, float steps,
                              float min, float max, float selectedMin, float selectedMax) {
         super(context);
         setLayoutResource(R.layout.preference_wide_widget);
         setWidgetLayoutResource(widgetResId);
-        this.lateInit = true;
+        setAttributes(dataType, format, steps, min, max, selectedMin, selectedMax);
         this.summaryTextColor = summaryTextColor;
-        this.bgDataType = bgDataType;
-        this.format = format;
-        this.steps = steps;
-        this.min = min;
-        this.max = max;
-        this.selectedMin = selectedMin;
-        this.selectedMax = selectedMax;
     }
 
     /**
@@ -78,6 +71,20 @@ public class SeekBarPreference extends Preference
         }
     }
 
+    public void setAttributes(int dataType, DecimalFormat format, float steps,
+                              float min, float max, float selectedMin, float selectedMax) {
+        this.dataType = dataType;
+        this.format = format;
+        this.steps = steps;
+        this.min = min;
+        this.max = max;
+        this.selectedMin = selectedMin;
+        this.selectedMax = selectedMax;
+
+        if (seekBar != null)
+            initSeekBar();
+    }
+
     public void setLowerBound(SeekBarPreference lowerBound) {
         seekBar.setLowerBoundSeekBar(lowerBound.seekBar);
     }
@@ -86,17 +93,43 @@ public class SeekBarPreference extends Preference
         seekBar.setUpperBoundSeekBar(upperBound.seekBar);
     }
 
-    public void initSeekBar(int dataType, DecimalFormat format, float steps,
-                            float min, float max, float selectedMin, float selectedMax) {
+    private void initSeekBar() {
         seekBar.setDataType(dataType, format);
         seekBar.setSteps(steps);
         seekBar.setMinValue(min);
         seekBar.setMaxValue(max);
-        seekBar.setSelectedMinValue(selectedMin);
-        seekBar.setSelectedMaxValue(selectedMax);
+
+        if (normMin != -1)
+            seekBar.setNormalizedMinValue(normMin);
+        else if (normMax != -1)
+            seekBar.setNormalizedMaxValue(normMax);
+        else {
+            seekBar.setSelectedMinValue(selectedMin);
+            seekBar.setSelectedMaxValue(selectedMax);
+        }
 
         seekBar.invalidate();
         seekBar.notifyValueChange();
+    }
+
+    @SuppressWarnings("unused")
+    public float getNormalizedMinValue() {
+        return (float) seekBar.getNormMin();
+    }
+
+    @SuppressWarnings("unused")
+    public void setNormalizedMinValue(float normMin) {
+        this.normMin = normMin;
+    }
+
+    @SuppressWarnings("unused")
+    public float getNormalizedMaxValue() {
+        return (float) seekBar.getNormMax();
+    }
+
+    @SuppressWarnings("unused")
+    public void setNormalizedMaxValue(float normMax) {
+        this.normMax = normMax;
     }
 
     public Number getSelectedMinValue() {
@@ -116,8 +149,7 @@ public class SeekBarPreference extends Preference
         (seekBar = (RangeSeekBar) ((ViewGroup) holder.findViewById(android.R.id.widget_frame))
                 .getChildAt(0)).setOnRangeSeekBarChangeListener(this);
 
-        if (lateInit)
-            initSeekBar(bgDataType, format, steps, min, max, selectedMin, selectedMax);
+        initSeekBar();
     }
 
     @Override

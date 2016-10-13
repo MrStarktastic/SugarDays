@@ -11,7 +11,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.mr_starktastic.sugardays.R;
-import com.squareup.picasso.Picasso;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -72,7 +71,7 @@ public class DayPageFragment extends Fragment {
         final TextView textView = (TextView) root.findViewById(R.id.test_text);
         textView.setText(textView.getText() + " " + mParam1 + " " + mParam2);
         final ImageView imageView = (ImageView) root.findViewById(R.id.photo);
-        Picasso.with(getContext()).load(R.drawable.london_1).fit().centerCrop().into(imageView);
+        //Picasso.with(getContext()).load(R.drawable.london_1).fit().centerCrop().into(imageView);
 
         return root;
     }

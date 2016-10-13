@@ -127,19 +127,31 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     @SuppressLint("CommitPrefEdits")
     @Override
     public void onPause() {
-        if (prefScrKey == null)
+        final SharedPreferences preferences = getPreferenceManager().getSharedPreferences();
+
+        if (prefScrKey == null) {
             saveBgPrefs();
-        else if (prefScrKey.equals(PrefKeys.SCR_BOLUS_PREDICT))
+
+            if (preferences.getBoolean(PrefKeys.BOLUS_PREDICT_SWITCH, false)) {
+                final float minVal = targetRangePref.getSelectedMinValue().floatValue();
+                final float val = preferences.getFloat(PrefKeys.OPTIMAL_NORM_BG, 0) / 100 *
+                        (targetRangePref.getSelectedMaxValue().floatValue() - minVal);
+                preferences.edit().putString(PrefKeys.OPTIMAL_BG, GSON.toJson(
+                        new BloodSugar(bgUnitIdx == BloodSugar.MGDL_IDX ? (int) val : val)))
+                        .commit();
+            }
+        } else if (prefScrKey.equals(PrefKeys.SCR_BOLUS_PREDICT))
             if (bolusPredictSwitchPref.isChecked()) {
-                final Number optimal = optimalPref.getSelectedMaxValue();
+                final float optimalNorm = optimalPref.getNormalizedMaxValue();
                 final float correctionFactor = correctionFactorPref.getValue();
                 final float carbToInsulin = carbToInsulinPref.getValue();
 
-                getPreferenceManager().getSharedPreferences().edit()
-                        .putString(PrefKeys.OPTIMAL_BG,
-                                GSON.toJson(bgUnitIdx == BloodSugar.MGDL_IDX ?
-                                        new BloodSugar(optimal.intValue()) :
-                                        new BloodSugar(optimal.floatValue())))
+                preferences.edit()
+                        .putFloat(PrefKeys.OPTIMAL_NORM_BG, optimalNorm)
+                        .putString(PrefKeys.OPTIMAL_BG, GSON.toJson(
+                                new BloodSugar(bgUnitIdx == BloodSugar.MGDL_IDX ?
+                                        optimalPref.getSelectedMaxValue().intValue() :
+                                        optimalPref.getSelectedMaxValue().floatValue())))
                         .putFloat(PrefKeys.CORRECTION_FACTOR, correctionFactor)
                         .putFloat(PrefKeys.CARB_TO_INSULIN, carbToInsulin)
                         .commit();
@@ -152,15 +164,17 @@ public class SettingsFragment extends PreferenceFragmentCompat {
      * When resuming, all complex {@link Preference}s are set to their expected behavior
      * while displaying their saved data.
      */
+    @SuppressLint("CommitPrefEdits")
     @Override
     public void onResume() {
         super.onResume();
+        final SharedPreferences preferences = getPreferenceManager().getSharedPreferences();
 
         if (prefScrKey == null) {
             initPills();
             bindSeekBars(getView());
             enableBolusPredict(insulinListPref.getValue());
-            bolusPredictPrefScr.setSummary(getPreferenceManager().getSharedPreferences()
+            bolusPredictPrefScr.setSummary(preferences
                     .getString(PrefKeys.SCR_BOLUS_PREDICT, getString(R.string.off)));
         } else if (prefScrKey.equals(PrefKeys.SCR_BOLUS_PREDICT))
             initBolusPredictPrefs();
@@ -174,6 +188,9 @@ public class SettingsFragment extends PreferenceFragmentCompat {
      * @param root The container view of the main {@link PreferenceScreen}
      */
     private void bindSeekBars(View root) {
+        bgUnitIdx = Integer.parseInt(bgUnitListPref.getValue());
+        initBgPrefs();
+
         root.getViewTreeObserver()
                 .addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                     @SuppressWarnings("deprecation")
@@ -187,8 +204,6 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                         targetRangePref.setLowerBound(hypoPref);
                         targetRangePref.setUpperBound(hyperPref);
                         hyperPref.setLowerBound(targetRangePref);
-                        bgUnitIdx = Integer.parseInt(bgUnitListPref.getValue());
-                        initBgPrefs();
                     }
                 });
     }
@@ -200,21 +215,22 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         final SharedPreferences preferences = getPreferenceManager().getSharedPreferences();
         final Context context = getContext();
 
-        final BloodSugar optimalBG = GSON.fromJson(
-                preferences.getString(PrefKeys.OPTIMAL_BG, null), BloodSugar.class);
+        bgUnitIdx = Integer.parseInt(preferences.getString(PrefKeys.BG_UNITS, "0"));
+        // Normalized value is used in order to avoid possible issues w.r.t. the target range
+        final float optimalNorm = preferences.getFloat(PrefKeys.OPTIMAL_NORM_BG, -1);
         final BloodSugar[] targetRangeBG = GSON.fromJson(
                 preferences.getString(PrefKeys.TARGET_RANGE, DEFAULT_TARGET_RNG_STR),
                 BloodSugar[].class);
         final float rngMin = targetRangeBG[0].get(bgUnitIdx);
         final float rngMax = targetRangeBG[1].get(bgUnitIdx);
         final DecimalFormat decimalFormat = BloodSugar.getFormat(bgUnitIdx);
-        final float optimal = optimalBG == null ? (rngMin + rngMax) / 2 : optimalBG.get(bgUnitIdx);
 
         optimalPref = new SeekBarPreference(context, R.layout.preference_point_seek_bar_widget,
                 ContextCompat.getColor(context, R.color.colorGoodBloodGlucose),
                 bgDataTypes[bgUnitIdx], decimalFormat, bgSeekBarSteps[bgUnitIdx],
-                rngMin, rngMax, rngMin, optimal);
-        optimalPref.setSummary(decimalFormat.format(optimal));
+                rngMin, rngMax, rngMin, rngMax);
+        optimalPref.setNormalizedMaxValue(optimalNorm == -1 ? 50f : optimalNorm);
+        optimalPref.setSummary("%s");
     }
 
     private void initBolusPredictPrefs() {
@@ -312,9 +328,9 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                 preferences.getString(PrefKeys.HYPER, DEFAULT_HYPER_STR),
                 BloodSugar.class).get(bgUnitIdx);
 
-        hypoPref.initSeekBar(dataType, format, steps, minV, maxV, minV, hypo);
-        targetRangePref.initSeekBar(dataType, format, steps, minV, maxV, rngMin, rngMax);
-        hyperPref.initSeekBar(dataType, format, steps, minV, maxV, hyper, minV);
+        hypoPref.setAttributes(dataType, format, steps, minV, maxV, minV, hypo);
+        targetRangePref.setAttributes(dataType, format, steps, minV, maxV, rngMin, rngMax);
+        hyperPref.setAttributes(dataType, format, steps, minV, maxV, hyper, minV);
     }
 
     @SuppressLint("CommitPrefEdits")

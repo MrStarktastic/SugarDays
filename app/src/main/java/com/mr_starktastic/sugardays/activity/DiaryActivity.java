@@ -157,7 +157,7 @@ public class DiaryActivity extends AppCompatActivity
          */
         subtitle = (TextView) dropDownLayout.findViewById(R.id.toolbar_subtitle);
 
-        // Indicates that the layout can be clicked for a dropdown
+        // Small arrow which indicates that the layout can be clicked for a dropdown
         dropDownArrow = (ImageView) dropDownLayout.findViewById(R.id.dropdown_arrow);
 
         calendarView = (MaterialCalendarView) appBar.findViewById(R.id.calendar_view);
@@ -171,7 +171,7 @@ public class DiaryActivity extends AppCompatActivity
         // Properly sets the width of each tile to fill the app bar
         final DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        calendarView.setTileWidth((int) (displayMetrics.widthPixels / 7 + 0.5f));
+        calendarView.setTileWidth((int) (displayMetrics.widthPixels / 7f + 0.5f));
 
         // Sets proper height according to the current month's rows
         final Resources resources = getResources();

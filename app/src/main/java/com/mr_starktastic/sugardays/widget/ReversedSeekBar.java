@@ -52,12 +52,12 @@ public class ReversedSeekBar extends SingleSeekBar {
     }
 
     @Override
-    protected double getNormMin() {
+    public double getNormMin() {
         return DEFAULT_NORM_MAX_VAL - normMaxVal;
     }
 
     @Override
-    protected void setNormalizedMaxValue(double value) {
+    public void setNormalizedMaxValue(double value) {
         if (lowerBoundSeekBar == null ||
                 DEFAULT_NORM_MAX_VAL - value > lowerBoundSeekBar.getNormMax())
             normMaxVal = Math.max(0d, Math.min(100d, value));

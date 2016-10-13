@@ -1,14 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_edit_log"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingBottom="@dimen/normal_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/normal_margin"
     tools:context="com.mr_starktastic.sugardays.activity.EditLogActivity">
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:animateLayoutChanges="true"
+        android:orientation="vertical">
 
-</RelativeLayout>
+        <android.support.v7.widget.AppCompatSpinner
+            android:id="@+id/log_type_spinner"
+            style="@style/Widget.AppCompat.Spinner"
+            android:layout_width="match_parent"
+            android:layout_height="?android:listPreferredItemHeightSmall"
+            android:layout_marginLeft="@dimen/normal_margin"
+            android:layout_marginRight="@dimen/normal_margin"
+            android:entries="@array/log_types" />
+
+        <include layout="@layout/divider" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="?android:listPreferredItemHeightSmall"
+            android:focusableInTouchMode="true">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="@dimen/icon_margin"
+                android:src="@drawable/ic_time"
+                tools:ignore="ContentDescription" />
+
+            <TextView
+                android:id="@+id/date_text"
+                style="@style/Widget.AppCompat.EditText"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/huge_margin"
+                android:focusable="false"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/time_text"
+                style="@style/Widget.AppCompat.EditText"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_gravity="end"
+                android:layout_marginEnd="@dimen/normal_margin"
+                android:focusable="false"
+                android:textSize="16sp" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="?android:listPreferredItemHeightSmall">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="@dimen/icon_margin"
+                android:src="@drawable/ic_location"
+                tools:ignore="ContentDescription" />
+
+            <EditText
+                android:id="@+id/location_edit_text"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/huge_margin"
+                android:layout_marginRight="@dimen/huge_margin"
+                android:hint="@string/location_hint"
+                android:imeOptions="actionNext"
+                android:singleLine="true"
+                android:textSize="16sp"
+                tools:ignore="Deprecated" />
+
+            <ImageButton
+                android:id="@+id/current_location_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end|center_vertical"
+                android:layout_marginEnd="@dimen/normal_margin"
+                android:contentDescription="@string/current_location_button_desc"
+                android:src="@drawable/ic_current_location" />
+        </FrameLayout>
+
+    </LinearLayout>
+</ScrollView>

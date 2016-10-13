@@ -12,6 +12,7 @@ public class PrefKeys {
     public static final String HYPER = "pref_hyper";
     public static final String SCR_BOLUS_PREDICT = "pref_scr_bolus_predict";
     public static final String BOLUS_PREDICT_SWITCH = "pref_bolus_predict_switch";
+    public static final String OPTIMAL_NORM_BG = "pref_optimal_norm_bg";
     public static final String OPTIMAL_BG = "pref_optimal_bg";
     public static final String CORRECTION_FACTOR = "pref_correction_factor";
     public static final String CARB_TO_INSULIN = "pref_carb_to_insulin";

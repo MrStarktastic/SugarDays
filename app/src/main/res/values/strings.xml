@@ -9,6 +9,16 @@
     <string name="today">Today</string>
     <string name="calendar_dropdown_arrow_desc">Calendar dropdown arrow</string>
 
+    <array name="log_types">
+        <item>Breakfast</item>
+        <item>Lunch</item>
+        <item>Dinner</item>
+        <item>Bedtime</item>
+    </array>
+
+    <string name="location_hint">Location</string>
+    <string name="current_location_button_desc">Pick location</string>
+
     <!-- TODO: Remove this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
@@ -46,7 +56,7 @@
     </string-array>
     <string name="pref_bgUnits_default">0</string>
 
-    <string name="pref_pills_edit_text_hint">"Name"</string>
+    <string name="pref_pills_edit_text_hint">"Pill name"</string>
 
     <string name="pref_hypo_title">Hypo</string>
     <string name="pref_targetRange_title">Target range</string>

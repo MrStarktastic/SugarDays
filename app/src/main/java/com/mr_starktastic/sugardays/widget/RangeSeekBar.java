@@ -273,11 +273,11 @@ public class RangeSeekBar extends View {
                 Math.max(0d, (screenCoord - barPadding) / (width - 2 * barPadding) * 100d));
     }
 
-    protected double getNormMin() {
+    public double getNormMin() {
         return normMinVal;
     }
 
-    protected double getNormMax() {
+    public double getNormMax() {
         return normMaxVal;
     }
 
@@ -289,13 +289,13 @@ public class RangeSeekBar extends View {
         this.upperBoundSeekBar = upperBoundSeekBar;
     }
 
-    protected void setNormalizedMinValue(double value) {
+    public void setNormalizedMinValue(double value) {
         if (lowerBoundSeekBar == null || value > lowerBoundSeekBar.getNormMax())
             normMinVal = Math.max(0d, Math.min(100d, Math.min(value, normMaxVal)));
         else normMinVal = lowerBoundSeekBar.getNormMax();
     }
 
-    protected void setNormalizedMaxValue(double value) {
+    public void setNormalizedMaxValue(double value) {
         if (upperBoundSeekBar == null || value < upperBoundSeekBar.getNormMin())
             normMaxVal = Math.max(0d, Math.min(100d, Math.max(value, normMinVal)));
         else normMaxVal = upperBoundSeekBar.getNormMin();

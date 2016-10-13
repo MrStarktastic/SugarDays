@@ -117,8 +117,9 @@ public class PillManagerActivity extends AppCompatActivity {
 
         for (EditText e : editTexts) {
             final String text = e.getText().toString().trim();
+            final String prohibitedText = getString(R.string.pref_pills_default_summary);
 
-            if (!TextUtils.isEmpty(text))
+            if (!TextUtils.isEmpty(text) && !text.equals(prohibitedText))
                 set.add(text);
         }
 
