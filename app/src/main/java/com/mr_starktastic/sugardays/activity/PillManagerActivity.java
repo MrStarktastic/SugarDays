@@ -21,8 +21,8 @@ import com.google.gson.Gson;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.preference.PrefKeys;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 
 /**
  * An alternative to the planned {@link android.support.v7.preference.PreferenceScreen}
@@ -40,7 +40,7 @@ public class PillManagerActivity extends AppCompatActivity {
             }};
 
     private LinearLayout pillItemContainer;
-    private LinkedList<EditText> editTexts;
+    private ArrayList<EditText> editTexts;
 
     /**
      * Listeners for the clear {@link android.widget.ImageButton}
@@ -99,7 +99,7 @@ public class PillManagerActivity extends AppCompatActivity {
         scrollView.addView(pillItemContainer);
         setContentView(scrollView);
 
-        editTexts = new LinkedList<>();
+        editTexts = new ArrayList<>();
         final String[] pillNames = new Gson().fromJson(PreferenceManager
                 .getDefaultSharedPreferences(this).getString(PrefKeys.PILLS, null), String[].class);
 

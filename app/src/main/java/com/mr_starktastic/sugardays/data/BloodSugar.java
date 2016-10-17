@@ -36,13 +36,11 @@ public class BloodSugar {
         return new BloodSugar[]{minVal, maxVal};
     }
 
-    public static BloodSugar[] getExtremeValues() {
-        final BloodSugar minVal = new BloodSugar();
-        minVal.arr = new Number[]{10, 0.5f};
+    public static BloodSugar getMaxValues() {
         final BloodSugar maxVal = new BloodSugar();
         maxVal.arr = new Number[]{900, 50f};
 
-        return new BloodSugar[]{minVal, maxVal};
+        return maxVal;
     }
 
     public static DecimalFormat getFormat(int bgUnit) {
@@ -58,11 +56,11 @@ public class BloodSugar {
     }
 
     public int getMgdl() {
-        return (int) arr[MGDL_IDX];
+        return arr[MGDL_IDX].intValue();
     }
 
     public float getMmoll() {
-        return (float) arr[MMOLL_IDX];
+        return arr[MMOLL_IDX].floatValue();
     }
 
     public float get(int index) {

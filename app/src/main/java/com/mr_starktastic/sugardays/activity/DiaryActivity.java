@@ -39,6 +39,7 @@ import com.prolificinteractive.materialcalendarview.OnMonthChangedListener;
 
 import org.apache.commons.lang3.time.FastDateFormat;
 
+import java.io.File;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -53,6 +54,7 @@ public class DiaryActivity extends AppCompatActivity
     /**
      * Extra keys
      */
+    public static final String EXTRA_TYPE = "TYPE";
     public static final String EXTRA_DATE = "DATE";
 
     /**
@@ -340,6 +342,22 @@ public class DiaryActivity extends AppCompatActivity
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // Clears the external cache directory
+        final File extCacheDir = getExternalCacheDir();
+
+        if (extCacheDir != null && extCacheDir.exists()) {
+            final File[] files = extCacheDir.listFiles();
+
+            if (files != null)
+                for (File f : files) // noinspection ResultOfMethodCallIgnored
+                    f.delete();
+        }
     }
 
     @Override

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_edit_log"
     android:layout_width="match_parent"
@@ -80,15 +81,94 @@
                 android:textSize="16sp"
                 tools:ignore="Deprecated" />
 
-            <ImageButton
+            <ImageView
                 android:id="@+id/current_location_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end|center_vertical"
-                android:layout_marginEnd="@dimen/normal_margin"
+                android:layout_marginEnd="@dimen/icon_margin"
+                android:background="?selectableItemBackgroundBorderless"
                 android:contentDescription="@string/current_location_button_desc"
                 android:src="@drawable/ic_current_location" />
         </FrameLayout>
 
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="?android:listPreferredItemHeightSmall"
+                android:layout_marginStart="@dimen/icon_margin"
+                android:src="@drawable/ic_camera"
+                tools:ignore="ContentDescription" />
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp">
+
+                <ImageView
+                    android:id="@+id/thumbnail_photo"
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
+                    android:layout_marginBottom="12dp"
+                    android:layout_marginEnd="@dimen/small_margin"
+                    android:layout_marginStart="@dimen/big_margin"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/ic_blank_photo"
+                    tools:ignore="ContentDescription" />
+
+                <android.support.v7.widget.AppCompatButton
+                    android:id="@+id/photo_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignTop="@id/thumbnail_photo"
+                    android:layout_marginTop="-6dp"
+                    android:layout_toEndOf="@id/thumbnail_photo"
+                    android:text="@string/change_photo"
+                    app:backgroundTint="?colorBackgroundFloating" />
+            </RelativeLayout>
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="?android:listPreferredItemHeightSmall">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="@dimen/icon_margin"
+                android:src="@drawable/ic_blood_sugar"
+                tools:ignore="contentDescription" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="@dimen/normal_margin"
+                android:layout_marginStart="@dimen/huge_margin"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/blood_sugar_edit_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ems="3"
+                    android:imeOptions="actionNext"
+                    android:textSize="16sp"
+                    tools:ignore="TextFields" />
+
+                <TextView
+                    android:id="@+id/blood_sugar_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/tiny_margin"
+                    android:labelFor="@id/blood_sugar_edit_text"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+        </FrameLayout>
     </LinearLayout>
 </ScrollView>

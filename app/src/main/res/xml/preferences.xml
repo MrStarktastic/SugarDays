@@ -62,14 +62,14 @@
     <android.support.v7.preference.PreferenceCategory android:title="@string/pref_cat_extras_title">
 
         <android.support.v7.preference.SwitchPreferenceCompat
-            android:defaultValue="true"
-            android:key="pref_save_photos"
-            android:title="@string/pref_save_photos_title" />
-
-        <android.support.v7.preference.SwitchPreferenceCompat
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:key="pref_auto_location"
             android:title="@string/pref_auto_location_title" />
+
+        <android.support.v7.preference.SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="pref_compress_photos"
+            android:title="@string/pref_compress_photos_title" />
 
     </android.support.v7.preference.PreferenceCategory>
 

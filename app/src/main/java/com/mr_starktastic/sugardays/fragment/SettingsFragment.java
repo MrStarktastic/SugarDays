@@ -89,7 +89,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 
             bolusPredictPrefScr = (PreferenceScreen) findPreference(PrefKeys.SCR_BOLUS_PREDICT);
 
-            savePhotosPref = (SwitchPreferenceCompat) findPreference(PrefKeys.SAVE_PHOTOS);
+            savePhotosPref = (SwitchPreferenceCompat) findPreference(PrefKeys.COMPRESS_PHOTOS);
             autoLocationPref = (SwitchPreferenceCompat) findPreference(PrefKeys.AUTO_LOCATION);
         } else if (prefScrKey.equals(PrefKeys.SCR_BOLUS_PREDICT)) {
             final SharedPreferences preferences = getPreferenceManager().getSharedPreferences();
