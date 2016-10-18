@@ -17,9 +17,9 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
-import com.google.gson.Gson;
 import com.mr_starktastic.sugardays.R;
-import com.mr_starktastic.sugardays.preference.PrefKeys;
+import com.mr_starktastic.sugardays.data.PrefKeys;
+import com.mr_starktastic.sugardays.util.PrefUtil;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -100,8 +100,8 @@ public class PillManagerActivity extends AppCompatActivity {
         setContentView(scrollView);
 
         editTexts = new ArrayList<>();
-        final String[] pillNames = new Gson().fromJson(PreferenceManager
-                .getDefaultSharedPreferences(this).getString(PrefKeys.PILLS, null), String[].class);
+        final String[] pillNames = PrefUtil.getPills(
+                PreferenceManager.getDefaultSharedPreferences(this));
 
         if (pillNames != null && pillNames.length > 0)
             for (String name : pillNames)
@@ -124,7 +124,7 @@ public class PillManagerActivity extends AppCompatActivity {
         }
 
         PreferenceManager.getDefaultSharedPreferences(this).edit().putString(PrefKeys.PILLS,
-                new Gson().toJson(set.size() != 0 ? set.toArray() : null)).commit();
+                PrefUtil.toJson(set.size() != 0 ? set.toArray() : null)).commit();
 
         super.onPause();
     }

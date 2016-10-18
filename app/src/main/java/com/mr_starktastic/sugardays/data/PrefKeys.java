@@ -1,4 +1,4 @@
-package com.mr_starktastic.sugardays.preference;
+package com.mr_starktastic.sugardays.data;
 
 /**
  * Contains preference keys

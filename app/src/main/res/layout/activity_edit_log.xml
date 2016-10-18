@@ -151,7 +151,7 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <EditText
+                <com.mr_starktastic.sugardays.widget.LabeledEditText
                     android:id="@+id/blood_sugar_edit_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

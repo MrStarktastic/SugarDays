@@ -43,11 +43,11 @@ import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.PlaceLikelihoodBuffer;
 import com.google.android.gms.location.places.Places;
 import com.google.android.gms.location.places.ui.PlacePicker;
-import com.google.gson.Gson;
 import com.mr_starktastic.sugardays.BuildConfig;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.BloodSugar;
-import com.mr_starktastic.sugardays.preference.PrefKeys;
+import com.mr_starktastic.sugardays.util.PrefUtil;
+import com.mr_starktastic.sugardays.widget.LabeledEditText;
 import com.squareup.picasso.Picasso;
 
 import org.apache.commons.io.FileUtils;
@@ -126,7 +126,7 @@ public class EditLogActivity extends AppCompatActivity
     private TextView dateText, timeText;
     private EditText locationEdit;
     private ImageView photoThumbnailView;
-    private EditText bloodSugarEdit;
+    private LabeledEditText bloodSugarEdit;
 
     /**
      * @param file File to extract path from.
@@ -142,7 +142,6 @@ public class EditLogActivity extends AppCompatActivity
         setContentView(R.layout.activity_edit_log);
 
         final Intent intent = getIntent();
-        final Gson gson = new Gson();
         final ActionBar actionBar = getSupportActionBar();
         // Setting the ActionBar
         if (actionBar != null) {
@@ -163,7 +162,7 @@ public class EditLogActivity extends AppCompatActivity
         popupMenu.inflate(R.menu.photo_change);
         final Menu changePhotoMenu = popupMenu.getMenu();
         photoThumbnailView = (ImageView) findViewById(R.id.thumbnail_photo);
-        bloodSugarEdit = (EditText) findViewById(R.id.blood_sugar_edit_text);
+        bloodSugarEdit = (LabeledEditText) findViewById(R.id.blood_sugar_edit_text);
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -198,8 +197,7 @@ public class EditLogActivity extends AppCompatActivity
         timeText.setOnClickListener(v -> timeDialog.show());
 
         // Automatic current location fetch
-        if (savedInstanceState == null &&
-                preferences.getBoolean(PrefKeys.AUTO_LOCATION, false)) {
+        if (savedInstanceState == null && PrefUtil.getAutoLocation(preferences)) {
             googleApiClient = new GoogleApiClient
                     .Builder(this)
                     .addApi(Places.PLACE_DETECTION_API)
@@ -259,21 +257,19 @@ public class EditLogActivity extends AppCompatActivity
             popupMenu.show();
         });
 
-        photoCompressEnabled = preferences.getBoolean(PrefKeys.COMPRESS_PHOTOS, false);
+        photoCompressEnabled = PrefUtil.getPhotoCompressEnabled(preferences);
 
         // Blood sugar
         final float hypo, minTargetRng, maxTargetRng, hyper;
-        final BloodSugar hypoBG = gson.fromJson(preferences.getString(PrefKeys.HYPO,
-                gson.toJson(BloodSugar.DEFAULT_HYPO)), BloodSugar.class);
-        final BloodSugar[] targetRngBG = gson.fromJson(preferences.getString(PrefKeys.TARGET_RANGE,
-                gson.toJson(BloodSugar.DEFAULT_TARGET_RNG)), BloodSugar[].class);
-        final BloodSugar hyperBG = gson.fromJson(preferences.getString(PrefKeys.HYPER,
-                gson.toJson(BloodSugar.DEFAULT_HYPER)), BloodSugar.class);
+        final BloodSugar hypoBG = PrefUtil.getHypo(preferences);
+        final BloodSugar[] targetRngBG = PrefUtil.getTargetRange(preferences);
+        final BloodSugar hyperBG = PrefUtil.getHyper(preferences);
         final int badBgColor = ContextCompat.getColor(this, R.color.colorBadBloodGlucose);
         final int medBgColor = ContextCompat.getColor(this, R.color.colorIntermediateBloodGlucose);
         final int goodBgColor = ContextCompat.getColor(this, R.color.colorGoodBloodGlucose);
-        final int bgUnitIdx = Integer.parseInt(preferences.getString(PrefKeys.BG_UNITS, "0"));
+        final int bgUnitIdx = PrefUtil.getBgUnitIdx(preferences);
         final TextView bloodSugarLabel = (TextView) findViewById(R.id.blood_sugar_label);
+        bloodSugarEdit.setLabels(bloodSugarLabel);
         bloodSugarLabel.setText(
                 getResources().getStringArray(R.array.pref_bgUnits_entries)[bgUnitIdx]);
 
@@ -611,6 +607,7 @@ public class EditLogActivity extends AppCompatActivity
                     return null;
             } catch (NumberFormatException ignored) {
             }
+
             return "";
         }
     }

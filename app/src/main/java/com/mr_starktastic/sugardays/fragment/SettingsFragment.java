@@ -18,27 +18,25 @@ import android.support.v7.preference.SwitchPreferenceCompat;
 import android.view.View;
 import android.view.ViewTreeObserver;
 
-import com.google.gson.Gson;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.activity.PillManagerActivity;
 import com.mr_starktastic.sugardays.data.BloodSugar;
+import com.mr_starktastic.sugardays.data.PrefKeys;
 import com.mr_starktastic.sugardays.preference.InlineEditTextPreference;
-import com.mr_starktastic.sugardays.preference.PrefKeys;
 import com.mr_starktastic.sugardays.preference.SeekBarPreference;
 import com.mr_starktastic.sugardays.preference.SwitchStripPreference;
+import com.mr_starktastic.sugardays.util.PrefUtil;
 import com.mr_starktastic.sugardays.widget.RangeSeekBar;
 
 import java.text.DecimalFormat;
+
+import static com.mr_starktastic.sugardays.util.PrefUtil.getTargetRange;
 
 public class SettingsFragment extends PreferenceFragmentCompat {
     private static final BloodSugar[] extremeBgValues = BloodSugar.getDiscreteExtremeValues();
     private static final float[] bgSeekBarSteps = {10, 0.5f};
     private static final int[] bgDataTypes =
             {RangeSeekBar.DataType.INTEGER, RangeSeekBar.DataType.FLOAT};
-    private static final Gson GSON = new Gson();
-    private static final String DEFAULT_HYPO_STR = GSON.toJson(BloodSugar.DEFAULT_HYPO);
-    private static final String DEFAULT_TARGET_RNG_STR = GSON.toJson(BloodSugar.DEFAULT_TARGET_RNG);
-    private static final String DEFAULT_HYPER_STR = GSON.toJson(BloodSugar.DEFAULT_HYPER);
 
     private int bgUnitIdx;
     private String prefScrKey;
@@ -132,11 +130,11 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         if (prefScrKey == null) {
             saveBgPrefs();
 
-            if (preferences.getBoolean(PrefKeys.BOLUS_PREDICT_SWITCH, false)) {
+            if (PrefUtil.getBolusPredictSwitch(preferences)) {
                 final float minVal = targetRangePref.getSelectedMinValue().floatValue();
                 final float val = preferences.getFloat(PrefKeys.OPTIMAL_NORM_BG, 0) / 100 *
                         (targetRangePref.getSelectedMaxValue().floatValue() - minVal);
-                preferences.edit().putString(PrefKeys.OPTIMAL_BG, GSON.toJson(
+                preferences.edit().putString(PrefKeys.OPTIMAL_BG, PrefUtil.toJson(
                         new BloodSugar(bgUnitIdx == BloodSugar.MGDL_IDX ? (int) val : val)))
                         .commit();
             }
@@ -148,7 +146,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 
                 preferences.edit()
                         .putFloat(PrefKeys.OPTIMAL_NORM_BG, optimalNorm)
-                        .putString(PrefKeys.OPTIMAL_BG, GSON.toJson(
+                        .putString(PrefKeys.OPTIMAL_BG, PrefUtil.toJson(
                                 new BloodSugar(bgUnitIdx == BloodSugar.MGDL_IDX ?
                                         optimalPref.getSelectedMaxValue().intValue() :
                                         optimalPref.getSelectedMaxValue().floatValue())))
@@ -215,12 +213,10 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         final SharedPreferences preferences = getPreferenceManager().getSharedPreferences();
         final Context context = getContext();
 
-        bgUnitIdx = Integer.parseInt(preferences.getString(PrefKeys.BG_UNITS, "0"));
+        bgUnitIdx = PrefUtil.getBgUnitIdx(preferences);
         // Normalized value is used in order to avoid possible issues w.r.t. the target range
         final float optimalNorm = preferences.getFloat(PrefKeys.OPTIMAL_NORM_BG, -1);
-        final BloodSugar[] targetRangeBG = GSON.fromJson(
-                preferences.getString(PrefKeys.TARGET_RANGE, DEFAULT_TARGET_RNG_STR),
-                BloodSugar[].class);
+        final BloodSugar[] targetRangeBG = PrefUtil.getTargetRange(preferences);
         final float rngMin = targetRangeBG[0].get(bgUnitIdx);
         final float rngMax = targetRangeBG[1].get(bgUnitIdx);
         final DecimalFormat decimalFormat = BloodSugar.getFormat(bgUnitIdx);
@@ -239,11 +235,11 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 
         optimalPref.setTitle(getString(R.string.pref_optimal_bg_title));
         correctionFactorPref.setTitle(getString(R.string.pref_correction_factor_title));
-        correctionFactorPref.setValue(preferences.getFloat(PrefKeys.CORRECTION_FACTOR, 0));
+        correctionFactorPref.setValue(PrefUtil.getCorrectionFactor(preferences));
         carbToInsulinPref.setTitle(getString(R.string.pref_carb_to_insulin_title));
-        carbToInsulinPref.setValue(preferences.getFloat(PrefKeys.CARB_TO_INSULIN, 0));
+        carbToInsulinPref.setValue(PrefUtil.getCarbToInsulin(preferences));
 
-        if (preferences.getBoolean(PrefKeys.BOLUS_PREDICT_SWITCH, false)) {
+        if (PrefUtil.getBolusPredictSwitch(preferences)) {
             screen.addPreference(optimalPref);
             screen.addPreference(correctionFactorPref);
             screen.addPreference(carbToInsulinPref);
@@ -272,12 +268,9 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     private boolean enableBolusPredict(String insulinTherapy) {
         final boolean enabled = Integer.parseInt(insulinTherapy) != 0;
         bolusPredictPrefScr.setEnabled(enabled);
-
-        if (!enabled)
-            bolusPredictPrefScr.setSummary(getContext().getString(R.string.off));
-        else
-            bolusPredictPrefScr.setSummary(getPreferenceManager().getSharedPreferences()
-                    .getString(PrefKeys.SCR_BOLUS_PREDICT, getString(R.string.off)));
+        bolusPredictPrefScr.setSummary(
+                !enabled ? getString(R.string.off) : getPreferenceManager().getSharedPreferences()
+                        .getString(PrefKeys.SCR_BOLUS_PREDICT, getString(R.string.off)));
 
         return true;
     }
@@ -287,9 +280,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
      * Format: "pillName1, pillName2, pillName3".
      */
     private void initPills() {
-        final String[] pillNames = GSON.fromJson(
-                getPreferenceManager().getSharedPreferences()
-                        .getString(PrefKeys.PILLS, null), String[].class);
+        final String[] pillNames = PrefUtil.getPills(getPreferenceManager().getSharedPreferences());
 
         if (pillNames == null)
             pillPref.setSummary(getString(R.string.pref_pills_default_summary));
@@ -317,16 +308,10 @@ public class SettingsFragment extends PreferenceFragmentCompat {
          * Gets saved {@link BloodSugar} values from {@link SharedPreferences}.
          */
         final SharedPreferences preferences = getPreferenceManager().getSharedPreferences();
-        final float hypo = GSON.fromJson(
-                preferences.getString(PrefKeys.HYPO, DEFAULT_HYPO_STR),
-                BloodSugar.class).get(bgUnitIdx);
-        final BloodSugar[] targetRange = GSON.fromJson(
-                preferences.getString(PrefKeys.TARGET_RANGE, DEFAULT_TARGET_RNG_STR),
-                BloodSugar[].class);
+        final float hypo = PrefUtil.getHypo(preferences).get(bgUnitIdx);
+        final BloodSugar[] targetRange = getTargetRange(preferences);
         final float rngMin = targetRange[0].get(bgUnitIdx), rngMax = targetRange[1].get(bgUnitIdx);
-        final float hyper = GSON.fromJson(
-                preferences.getString(PrefKeys.HYPER, DEFAULT_HYPER_STR),
-                BloodSugar.class).get(bgUnitIdx);
+        final float hyper = PrefUtil.getHyper(preferences).get(bgUnitIdx);
 
         hypoPref.setAttributes(dataType, format, steps, minV, maxV, minV, hypo);
         targetRangePref.setAttributes(dataType, format, steps, minV, maxV, rngMin, rngMax);
@@ -357,12 +342,10 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             hyperBG = new BloodSugar(hyper.floatValue());
         }
 
-        final String hypoJson = GSON.toJson(hypoBG), hyperJson = GSON.toJson(hyperBG);
-        final String targetRangeJson = GSON.toJson(targetRangeBG);
         getPreferenceManager().getSharedPreferences().edit()
-                .putString(PrefKeys.HYPO, hypoJson)
-                .putString(PrefKeys.TARGET_RANGE, targetRangeJson)
-                .putString(PrefKeys.HYPER, hyperJson)
+                .putString(PrefKeys.HYPO, PrefUtil.toJson(hypoBG))
+                .putString(PrefKeys.TARGET_RANGE, PrefUtil.toJson(targetRangeBG))
+                .putString(PrefKeys.HYPER, PrefUtil.toJson(hyperBG))
                 .commit();
     }
 }
