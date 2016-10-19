@@ -52,7 +52,7 @@ public class DiaryActivity extends AppCompatActivity
         AppBarLayout.OnOffsetChangedListener, OnMonthChangedListener, OnDateSelectedListener,
         ViewPager.OnPageChangeListener, DayPageFragment.OnFragmentInteractionListener {
     /**
-     * Extra keys
+     * Extra keys for {@link Intent}s
      */
     public static final String EXTRA_TYPE = "TYPE";
     public static final String EXTRA_DATE = "DATE";
@@ -377,7 +377,13 @@ public class DiaryActivity extends AppCompatActivity
 
     @Override
     public void onMonthChanged(MaterialCalendarView widget, CalendarDay date) {
-        // First animates the height of calendarView if necessary
+        if (date.getMonth() != widget.getSelectedDate().getMonth()) {
+            // Then selected date becomes the first day of the month and pager must be updated
+            calendarView.setSelectedDate(date);
+            pager.setCurrentItem(getPageIndexFromDate(date));
+        }
+
+        // Animates the height of calendarView if necessary
         final int newHeight = calcCalendarHeight(date.getCalendar());
 
         if (isCalendarHidden()) { // Then no need to animate
@@ -393,12 +399,6 @@ public class DiaryActivity extends AppCompatActivity
                 animator.addUpdateListener(calendarResizeAnimListener);
                 animator.setDuration(CALENDAR_RESIZE_ANIM_DURATION).start();
             }
-        }
-
-        if (date.getMonth() != widget.getSelectedDate().getMonth()) {
-            // Then selected date becomes the first day of the month and pager must be updated
-            widget.setSelectedDate(date);
-            pager.setCurrentItem(getPageIndexFromDate(date));
         }
     }
 
