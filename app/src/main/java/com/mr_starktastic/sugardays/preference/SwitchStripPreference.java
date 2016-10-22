@@ -6,6 +6,7 @@ import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceViewHolder;
 import android.support.v7.widget.SwitchCompat;
 import android.util.AttributeSet;
+import android.widget.CompoundButton;
 
 import com.mr_starktastic.sugardays.R;
 
@@ -59,22 +60,25 @@ public class SwitchStripPreference extends Preference {
         switchCompat = (SwitchCompat) holder.findViewById(R.id.switch_compat);
         switchCompat.setChecked(getSharedPreferences().getBoolean(getKey(), false));
 
-        switchCompat.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                setTitle(R.string.on);
-                setSummary(onSummary);
-            } else {
-                setTitle(R.string.off);
-                setSummary(offSummary);
-            }
-            if (listener != null)
-                listener.onCheckedChangeListener(isChecked);
+        switchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    setTitle(R.string.on);
+                    setSummary(onSummary);
+                } else {
+                    setTitle(R.string.off);
+                    setSummary(offSummary);
+                }
+                if (listener != null)
+                    listener.onCheckedChangeListener(isChecked);
 
-            getSharedPreferences().edit()
-                    .putBoolean(getKey(), isChecked)
-                    .putString(getPreferenceManager().getPreferenceScreen().getKey(),
-                            getTitle().toString())
-                    .commit();
+                getSharedPreferences().edit()
+                        .putBoolean(getKey(), isChecked)
+                        .putString(getPreferenceManager().getPreferenceScreen().getKey(),
+                                getTitle().toString())
+                        .commit();
+            }
         });
     }
 

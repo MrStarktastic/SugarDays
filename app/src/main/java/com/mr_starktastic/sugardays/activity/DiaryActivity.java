@@ -48,7 +48,7 @@ import java.util.GregorianCalendar;
  * Main activity where the user can navigate between days and view his logs
  */
 public class DiaryActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener,
+        implements NavigationView.OnNavigationItemSelectedListener, View.OnClickListener,
         AppBarLayout.OnOffsetChangedListener, OnMonthChangedListener, OnDateSelectedListener,
         ViewPager.OnPageChangeListener, DayPageFragment.OnFragmentInteractionListener {
     /**
@@ -82,7 +82,12 @@ public class DiaryActivity extends AppCompatActivity
     private AppBarLayout appBar;
     private MaterialCalendarView calendarView;
     private final ValueAnimator.AnimatorUpdateListener calendarResizeAnimListener =
-            valueAnimator -> setCalendarHeight((int) valueAnimator.getAnimatedValue());
+            new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                    setCalendarHeight((int) valueAnimator.getAnimatedValue());
+                }
+            };
     private int calBottomPad;
     private int calTileHeight;
     private TextView title, subtitle;
@@ -150,6 +155,7 @@ public class DiaryActivity extends AppCompatActivity
         final LayoutTransition dropDownTransition = dropDownLayout.getLayoutTransition();
         dropDownTransition.setAnimateParentHierarchy(false);
         dropDownTransition.enableTransitionType(LayoutTransition.CHANGING);
+        dropDownLayout.setOnClickListener(this);
 
         // Displays the date
         title = (TextView) dropDownLayout.findViewById(R.id.toolbar_title);
@@ -185,9 +191,7 @@ public class DiaryActivity extends AppCompatActivity
         calendarView.setOnDateChangedListener(this);
 
         final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(v -> addLog());
-
-        dropDownLayout.setOnClickListener(v -> appBar.setExpanded(isCalendarHidden()));
+        fab.setOnClickListener(this);
 
         final ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar,
                 R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -439,6 +443,19 @@ public class DiaryActivity extends AppCompatActivity
     @Override
     public void onFragmentInteraction(Uri uri) {
 
+    }
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.fab:
+                addLog();
+                break;
+
+            case R.id.dropdown_layout:
+                appBar.setExpanded(isCalendarHidden());
+                break;
+        }
     }
 
     /**

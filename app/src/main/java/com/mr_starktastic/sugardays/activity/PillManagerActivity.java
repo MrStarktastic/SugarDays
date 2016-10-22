@@ -8,6 +8,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.InputFilter;
+import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.View;
@@ -30,14 +31,17 @@ import java.util.LinkedHashSet;
  */
 public class PillManagerActivity extends AppCompatActivity {
     private static final int LAYOUT_TRANSITION_DURATION = 100;
-    private static final InputFilter[] INPUT_FILTERS = {
-            (source, start, end, dest, dstart, dend) -> {
-                for (int i = start; i < end; ++i)
-                    if (source.charAt(i) == ',')
-                        return "";
+    private static final InputFilter[] INPUT_FILTERS = {new InputFilter() {
+        @Override
+        public CharSequence filter(CharSequence source, int start, int end,
+                                   Spanned dest, int dstart, int dend) {
+            for (int i = start; i < end; ++i)
+                if (source.charAt(i) == ',')
+                    return "";
 
-                return null;
-            }};
+            return null;
+        }
+    }};
 
     private LinearLayout pillItemContainer;
     private ArrayList<EditText> editTexts;
@@ -46,12 +50,15 @@ public class PillManagerActivity extends AppCompatActivity {
      * Listeners for the clear {@link android.widget.ImageButton}
      * and {@link EditText} which holds the name of a pill.
      */
-    private View.OnClickListener onClearListener = v -> {
-        final int index = pillItemContainer.indexOfChild((View) v.getParent());
+    private View.OnClickListener onClearListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            final int index = pillItemContainer.indexOfChild((View) v.getParent());
 
-        if (!TextUtils.isEmpty(editTexts.get(index).getText()) && editTexts.size() > 1) {
-            editTexts.remove(index);
-            pillItemContainer.removeViewAt(index);
+            if (!TextUtils.isEmpty(editTexts.get(index).getText()) && editTexts.size() > 1) {
+                editTexts.remove(index);
+                pillItemContainer.removeViewAt(index);
+            }
         }
     };
     private TextWatcher textWatcher = new TextWatcher() {

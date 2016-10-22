@@ -65,21 +65,33 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         if (prefScrKey == null) {
             insulinListPref = (ListPreference) findPreference(PrefKeys.INSULIN);
             insulinListPref.setOnPreferenceChangeListener(
-                    (preference, newValue) -> enableBolusPredict((String) newValue));
+                    new Preference.OnPreferenceChangeListener() {
+                        @Override
+                        public boolean onPreferenceChange(Preference preference, Object newValue) {
+                            return enableBolusPredict((String) newValue);
+                        }
+                    });
 
             (pillPref = findPreference(PrefKeys.PILLS)).setOnPreferenceClickListener(
-                    preference -> {
-                        startActivity(new Intent(getActivity(), PillManagerActivity.class));
-                        return true;
+                    new Preference.OnPreferenceClickListener() {
+                        @Override
+                        public boolean onPreferenceClick(Preference preference) {
+                            startActivity(new Intent(getActivity(), PillManagerActivity.class));
+                            return true;
+                        }
                     });
 
             bgUnitListPref = (ListPreference) findPreference(PrefKeys.BG_UNITS);
-            bgUnitListPref.setOnPreferenceChangeListener((preference, newValue) -> {
-                saveBgPrefs();
-                bgUnitIdx = Integer.parseInt((String) newValue);
-                initBgPrefs();
-                return true;
-            });
+            bgUnitListPref.setOnPreferenceChangeListener(
+                    new Preference.OnPreferenceChangeListener() {
+                        @Override
+                        public boolean onPreferenceChange(Preference preference, Object newValue) {
+                            saveBgPrefs();
+                            bgUnitIdx = Integer.parseInt((String) newValue);
+                            initBgPrefs();
+                            return true;
+                        }
+                    });
 
             hypoPref = (SeekBarPreference) findPreference(PrefKeys.HYPO);
             targetRangePref = (SeekBarPreference) findPreference(PrefKeys.TARGET_RANGE);
@@ -185,7 +197,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
      *
      * @param root The container view of the main {@link PreferenceScreen}
      */
-    private void bindSeekBars(View root) {
+    private void bindSeekBars(final View root) {
         bgUnitIdx = Integer.parseInt(bgUnitListPref.getValue());
         initBgPrefs();
 
@@ -245,17 +257,21 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             screen.addPreference(carbToInsulinPref);
         }
 
-        bolusPredictSwitchPref.setOnCheckedChangeListener(isChecked -> {
-            if (isChecked) {
-                screen.addPreference(optimalPref);
-                screen.addPreference(correctionFactorPref);
-                screen.addPreference(carbToInsulinPref);
-            } else {
-                screen.removePreference(optimalPref);
-                screen.removePreference(correctionFactorPref);
-                screen.removePreference(carbToInsulinPref);
-            }
-        });
+        bolusPredictSwitchPref.setOnCheckedChangeListener(
+                new SwitchStripPreference.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChangeListener(boolean isChecked) {
+                        if (isChecked) {
+                            screen.addPreference(optimalPref);
+                            screen.addPreference(correctionFactorPref);
+                            screen.addPreference(carbToInsulinPref);
+                        } else {
+                            screen.removePreference(optimalPref);
+                            screen.removePreference(correctionFactorPref);
+                            screen.removePreference(carbToInsulinPref);
+                        }
+                    }
+                });
     }
 
     /**

@@ -168,7 +168,28 @@
                     android:labelFor="@id/blood_sugar_edit_text"
                     android:textSize="16sp" />
             </LinearLayout>
+        </FrameLayout>
 
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="?android:listPreferredItemHeightSmall">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="@dimen/icon_margin"
+                android:src="@drawable/ic_food"
+                tools:ignore="ContentDescription" />
+
+            <android.support.v7.widget.AppCompatButton
+                android:id="@+id/food_add_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/normal_margin"
+                android:layout_marginStart="@dimen/huge_margin"
+                android:text="@string/add_food"
+                app:backgroundTint="?colorBackgroundFloating" />
         </FrameLayout>
     </LinearLayout>
 </ScrollView>

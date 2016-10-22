@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
+        android:id="@+id/menu_remove_photo"
         android:title="@string/remove_photo"
         android:visible="false" />
-    <item android:title="@string/take_photo" />
-    <item android:title="@string/choose_photo" />
+    <item
+        android:id="@+id/menu_take_photo"
+        android:title="@string/take_photo" />
+    <item
+        android:id="@+id/menu_choose_photo"
+        android:title="@string/choose_photo" />
 </menu>

@@ -40,26 +40,33 @@ public class RangeSeekBar extends View {
                     super.onAnimationEnd(animation);
                 }
             };
-
+    private final ValueAnimator.AnimatorUpdateListener rightThumbAnimUpdateListener =
+            new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    rightThumbSize = (float) animation.getAnimatedValue();
+                    RangeSeekBar.this.invalidate();
+                }
+            };
     protected int barColor, barHighlightColor, thumbColor;
     protected DecimalFormat numberFormat;
     protected double normMinVal = DEFAULT_NORM_MIN_VAL, normMaxVal = DEFAULT_NORM_MAX_VAL;
     protected float minValue, maxValue, steps;
     protected OnRangeSeekBarChangeListener onValueChangeListener;
     protected RangeSeekBar lowerBoundSeekBar, upperBoundSeekBar;
-
     private boolean singleThumb;
     private int activePointerId = INVALID_POINTER_ID;
     private int dataType;
     private float barPadding, barHeight, thumbUnpressedSize, thumbPressedSize;
     private float leftThumbSize, rightThumbSize;
-    private final ValueAnimator.AnimatorUpdateListener leftThumbAnimUpdateListener = animation -> {
-        leftThumbSize = (float) animation.getAnimatedValue();
-        invalidate();
-    }, rightThumbAnimUpdateListener = animation -> {
-        rightThumbSize = (float) animation.getAnimatedValue();
-        invalidate();
-    };
+    private final ValueAnimator.AnimatorUpdateListener leftThumbAnimUpdateListener =
+            new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    leftThumbSize = (float) animation.getAnimatedValue();
+                    RangeSeekBar.this.invalidate();
+                }
+            };
     private RectF rect;
     private Paint paint;
     private ValueAnimator leftThumbAnimator, rightThumbAnimator;
@@ -435,7 +442,6 @@ public class RangeSeekBar extends View {
 
     protected enum Thumb {MIN, MAX}
 
-    @FunctionalInterface
     public interface OnRangeSeekBarChangeListener {
         void valueChanged(Number minValue, Number maxValue);
     }

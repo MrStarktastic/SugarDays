@@ -8,6 +8,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.mr_starktastic.sugardays.R;
+import com.mr_starktastic.sugardays.util.NumericTextUtil;
 
 /**
  * A {@link Preference} representing an {@link EditText} (without a dialog) and a label next to it.
@@ -30,10 +31,8 @@ public class InlineEditTextPreference extends Preference {
 
         numberEditText = (EditText) holder.findViewById(R.id.number_edit);
 
-        if (value != 0) {
-            final String str = String.valueOf(value);
-            numberEditText.setText(!str.endsWith(".0") ? str : str.substring(0, str.length() - 2));
-        }
+        if (value != 0)
+            numberEditText.setText(NumericTextUtil.trimNumber(value));
 
         final TextView numberEditLabel = (TextView) holder.findViewById(R.id.number_label);
         numberEditLabel.setText(label);

@@ -30,6 +30,12 @@
     <string name="take_new_photo">Take new photo</string>
     <string name="choose_new_photo">Choose new photo</string>
 
+    <string name="add_food">Add food</string>
+    <string name="food_hint">Food name or description</string>
+    <string name="quantity_hint">Quantity</string>
+    <string name="carbs_hint">Carbs</string>
+    <string name="grams_condensed">g</string>
+
     <!-- TODO: Remove this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 

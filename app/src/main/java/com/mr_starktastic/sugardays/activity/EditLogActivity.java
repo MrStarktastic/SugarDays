@@ -6,6 +6,7 @@ import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -29,16 +30,20 @@ import android.text.TextWatcher;
 import android.text.format.DateFormat;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.PlaceLikelihoodBuffer;
 import com.google.android.gms.location.places.Places;
@@ -46,6 +51,7 @@ import com.google.android.gms.location.places.ui.PlacePicker;
 import com.mr_starktastic.sugardays.BuildConfig;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.BloodSugar;
+import com.mr_starktastic.sugardays.fragment.FoodDialogFragment;
 import com.mr_starktastic.sugardays.util.PrefUtil;
 import com.mr_starktastic.sugardays.widget.LabeledEditText;
 import com.squareup.picasso.Picasso;
@@ -67,7 +73,9 @@ import id.zelory.compressor.Compressor;
  * Activity for adding new logs or editing existing ones
  */
 public class EditLogActivity extends AppCompatActivity
-        implements GoogleApiClient.OnConnectionFailedListener {
+        implements GoogleApiClient.OnConnectionFailedListener,
+        View.OnClickListener, MenuItem.OnMenuItemClickListener,
+        ResultCallback<PlaceLikelihoodBuffer> {
     /**
      * Request codes
      */
@@ -78,9 +86,11 @@ public class EditLogActivity extends AppCompatActivity
     /**
      * Permission request codes
      */
+    private static final int PERMISSION_REQ_IGNORED = 0;
     private static final int PERMISSION_REQ_PLACE_DETECT = 1;
     private static final int PERMISSION_REQ_PLACE_PICKER = 2;
-    private static final int PERMISSION_REQ_CAMERA = 3;
+    private static final int PERMISSION_REQ_CHOOSE_PHOTO = 3;
+    private static final int PERMISSION_REQ_CAMERA = 4;
 
     /**
      * Action indices from the Camera section
@@ -140,6 +150,7 @@ public class EditLogActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_log);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         final Intent intent = getIntent();
         final ActionBar actionBar = getSupportActionBar();
@@ -150,6 +161,13 @@ public class EditLogActivity extends AppCompatActivity
             // TODO: Title should be either "Add log" or "Edit log", based on data from intent.
             actionBar.setTitle(getString(R.string.action_title_add_log));
         }
+
+        googleApiClient = new GoogleApiClient
+                .Builder(this)
+                .enableAutoManage(this, this)
+                .addApi(Places.PLACE_DETECTION_API)
+                .addOnConnectionFailedListener(this)
+                .build();
 
         // Wiring-up views
         typeSpinner = (AppCompatSpinner) findViewById(R.id.log_type_spinner);
@@ -173,88 +191,80 @@ public class EditLogActivity extends AppCompatActivity
         calendar = (GregorianCalendar) intent.getSerializableExtra(DiaryActivity.EXTRA_DATE);
         dateText.setText(DATE_FORMAT.format(calendar));
         final DatePickerDialog dateDialog = new DatePickerDialog(this,
-                (view, year, month, dayOfMonth) -> {
-                    calendar.set(year, month, dayOfMonth);
-                    dateText.setText(DATE_FORMAT.format(calendar));
+                new DatePickerDialog.OnDateSetListener() {
+                    @Override
+                    public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                        calendar.set(year, month, dayOfMonth);
+                        dateText.setText(DATE_FORMAT.format(calendar));
+                    }
                 },
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
                 calendar.get(Calendar.DAY_OF_MONTH));
         dateDialog.getDatePicker().setMaxDate(new Date().getTime());
-        dateText.setOnClickListener(v -> dateDialog.show());
+        dateText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dateDialog.show();
+            }
+        });
 
         // Time
         timeText.setText(TIME_FORMAT.format(calendar));
         final TimePickerDialog timeDialog = new TimePickerDialog(this,
-                (view, hourOfDay, minute) -> {
-                    calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                    calendar.set(Calendar.MINUTE, minute);
-                    timeText.setText(TIME_FORMAT.format(calendar));
+                new TimePickerDialog.OnTimeSetListener() {
+                    @Override
+                    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+                        calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                        calendar.set(Calendar.MINUTE, minute);
+                        timeText.setText(TIME_FORMAT.format(calendar));
+                    }
                 },
                 calendar.get(Calendar.HOUR_OF_DAY),
                 calendar.get(Calendar.MINUTE),
                 DateFormat.is24HourFormat(this));
-        timeText.setOnClickListener(v -> timeDialog.show());
+        timeText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                timeDialog.show();
+            }
+        });
 
         // Automatic current location fetch
-        if (savedInstanceState == null && PrefUtil.getAutoLocation(preferences)) {
-            googleApiClient = new GoogleApiClient
-                    .Builder(this)
-                    .addApi(Places.PLACE_DETECTION_API)
-                    .enableAutoManage(this, this)
-                    .build();
-
-            getCurrentLocation();
-        }
+        if (savedInstanceState == null && PrefUtil.getAutoLocation(preferences) &&
+                checkPermission(PERMISSION_REQ_PLACE_DETECT,
+                        Manifest.permission.ACCESS_FINE_LOCATION))
+            Places.PlaceDetectionApi
+                    .getCurrentPlace(googleApiClient, null)
+                    .setResultCallback(this);
 
         // Listener for invoking the PlacePicker
-        placePickerButton.setOnClickListener(v -> openPlacePicker());
+        placePickerButton.setOnClickListener(this);
 
         // Listeners for photo change button (and its menu items)
-        final PackageManager packageManager = getPackageManager();
+        changePhotoMenu.getItem(MENU_REMOVE_PHOTO).setOnMenuItemClickListener(this);
+        changePhotoMenu.getItem(MENU_TAKE_PHOTO).setOnMenuItemClickListener(this);
+        changePhotoMenu.getItem(MENU_CHOOSE_PHOTO).setOnMenuItemClickListener(this);
 
-        changePhotoMenu.getItem(MENU_REMOVE_PHOTO).setOnMenuItemClickListener(item -> {
-            // noinspection ResultOfMethodCallIgnored
-            new File(Uri.parse(currentPhotoPath).getPath()).delete();
-            currentPhotoPath = null;
-            photoThumbnailView.setImageBitmap(null);
+        changePhotoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final MenuItem removeMenuItem = changePhotoMenu.getItem(MENU_REMOVE_PHOTO);
 
-            return true;
-        });
-
-        if (packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA))
-            changePhotoMenu.getItem(MENU_TAKE_PHOTO).setOnMenuItemClickListener(item -> {
-                if (!checkPermission(PERMISSION_REQ_CAMERA, Manifest.permission.CAMERA))
-                    return false;
-
-                dispatchTakePictureIntent();
-                return true;
-            });
-
-        changePhotoMenu.getItem(MENU_CHOOSE_PHOTO).setOnMenuItemClickListener(item -> {
-            startActivityForResult(Intent.createChooser(
-                    new Intent(Intent.ACTION_GET_CONTENT).setType(PHOTO_CHOOSER_TYPE),
-                    item.getTitle()), REQ_CHOOSE_PHOTO);
-
-            return true;
-        });
-
-        changePhotoButton.setOnClickListener(v -> {
-            final MenuItem removeMenuItem = changePhotoMenu.getItem(MENU_REMOVE_PHOTO);
-
-            if (currentPhotoPath != null) {
-                if (!removeMenuItem.isVisible()) {
-                    removeMenuItem.setVisible(true);
-                    changePhotoMenu.getItem(MENU_TAKE_PHOTO).setTitle(R.string.take_new_photo);
-                    changePhotoMenu.getItem(MENU_CHOOSE_PHOTO).setTitle(R.string.choose_new_photo);
+                if (currentPhotoPath != null) {
+                    if (!removeMenuItem.isVisible()) {
+                        removeMenuItem.setVisible(true);
+                        changePhotoMenu.getItem(MENU_TAKE_PHOTO).setTitle(R.string.take_new_photo);
+                        changePhotoMenu.getItem(MENU_CHOOSE_PHOTO).setTitle(R.string.choose_new_photo);
+                    }
+                } else if (removeMenuItem.isVisible()) {
+                    removeMenuItem.setVisible(false);
+                    changePhotoMenu.getItem(MENU_TAKE_PHOTO).setTitle(R.string.take_photo);
+                    changePhotoMenu.getItem(MENU_CHOOSE_PHOTO).setTitle(R.string.choose_photo);
                 }
-            } else if (removeMenuItem.isVisible()) {
-                removeMenuItem.setVisible(false);
-                changePhotoMenu.getItem(MENU_TAKE_PHOTO).setTitle(R.string.take_photo);
-                changePhotoMenu.getItem(MENU_CHOOSE_PHOTO).setTitle(R.string.choose_photo);
-            }
 
-            popupMenu.show();
+                popupMenu.show();
+            }
         });
 
         photoCompressEnabled = PrefUtil.getPhotoCompressEnabled(preferences);
@@ -324,6 +334,10 @@ public class EditLogActivity extends AppCompatActivity
 
             }
         });
+
+        // Food
+        final AppCompatButton addFoodButton = (AppCompatButton) findViewById(R.id.food_add_button);
+        addFoodButton.setOnClickListener(this);
     }
 
     /**
@@ -354,31 +368,9 @@ public class EditLogActivity extends AppCompatActivity
     }
 
     /**
-     * Gets the current location by extracting the {@link Place} with the highest likelihood
-     * and then sets the appropriate {@link EditText} with the place's description.
-     */
-    private void getCurrentLocation() {
-        if (!checkPermission(PERMISSION_REQ_PLACE_DETECT, Manifest.permission.ACCESS_FINE_LOCATION))
-            return;
-
-        final PendingResult<PlaceLikelihoodBuffer> result =
-                Places.PlaceDetectionApi.getCurrentPlace(googleApiClient, null);
-        result.setResultCallback(likelyPlaces -> {
-            if (likelyPlaces.getCount() != 0)
-                setLocationText(likelyPlaces.get(0).getPlace());
-
-            likelyPlaces.release();
-            googleApiClient.disconnect();
-        });
-    }
-
-    /**
      * Opens the {@link PlacePicker}.
      */
     private void openPlacePicker() {
-        if (!checkPermission(PERMISSION_REQ_PLACE_PICKER, Manifest.permission.ACCESS_FINE_LOCATION))
-            return;
-
         final PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
 
         try {
@@ -444,6 +436,16 @@ public class EditLogActivity extends AppCompatActivity
     }
 
     /**
+     * Opens the photo chooser.
+     */
+    private void openPhotoChooser() {
+        startActivityForResult(Intent.createChooser(
+                new Intent(Intent.ACTION_GET_CONTENT).setType(PHOTO_CHOOSER_TYPE),
+                getString(R.string.choose_photo)),
+                REQ_CHOOSE_PHOTO);
+    }
+
+    /**
      * Sets the photo to be viewed in this activity as a thumbnail and compresses if needed.
      *
      * @param imageFile The file containing the photo.
@@ -481,7 +483,8 @@ public class EditLogActivity extends AppCompatActivity
         super.onRestoreInstanceState(savedInstanceState);
 
         currentPhotoPath = savedInstanceState.getString(KEY_INSTANCE_PHOTO_PATH);
-        photoThumbnailView.setImageBitmap(savedInstanceState.getParcelable(KEY_INSTANCE_BITMAP));
+        photoThumbnailView.setImageBitmap(
+                savedInstanceState.<Bitmap>getParcelable(KEY_INSTANCE_BITMAP));
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -539,17 +542,25 @@ public class EditLogActivity extends AppCompatActivity
         }
     }
 
+    @SuppressWarnings("MissingPermission")
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+        if (requestCode > 0 &&
+                grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
             switch (requestCode) {
                 case PERMISSION_REQ_PLACE_DETECT:
-                    getCurrentLocation();
+                    Places.PlaceDetectionApi
+                            .getCurrentPlace(googleApiClient, null)
+                            .setResultCallback(this);
                     break;
 
                 case PERMISSION_REQ_PLACE_PICKER:
                     openPlacePicker();
+                    break;
+
+                case PERMISSION_REQ_CHOOSE_PHOTO:
+                    openPhotoChooser();
                     break;
 
                 case PERMISSION_REQ_CAMERA:
@@ -588,8 +599,80 @@ public class EditLogActivity extends AppCompatActivity
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+
+        if (googleApiClient != null)
+            googleApiClient.connect();
+    }
+
+    @Override
+    protected void onStop() {
+        if (googleApiClient != null && googleApiClient.isConnected())
+            googleApiClient.disconnect();
+
+        super.onStop();
+    }
+
+    @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Toast.makeText(this, connectionResult.getErrorMessage(), Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.current_location_button:
+                if (checkPermission(PERMISSION_REQ_PLACE_PICKER,
+                        Manifest.permission.ACCESS_FINE_LOCATION))
+                    openPlacePicker();
+                break;
+
+            case R.id.food_add_button:
+                checkPermission(PERMISSION_REQ_IGNORED, Manifest.permission.INTERNET);
+                new FoodDialogFragment().show(getSupportFragmentManager(), "TAG");
+                break;
+        }
+    }
+
+    @Override
+    public boolean onMenuItemClick(MenuItem menuItem) {
+        switch (menuItem.getItemId()) {
+            case R.id.menu_remove_photo:
+                // noinspection ResultOfMethodCallIgnored
+                new File(Uri.parse(currentPhotoPath).getPath()).delete();
+                currentPhotoPath = null;
+                photoThumbnailView.setImageBitmap(null);
+                return true;
+
+            case R.id.menu_take_photo:
+                if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
+                    if (!checkPermission(PERMISSION_REQ_CAMERA, Manifest.permission.CAMERA))
+                        break;
+
+                    dispatchTakePictureIntent();
+                    return true;
+                }
+                break;
+
+            case R.id.menu_choose_photo:
+                if (!checkPermission(PERMISSION_REQ_CHOOSE_PHOTO,
+                        Manifest.permission.READ_EXTERNAL_STORAGE))
+                    break;
+
+                openPhotoChooser();
+                return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public void onResult(@NonNull PlaceLikelihoodBuffer likelyPlaces) {
+        if (likelyPlaces.getCount() != 0)
+            setLocationText(likelyPlaces.get(0).getPlace());
+
+        likelyPlaces.release();
     }
 
     private class InputFilterMax implements InputFilter {
