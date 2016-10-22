@@ -9,6 +9,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatDialogFragment;
 import android.support.v7.widget.AppCompatSpinner;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,20 +39,28 @@ import java.util.concurrent.ExecutionException;
 public class FoodDialogFragment extends AppCompatDialogFragment {
     private static final int AUTOCOMPLETE_THRESHOLD = 2;
     private static final String JSON_ROOT_NAME = "food";
-    private static final String JSON_ARRAY_CONTAINER_NAME = "servings";
-    private static final String JSON_ARRAY_NAME = "serving";
+    private static final String JSON_SERVING_CONTAINER_NAME = "servings";
+    private static final String JSON_SERVING_ARRAY_OR_OBJECT_NAME = "serving";
     private static final FetchJSONTask.JSONParser<Serving> JSON_PARSER =
             new FetchJSONTask.JSONParser<Serving>() {
                 @Override
                 public ArrayList<Serving> parseJSON(String json) throws JSONException {
-                    final JSONArray foods = new JSONObject(json)
+                    final JSONObject servingContainer = new JSONObject(json)
                             .getJSONObject(JSON_ROOT_NAME)
-                            .getJSONObject(JSON_ARRAY_CONTAINER_NAME)
-                            .getJSONArray(JSON_ARRAY_NAME);
+                            .getJSONObject(JSON_SERVING_CONTAINER_NAME);
                     final ArrayList<Serving> array = new ArrayList<>();
 
-                    for (int i = 0; i < foods.length(); ++i)
-                        array.add(new Serving(foods.getJSONObject(i)));
+                    try {
+                        final JSONArray servings = servingContainer
+                                .getJSONArray(JSON_SERVING_ARRAY_OR_OBJECT_NAME);
+
+                        for (int i = 0; i < servings.length(); ++i)
+                            array.add(new Serving(servings.getJSONObject(i)));
+                    } catch (JSONException e) { // There's just 1 serving and not a JSONArray
+                        Log.d("JSON", json);
+                        array.add(new Serving(servingContainer
+                                .getJSONObject(JSON_SERVING_ARRAY_OR_OBJECT_NAME)));
+                    }
 
                     return array;
                 }
@@ -70,7 +79,8 @@ public class FoodDialogFragment extends AppCompatDialogFragment {
     @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        final MaterialDialog dialog = new MaterialDialog.Builder(getContext())
+        final Context context = getContext();
+        final MaterialDialog dialog = new MaterialDialog.Builder(context)
                 .title(R.string.add_food)
                 .customView(R.layout.dialog_fragment_food, true)
                 .canceledOnTouchOutside(false)
@@ -96,18 +106,18 @@ public class FoodDialogFragment extends AppCompatDialogFragment {
         foodNameEdit = (LoadingAutoCompleteTextView) root
                 .findViewById(R.id.food_name_auto_complete_text);
 
-        if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.INTERNET) ==
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.INTERNET) ==
                 PackageManager.PERMISSION_GRANTED) {
             foodNameEdit.setProgressBar(
                     (ProgressBar) root.findViewById(R.id.food_loading_indicator));
             foodNameEdit.setThreshold(AUTOCOMPLETE_THRESHOLD);
-            foodNameEdit.setAdapter(new FoodAutoCompleteAdapter(getContext()));
+            foodNameEdit.setAdapter(new FoodAutoCompleteAdapter(context));
             foodNameEdit.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     try {
                         servingSpinner.setAdapter(new ServingAdapter(
-                                FoodDialogFragment.this.getContext(), new FetchJSONTask<>(
+                                context, new FetchJSONTask<>(
                                 ((FoodAutoCompleteAdapter) foodNameEdit.getAdapter())
                                         .buildFoodGetUrl(position), JSON_PARSER).execute().get()));
                         quantityContainer.setVisibility(View.VISIBLE);
