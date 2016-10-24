@@ -146,6 +146,11 @@ public class EditLogActivity extends AppCompatActivity
         return "file:" + file.getAbsolutePath();
     }
 
+    private static boolean isPermissionGranted(int requestCode, int[] grantResults) {
+        return requestCode > 0 &&
+                grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -546,32 +551,33 @@ public class EditLogActivity extends AppCompatActivity
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
-        if (requestCode > 0 &&
-                grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-            switch (requestCode) {
-                case PERMISSION_REQ_PLACE_DETECT:
+        switch (requestCode) {
+            case PERMISSION_REQ_PLACE_DETECT:
+                if (isPermissionGranted(requestCode, grantResults))
                     Places.PlaceDetectionApi
                             .getCurrentPlace(googleApiClient, null)
                             .setResultCallback(this);
-                    break;
+                break;
 
-                case PERMISSION_REQ_PLACE_PICKER:
+            case PERMISSION_REQ_PLACE_PICKER:
+                if (isPermissionGranted(requestCode, grantResults))
                     openPlacePicker();
-                    break;
+                break;
 
-                case PERMISSION_REQ_CHOOSE_PHOTO:
+            case PERMISSION_REQ_CHOOSE_PHOTO:
+                if (isPermissionGranted(requestCode, grantResults))
                     openPhotoChooser();
-                    break;
+                break;
 
-                case PERMISSION_REQ_CAMERA:
+            case PERMISSION_REQ_CAMERA:
+                if (isPermissionGranted(requestCode, grantResults))
                     dispatchTakePictureIntent();
-                    break;
+                break;
 
-                default:
-                    break;
-            }
-
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+                break;
+        }
     }
 
     @Override

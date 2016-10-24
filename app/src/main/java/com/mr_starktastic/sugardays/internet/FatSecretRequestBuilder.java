@@ -1,4 +1,4 @@
-package com.mr_starktastic.sugardays.util;
+package com.mr_starktastic.sugardays.internet;
 
 import android.net.Uri;
 import android.support.annotation.NonNull;
@@ -28,7 +28,10 @@ public class FatSecretRequestBuilder {
     private static final String FOOD_GET_PRE_SIGNATURE_PREFIX_1 = "food_id=";
     private static final String FOOD_GET_PRE_SIGNATURE_PREFIX_2 =
             "&format=json&method=food.get&oauth_consumer_key=572148ea582941e5b6d2559084fd86dc&oauth_nonce=";
-    private static final String FOOD_GET_POST_SIGNATURE_2 = "&oauth_version=1.0";
+    private static final String POST_SIGNATURE_2 = "&oauth_version=1.0";
+    private static final String FOOD_BARCODE_PRE_SIGNATURE_PREFIX_1 = "barcode=";
+    private static final String FOOD_BARCODE_PRE_SIGNATURE_PREFIX_2 =
+            "&format=json&method=food.find_id_for_barcode&oauth_consumer_key=572148ea582941e5b6d2559084fd86dc&oauth_nonce=";
 
     private static final String OAUTH_SIGNATURE_METHOD = "HmacSHA1";
     private static final String OAUTH_SIGNATURE_KEY = "&oauth_signature=";
@@ -79,22 +82,24 @@ public class FatSecretRequestBuilder {
         return signature.substring(0, signature.length() - 3); // Gets rid of "%0A" at the end
     }
 
-    public String buildFoodSearchUrl(String query) {
-        final String preSignature = FOODS_SEARCH_PRE_SIGNATURE_PREFIX + nonce();
-        final String postSignature = POST_SIGNATURE_1 + timestamp() +
-                FOODS_SEARCH_POST_SIGNATURE_2 + encode(query);
-
-        return URL_PREFIX + preSignature + OAUTH_SIGNATURE_KEY +
-                sign(preSignature + postSignature) + postSignature;
+    private static String buildUrl(String preSign, String postSign) {
+        return URL_PREFIX + preSign + OAUTH_SIGNATURE_KEY + sign(preSign + postSign) + postSign;
     }
 
-    private String buildFoodGetUrl(String id) {
-        final String preSignature = FOOD_GET_PRE_SIGNATURE_PREFIX_1 + id +
-                FOOD_GET_PRE_SIGNATURE_PREFIX_2 + nonce();
-        final String postSignature = POST_SIGNATURE_1 + timestamp() + FOOD_GET_POST_SIGNATURE_2;
+    public String buildFoodSearchUrl(String query) {
+        return buildUrl(FOODS_SEARCH_PRE_SIGNATURE_PREFIX + nonce(),
+                POST_SIGNATURE_1 + timestamp() + FOODS_SEARCH_POST_SIGNATURE_2 + encode(query));
+    }
 
-        return URL_PREFIX + preSignature + OAUTH_SIGNATURE_KEY +
-                sign(preSignature + postSignature) + postSignature;
+    public String buildFoodGetUrl(String id) {
+        return buildUrl(FOOD_GET_PRE_SIGNATURE_PREFIX_1 + id + FOOD_GET_PRE_SIGNATURE_PREFIX_2 +
+                nonce(), POST_SIGNATURE_1 + timestamp() + POST_SIGNATURE_2);
+    }
+
+    public String buildFindIdForBarcodeUrl(String barcode) {
+        return buildUrl(FOOD_BARCODE_PRE_SIGNATURE_PREFIX_1 + barcode +
+                        FOOD_BARCODE_PRE_SIGNATURE_PREFIX_2 + nonce(),
+                POST_SIGNATURE_1 + timestamp() + POST_SIGNATURE_2);
     }
 
     public String buildFoodGetUrl(long id) {

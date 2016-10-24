@@ -1,4 +1,4 @@
-package com.mr_starktastic.sugardays.data;
+package com.mr_starktastic.sugardays.internet;
 
 import android.os.AsyncTask;
 
@@ -10,22 +10,21 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
 
-public class FetchJSONTask<T> extends AsyncTask<Void, Void, ArrayList<T>> {
+public class FetchAndParseJSONTask<T> extends AsyncTask<Void, Void, T> {
     private static final String CHARSET_NAME = "utf-8";
     private static final int BUFF_SIZE = 8;
 
     private String url;
     private JSONParser<T> parser;
 
-    public FetchJSONTask(String url, JSONParser<T> parser) {
+    public FetchAndParseJSONTask(String url, JSONParser<T> parser) {
         this.url = url;
         this.parser = parser;
     }
 
     @Override
-    protected ArrayList<T> doInBackground(Void... voids) {
+    protected T doInBackground(Void... voids) {
         HttpURLConnection connection = null;
         BufferedReader reader = null;
         String jsonStr;
@@ -72,6 +71,6 @@ public class FetchJSONTask<T> extends AsyncTask<Void, Void, ArrayList<T>> {
     }
 
     public interface JSONParser<T> {
-        ArrayList<T> parseJSON(String json) throws JSONException;
+        T parseJSON(String json) throws JSONException;
     }
 }

@@ -36,6 +36,7 @@
     <string name="carbs_hint">Carbs</string>
     <string name="grams_condensed">g</string>
     <string name="scan_barcode">Scan barcode</string>
+    <string name="barcode_food_not_found">Food not found</string>
 
     <!-- TODO: Remove this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

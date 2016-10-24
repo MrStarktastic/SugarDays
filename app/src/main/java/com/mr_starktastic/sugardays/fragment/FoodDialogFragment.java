@@ -19,58 +19,32 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.activity.BarcodeScanActivity;
-import com.mr_starktastic.sugardays.data.FetchJSONTask;
-import com.mr_starktastic.sugardays.util.FatSecretRequestBuilder;
+import com.mr_starktastic.sugardays.data.Food;
+import com.mr_starktastic.sugardays.data.Serving;
+import com.mr_starktastic.sugardays.internet.FatSecretRequestBuilder;
+import com.mr_starktastic.sugardays.internet.FetchAndParseJSONTask;
 import com.mr_starktastic.sugardays.util.NumericTextUtil;
 import com.mr_starktastic.sugardays.widget.FoodAutoCompleteAdapter;
 import com.mr_starktastic.sugardays.widget.LoadingAutoCompleteTextView;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class FoodDialogFragment extends AppCompatDialogFragment
         implements MaterialDialog.SingleButtonCallback {
+    public static final int REQ_SCAN_BARCODE = 4;
+
+    private static final int PERMISSION_REQ_CAMERA = 5;
+
     private static final int AUTOCOMPLETE_THRESHOLD = 2;
 
-    private static final String JSON_ROOT_NAME = "food";
-    private static final String JSON_SERVING_CONTAINER_NAME = "servings";
-    private static final String JSON_SERVING_ARRAY_OR_OBJECT_NAME = "serving";
-
-    private static final FetchJSONTask.JSONParser<Serving> JSON_PARSER =
-            new FetchJSONTask.JSONParser<Serving>() {
-                @Override
-                public ArrayList<Serving> parseJSON(String json) throws JSONException {
-                    final JSONObject servingContainer = new JSONObject(json)
-                            .getJSONObject(JSON_ROOT_NAME)
-                            .getJSONObject(JSON_SERVING_CONTAINER_NAME);
-                    final ArrayList<Serving> array = new ArrayList<>();
-
-                    try {
-                        final JSONArray servings = servingContainer
-                                .getJSONArray(JSON_SERVING_ARRAY_OR_OBJECT_NAME);
-
-                        for (int i = 0; i < servings.length(); ++i)
-                            array.add(new Serving(servings.getJSONObject(i)));
-                    } catch (JSONException e) { // There's just 1 serving and not a JSONArray
-                        array.add(new Serving(servingContainer
-                                .getJSONObject(JSON_SERVING_ARRAY_OR_OBJECT_NAME)));
-                    }
-
-                    return array;
-                }
-            };
-
     private FatSecretRequestBuilder requestBuilder;
+    private Food food;
 
     private LoadingAutoCompleteTextView foodNameEdit;
     private View quantityContainer;
@@ -88,11 +62,9 @@ public class FoodDialogFragment extends AppCompatDialogFragment
         final Context context = getContext();
         final MaterialDialog dialog = new MaterialDialog.Builder(context)
                 .title(R.string.add_food)
-                .customView(R.layout.dialog_fragment_food, true)
-                .canceledOnTouchOutside(false)
-                .onNeutral(this)
-                .onPositive(this)
-                .onNegative(this)
+                .customView(R.layout.fragment_food_dialog, true)
+                .canceledOnTouchOutside(false).autoDismiss(false)
+                .onAny(this)
                 .neutralText(R.string.scan_barcode)
                 .positiveText(android.R.string.ok)
                 .negativeText(android.R.string.cancel)
@@ -114,10 +86,15 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     try {
-                        servingSpinner.setAdapter(new ServingAdapter(context, new FetchJSONTask<>(
-                                requestBuilder.buildFoodGetUrl(id), JSON_PARSER).execute().get()));
+                        food = (Food) foodNameEdit.getAdapter().getItem(position);
+                        final Serving[] servings = new FetchAndParseJSONTask<>(
+                                requestBuilder.buildFoodGetUrl(id), Serving.JSON_PARSER)
+                                .execute().get();
+                        food.setServings(servings);
+                        servingSpinner.setAdapter(new ServingAdapter(context, servings));
                         quantityContainer.setVisibility(View.VISIBLE);
                     } catch (InterruptedException | ExecutionException e) {
+                        food = null;
                         e.printStackTrace();
                     }
                 }
@@ -128,31 +105,116 @@ public class FoodDialogFragment extends AppCompatDialogFragment
             servingSpinner = (AppCompatSpinner) quantityContainer
                     .findViewById(R.id.serving_spinner);
             carbsEdit = (EditText) root.findViewById(R.id.carbs_edit);
+
+            servingSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view,
+                                           int position, long id) {
+                    final Serving serving = food.getServings()[position];
+                    quantityEdit.setText(NumericTextUtil.trimNumber(serving.getDefaultQuantity()));
+                    carbsEdit.setText(NumericTextUtil.trimNumber(serving.getCarbs()));
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+
+                }
+            });
         }
 
         // noinspection ConstantConditions
-        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNCHANGED |
+                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         return dialog;
+    }
+
+    private void setFoodName(String name) {
+        final FoodAutoCompleteAdapter adapter =
+                (FoodAutoCompleteAdapter) foodNameEdit.getAdapter();
+        foodNameEdit.setAdapter(null);
+        foodNameEdit.setText(name);
+        foodNameEdit.setAdapter(adapter);
     }
 
     @Override
     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
         switch (which) {
             case NEUTRAL:
-                startActivity(new Intent(getContext(), BarcodeScanActivity.class));
+                if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.CAMERA) !=
+                        PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.CAMERA},
+                            PERMISSION_REQ_CAMERA);
+                    return;
+                }
+
+                startActivityForResult(new Intent(getContext(), BarcodeScanActivity.class),
+                        REQ_SCAN_BARCODE);
                 break;
 
             case POSITIVE:
+                dismiss();
                 break;
 
             case NEGATIVE:
+                dismiss();
                 break;
         }
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQ_CAMERA:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                    startActivityForResult(new Intent(getContext(), BarcodeScanActivity.class),
+                            REQ_SCAN_BARCODE);
+                break;
+
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case REQ_SCAN_BARCODE:
+                if (data != null) {
+                    try {
+                        food = new FetchAndParseJSONTask<>(requestBuilder.buildFindIdForBarcodeUrl(
+                                data.getStringExtra(BarcodeScanActivity.EXTRA_BARCODE_VALUE)),
+                                Food.JSON_ID_PARSER).execute().get();
+
+                        if (food != null) {
+                            if (food.toString() == null) {
+                                Toast.makeText(getContext(),
+                                        getString(R.string.barcode_food_not_found),
+                                        Toast.LENGTH_SHORT).show();
+                                throw new IllegalArgumentException("Bad barcode");
+                            }
+
+                            setFoodName(food.toString());
+                            servingSpinner.setAdapter(
+                                    new ServingAdapter(getContext(), food.getServings()));
+                            quantityContainer.setVisibility(View.VISIBLE);
+                        }
+                    } catch (ExecutionException | InterruptedException |
+                            IllegalArgumentException e) {
+                        food = null;
+                        e.printStackTrace();
+                    }
+                }
+                break;
+
+            default:
+                super.onActivityResult(requestCode, resultCode, data);
+        }
+    }
+
     private static class ServingAdapter extends ArrayAdapter<Serving> {
-        private ServingAdapter(Context context, List<Serving> servings) {
+        private ServingAdapter(Context context, Serving[] servings) {
             super(context, android.R.layout.simple_spinner_item, servings);
         }
 
@@ -173,10 +235,11 @@ public class FoodDialogFragment extends AppCompatDialogFragment
             final Serving serving = getItem(position);
 
             if (serving != null) {
-                holder.textView1.setText(serving.description);
+                holder.textView1.setText(serving.getDescription());
+                final String caption = serving.getCaption();
 
-                if (serving.caption != null) {
-                    holder.textView2.setText(serving.caption);
+                if (caption != null) {
+                    holder.textView2.setText(caption);
                     holder.textView2.setVisibility(View.VISIBLE);
                 } else holder.textView2.setVisibility(View.GONE);
             }
@@ -186,48 +249,6 @@ public class FoodDialogFragment extends AppCompatDialogFragment
 
         private static class ViewHolder {
             private TextView textView1, textView2;
-        }
-    }
-
-    private static class Serving {
-        private static final String JSON_CARBS_KEY = "carbohydrate";
-        private static final String JSON_MEASUREMENT_DESCRIPTION_KEY = "measurement_description";
-        private static final String JSON_SERVING_DESCRIPTION = "serving_description";
-        private static final String JSON_WEIGHT_KEY = "metric_serving_amount";
-        private static final String JSON_WEIGHT_UNIT_KEY = "metric_serving_unit";
-        private static final String JSON_DEFAULT_COUNT_KEY = "number_of_units";
-
-        private String description, caption, weight, weightUnit;
-        private float carbs, defaultCount;
-
-        private Serving(JSONObject jsonObject) throws JSONException {
-            carbs = Float.parseFloat(jsonObject.getString(JSON_CARBS_KEY));
-            description = jsonObject.getString(JSON_MEASUREMENT_DESCRIPTION_KEY);
-            defaultCount = Float.parseFloat(jsonObject.getString(JSON_DEFAULT_COUNT_KEY));
-
-            if (description.equals(JSON_SERVING_ARRAY_OR_OBJECT_NAME)) {
-                description += " (" + jsonObject.getString(JSON_SERVING_DESCRIPTION) + ")";
-
-                try {
-                    weight = NumericTextUtil.trimNumber(jsonObject.getString(JSON_WEIGHT_KEY));
-                    weightUnit = jsonObject.getString(JSON_WEIGHT_UNIT_KEY);
-                    caption = weight + " " + weightUnit;
-                } catch (JSONException ignored) {
-                }
-            } else {
-                weight = NumericTextUtil.trimNumber(jsonObject.getString(JSON_WEIGHT_KEY));
-                weightUnit = jsonObject.getString(JSON_WEIGHT_UNIT_KEY);
-
-                if (description.equals(weightUnit))
-                    description = weight + " " + weightUnit;
-                else if (!description.contains(weight + weightUnit))
-                    caption = weight + " " + weightUnit;
-            }
-        }
-
-        @Override
-        public String toString() {
-            return description;
         }
     }
 }
