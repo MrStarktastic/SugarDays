@@ -200,13 +200,13 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
                     final String str = s.toString();
-                    final float q = Float.parseFloat(str);
+                    final float q;
 
-                    if (!TextUtils.isEmpty(str) && q != 0) {
+                    if (!TextUtils.isEmpty(str) && (q = Float.parseFloat(str)) != 0) {
                         food.setChosenServingPosition(servingSpinner.getSelectedItemPosition());
                         food.setQuantity(q);
                         carbsEdit.setText(NumericTextUtil.trimNumber(food.getCarbs()));
-                    } else positiveButton.setEnabled(!food.isSameAsOld());
+                    } else positiveButton.setEnabled(false);
                 }
 
                 @Override
@@ -343,7 +343,6 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                                     new ServingAdapter(getContext(), servings));
                             qtyContainer.setVisibility(View.VISIBLE);
                             carbsEdit.setEnabled(true);
-                            positiveButton.setEnabled(!food.isSameAsOld());
                         }
                     } catch (ExecutionException | InterruptedException |
                             IllegalArgumentException e) {

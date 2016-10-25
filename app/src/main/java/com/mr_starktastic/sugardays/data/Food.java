@@ -100,10 +100,6 @@ public class Food implements Serializable {
         oldInstance = other;
     }
 
-    public Food getOldInstance() {
-        return oldInstance;
-    }
-
     public boolean isSameAsOld() {
         return oldInstance != null && name.equals(oldInstance.name) &&
                 quantity == oldInstance.quantity &&
