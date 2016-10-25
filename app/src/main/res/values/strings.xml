@@ -31,6 +31,7 @@
     <string name="choose_new_photo">Choose new photo</string>
 
     <string name="add_food">Add food</string>
+    <string name="edit_food">Edit food</string>
     <string name="food_hint">Food name or description</string>
     <string name="quantity_hint">Quantity</string>
     <string name="carbs_hint">Carbs</string>

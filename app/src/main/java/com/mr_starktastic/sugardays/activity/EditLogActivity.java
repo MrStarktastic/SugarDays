@@ -1,6 +1,7 @@
 package com.mr_starktastic.sugardays.activity;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
@@ -14,6 +15,7 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.ActionBar;
@@ -35,6 +37,7 @@ import android.view.WindowManager;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
@@ -51,7 +54,10 @@ import com.google.android.gms.location.places.ui.PlacePicker;
 import com.mr_starktastic.sugardays.BuildConfig;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.BloodSugar;
+import com.mr_starktastic.sugardays.data.Food;
+import com.mr_starktastic.sugardays.data.Serving;
 import com.mr_starktastic.sugardays.fragment.FoodDialogFragment;
+import com.mr_starktastic.sugardays.util.NumericTextUtil;
 import com.mr_starktastic.sugardays.util.PrefUtil;
 import com.mr_starktastic.sugardays.widget.LabeledEditText;
 import com.squareup.picasso.Picasso;
@@ -127,6 +133,7 @@ public class EditLogActivity extends AppCompatActivity
     private GoogleApiClient googleApiClient;
     private String currentPhotoPath;
     private boolean photoCompressEnabled;
+    private ArrayList<Food> foods;
 
     /**
      * Views
@@ -137,6 +144,7 @@ public class EditLogActivity extends AppCompatActivity
     private EditText locationEdit;
     private ImageView photoThumbnailView;
     private LabeledEditText bloodSugarEdit;
+    private LinearLayout foodEntryContainer;
 
     /**
      * @param file File to extract path from.
@@ -186,6 +194,7 @@ public class EditLogActivity extends AppCompatActivity
         final Menu changePhotoMenu = popupMenu.getMenu();
         photoThumbnailView = (ImageView) findViewById(R.id.thumbnail_photo);
         bloodSugarEdit = (LabeledEditText) findViewById(R.id.blood_sugar_edit_text);
+        foodEntryContainer = (LinearLayout) findViewById(R.id.food_entry_container);
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -326,7 +335,6 @@ public class EditLogActivity extends AppCompatActivity
                 try {
                     val = Float.parseFloat(s.toString());
                 } catch (NumberFormatException e) {
-                    e.printStackTrace();
                     return;
                 }
 
@@ -341,7 +349,9 @@ public class EditLogActivity extends AppCompatActivity
         });
 
         // Food
-        final AppCompatButton addFoodButton = (AppCompatButton) findViewById(R.id.food_add_button);
+        foods = new ArrayList<>();
+        final AppCompatButton addFoodButton =
+                (AppCompatButton) foodEntryContainer.findViewById(R.id.food_add_button);
         addFoodButton.setOnClickListener(this);
     }
 
@@ -469,6 +479,57 @@ public class EditLogActivity extends AppCompatActivity
         }
 
         Picasso.with(this).load(currentPhotoPath).fit().centerCrop().into(photoThumbnailView);
+    }
+
+    @SuppressLint("SetTextI18n")
+    public void setFood(final int position, @NonNull Food food) {
+        final View entry;
+
+        if (position == foodEntryContainer.getChildCount() - 1) {
+            entry = getLayoutInflater()
+                    .inflate(R.layout.food_entry, foodEntryContainer, false);
+            foodEntryContainer.addView(entry, position);
+        } else entry = foodEntryContainer.getChildAt(position);
+
+        entry.findViewById(R.id.food_delete_button).setOnClickListener(this);
+        ((TextView) entry.findViewById(R.id.food_name_text)).setText(food.getName());
+        final TextView quantityText = ((TextView) entry.findViewById(R.id.quantity_text));
+        final Serving[] servings = food.getServings();
+
+        if (servings != null) {
+            final Serving chosenServing = food.getChosenServing();
+            String servingStr = chosenServing.getDescription();
+
+            if (chosenServing.getCaption() != null)
+                servingStr += " - " + chosenServing.getCaption();
+
+            Toast.makeText(this, Float.toString(food.getQuantity()), Toast.LENGTH_SHORT).show();
+            quantityText.setText(String.format("%s \u00D7 %s",
+                    NumericTextUtil.trimNumber(food.getQuantity()), servingStr));
+            quantityText.setVisibility(View.VISIBLE);
+        } else quantityText.setVisibility(View.GONE);
+
+        final float carbs = food.getCarbs();
+        final TextView carbsText = (TextView) entry.findViewById(R.id.carbs_text);
+
+        if (carbs != Food.NO_CARBS) {
+            carbsText.setText(NumericTextUtil.trimNumber(carbs) +
+                    getString(R.string.grams_of_carb));
+            carbsText.setVisibility(View.VISIBLE);
+        } else carbsText.setVisibility(View.GONE);
+
+        entry.setOnClickListener(this);
+        foods.add(position, food);
+    }
+
+    private void openFoodEntry(int index, Food food) {
+        checkPermission(PERMISSION_REQ_IGNORED, Manifest.permission.INTERNET);
+        final DialogFragment fragment = new FoodDialogFragment();
+        final Bundle args = new Bundle();
+        args.putInt(FoodDialogFragment.EXTRA_POSITION, index);
+        args.putSerializable(FoodDialogFragment.EXTRA_FOOD, food);
+        fragment.setArguments(args);
+        fragment.show(getSupportFragmentManager(), null);
     }
 
     @Override
@@ -635,9 +696,18 @@ public class EditLogActivity extends AppCompatActivity
                 break;
 
             case R.id.food_add_button:
-                checkPermission(PERMISSION_REQ_IGNORED, Manifest.permission.INTERNET);
-                new FoodDialogFragment().show(getSupportFragmentManager(), "TAG");
+                openFoodEntry(foodEntryContainer.getChildCount() - 1, null);
                 break;
+
+            case R.id.food_delete_button:
+                final int indexToRemove = foodEntryContainer.indexOfChild((View) view.getParent());
+                foodEntryContainer.removeViewAt(indexToRemove);
+                foods.remove(indexToRemove);
+                break;
+
+            case R.id.food_entry:
+                final int indexToView = foodEntryContainer.indexOfChild(view);
+                openFoodEntry(indexToView, foods.get(indexToView));
         }
     }
 

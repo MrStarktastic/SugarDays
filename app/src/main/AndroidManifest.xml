@@ -56,7 +56,9 @@
         <activity
             android:name=".activity.SettingsActivity"
             android:screenOrientation="portrait" />
-        <activity android:name=".activity.EditLogActivity" />
+        <activity
+            android:name=".activity.EditLogActivity"
+            android:configChanges="orientation|screenSize" />
         <activity
             android:name=".activity.PillManagerActivity"
             android:label="@string/pref_pills_title"

@@ -7,7 +7,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class Serving {
+import java.io.Serializable;
+
+public class Serving implements Serializable {
     private static final String JSON_ROOT_NAME = "food";
     private static final String JSON_FOOD_NAME = "food_name";
     private static final String JSON_CONTAINER_NAME = "servings";
@@ -55,37 +57,31 @@ public class Serving {
 
     private static final String JSON_CARBS_KEY = "carbohydrate";
     private static final String JSON_MEASUREMENT_DESCRIPTION_KEY = "measurement_description";
-    private static final String JSON_SERVING_DESCRIPTION = "serving_description";
     private static final String JSON_WEIGHT_KEY = "metric_serving_amount";
     private static final String JSON_WEIGHT_UNIT_KEY = "metric_serving_unit";
     private static final String JSON_DEFAULT_QUANTITY_KEY = "number_of_units";
+    private static final String JSON_SERVING_DESCRIPTION_KEY = "serving_description";
 
-    private String description, caption, weight, weightUnit;
+    private String description;
+    private String caption;
     private float carbs, defaultQuantity;
 
     private Serving(JSONObject jsonObject) throws JSONException {
         carbs = Float.parseFloat(jsonObject.getString(JSON_CARBS_KEY));
         description = jsonObject.getString(JSON_MEASUREMENT_DESCRIPTION_KEY);
         defaultQuantity = Float.parseFloat(jsonObject.getString(JSON_DEFAULT_QUANTITY_KEY));
+        final String weight, weightUnit;
 
-        if (description.equals(JSON_ARRAY_OR_OBJECT_NAME)) {
-            description += " (" + jsonObject.getString(JSON_SERVING_DESCRIPTION) + ")";
-
-            try {
-                weight = NumericTextUtil.trimNumber(jsonObject.getString(JSON_WEIGHT_KEY));
-                weightUnit = jsonObject.getString(JSON_WEIGHT_UNIT_KEY);
-                caption = weight + " " + weightUnit;
-            } catch (JSONException ignored) {
-            }
-        } else {
+        try {
             weight = NumericTextUtil.trimNumber(jsonObject.getString(JSON_WEIGHT_KEY));
             weightUnit = jsonObject.getString(JSON_WEIGHT_UNIT_KEY);
-
-            if (description.equals(weightUnit))
-                description = weight + " " + weightUnit;
-            else if (!description.contains(weight + weightUnit))
-                caption = weight + " " + weightUnit;
+        } catch (JSONException e) {
+            caption = jsonObject.getString(JSON_SERVING_DESCRIPTION_KEY);
+            return;
         }
+
+        if (!description.equals(weightUnit) && !description.contains(weight + weightUnit))
+            caption = weight + " " + weightUnit;
     }
 
     public String getDescription() {

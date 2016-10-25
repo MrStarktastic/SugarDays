@@ -17,6 +17,39 @@ import java.util.concurrent.ExecutionException;
 public class FoodAutoCompleteAdapter extends ArrayAdapter {
     private ArrayList<Food> foods;
     private FatSecretRequestBuilder requestBuilder;
+    private Filter filter = new Filter() {
+        @Override
+        protected FilterResults performFiltering(CharSequence constraint) {
+            final FilterResults filterResults = new FilterResults();
+
+            if (!TextUtils.isEmpty(constraint)) {
+                final ArrayList<Food> foods;
+
+                try {
+                    foods = new FetchAndParseJSONTask<>(
+                            requestBuilder.buildFoodSearchUrl(constraint.toString()),
+                            Food.JSON_SEARCH_PARSER).execute().get();
+
+                    if (foods != null) {
+                        filterResults.values = foods;
+                        filterResults.count = foods.size();
+                    }
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            return filterResults;
+        }
+
+        @Override
+        protected void publishResults(CharSequence constraint, FilterResults results) {
+            if (results != null && results.count > 0) { // noinspection unchecked
+                foods = (ArrayList<Food>) results.values;
+                notifyDataSetChanged();
+            } else notifyDataSetInvalidated();
+        }
+    };
 
     public FoodAutoCompleteAdapter(Context context) {
         super(context, R.layout.list_item_multiline, R.id.list_item);
@@ -42,38 +75,6 @@ public class FoodAutoCompleteAdapter extends ArrayAdapter {
     @NonNull
     @Override
     public Filter getFilter() {
-        return new Filter() {
-            @Override
-            protected FilterResults performFiltering(CharSequence constraint) {
-                final FilterResults filterResults = new FilterResults();
-
-                if (!TextUtils.isEmpty(constraint)) {
-                    final ArrayList<Food> foodNames;
-
-                    try {
-                        foodNames = new FetchAndParseJSONTask<>(
-                                requestBuilder.buildFoodSearchUrl(constraint.toString()),
-                                Food.JSON_SEARCH_PARSER).execute().get();
-
-                        if (foodNames != null) {
-                            filterResults.values = foodNames;
-                            filterResults.count = foodNames.size();
-                        }
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                return filterResults;
-            }
-
-            @Override
-            protected void publishResults(CharSequence constraint, FilterResults results) {
-                if (results != null && results.count > 0) { // noinspection unchecked
-                    foods = (ArrayList<Food>) results.values;
-                    notifyDataSetChanged();
-                } else notifyDataSetInvalidated();
-            }
-        };
+        return filter;
     }
 }

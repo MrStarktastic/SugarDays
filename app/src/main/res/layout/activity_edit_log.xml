@@ -2,7 +2,6 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/activity_edit_log"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.mr_starktastic.sugardays.activity.EditLogActivity">
@@ -172,24 +171,32 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="?android:listPreferredItemHeightSmall">
+            android:layout_height="wrap_content"
+            android:minHeight="?android:listPreferredItemHeightSmall">
 
             <ImageView
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
+                android:layout_height="?android:listPreferredItemHeightSmall"
                 android:layout_marginStart="@dimen/icon_margin"
                 android:src="@drawable/ic_food"
                 tools:ignore="ContentDescription" />
 
-            <android.support.v7.widget.AppCompatButton
-                android:id="@+id/food_add_button"
+            <LinearLayout
+                android:id="@+id/food_entry_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/normal_margin"
                 android:layout_marginStart="@dimen/huge_margin"
-                android:text="@string/add_food"
-                app:backgroundTint="?colorBackgroundFloating" />
+                android:animateLayoutChanges="true"
+                android:orientation="vertical">
+
+                <android.support.v7.widget.AppCompatButton
+                    android:id="@+id/food_add_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/icon_margin"
+                    android:text="@string/add_food"
+                    app:backgroundTint="?colorBackgroundFloating" />
+            </LinearLayout>
         </FrameLayout>
     </LinearLayout>
 </ScrollView>
