@@ -100,6 +100,13 @@ public class Serving implements Serializable {
         return defaultQuantity;
     }
 
+    public boolean equals(Serving other) {
+        return description.equals(other.description) &&
+                ((caption == null && other.caption == null) ||
+                        (caption != null && other.caption != null && caption.equals(other.caption))) &&
+                carbs == other.carbs && defaultQuantity == other.defaultQuantity;
+    }
+
     @Override
     public String toString() {
         return description;

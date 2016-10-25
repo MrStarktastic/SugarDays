@@ -82,14 +82,14 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                 carbsEdit.setEnabled(false);
                 food.setCarbs(Food.NO_CARBS);
             } else {
-                positiveButton.setEnabled(true);
-                carbsEdit.setEnabled(true);
-
                 try {
                     food.setCarbs(Float.parseFloat(carbsEdit.getText().toString()));
                 } catch (NumberFormatException e) {
                     food.setCarbs(Food.NO_CARBS);
                 }
+
+                carbsEdit.setEnabled(true);
+                positiveButton.setEnabled(!food.isSameAsOld());
             }
         }
 
@@ -109,12 +109,6 @@ public class FoodDialogFragment extends AppCompatDialogFragment
         titleRes = oldFood == null ? R.string.add_food : R.string.edit_food;
 
         food = new Food(oldFood);
-        food.setOnFoodChangeListener(new Food.OnFoodChangeListener() {
-            @Override
-            public void onFoodChange() {
-                positiveButton.setEnabled(true);
-            }
-        });
         requestBuilder = FatSecretRequestBuilder.getInstance();
 
         super.setArguments(args);
@@ -161,6 +155,8 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                 } catch (NumberFormatException e) {
                     food.setCarbs(Food.NO_CARBS);
                 }
+
+                positiveButton.setEnabled(!food.isSameAsOld());
             }
 
             @Override
@@ -210,7 +206,7 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                         food.setChosenServingPosition(servingSpinner.getSelectedItemPosition());
                         food.setQuantity(q);
                         carbsEdit.setText(NumericTextUtil.trimNumber(food.getCarbs()));
-                    }
+                    } else positiveButton.setEnabled(!food.isSameAsOld());
                 }
 
                 @Override
@@ -223,10 +219,10 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view,
                                            int position, long id) {
-                    final Serving serving = food.getChosenServing();
                     food.setChosenServingPosition(position);
-                    quantityEdit.setText(NumericTextUtil.trimNumber(food.getQuantity()));
-                    carbsEdit.setText(NumericTextUtil.trimNumber(food.getCarbs()));
+                    final Serving serving = food.getChosenServing();
+                    quantityEdit.setText(NumericTextUtil.trimNumber(serving.getDefaultQuantity()));
+                    carbsEdit.setText(NumericTextUtil.trimNumber(serving.getCarbs()));
                 }
 
                 @Override
@@ -341,12 +337,13 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                             }
 
                             obscurelySetFoodName(name);
-                            food.setServings(f.getServings());
+                            final Serving[] servings = f.getServings();
+                            food.setServings(servings);
                             servingSpinner.setAdapter(
-                                    new ServingAdapter(getContext(), food.getServings()));
+                                    new ServingAdapter(getContext(), servings));
                             qtyContainer.setVisibility(View.VISIBLE);
                             carbsEdit.setEnabled(true);
-                            positiveButton.setEnabled(true);
+                            positiveButton.setEnabled(!food.isSameAsOld());
                         }
                     } catch (ExecutionException | InterruptedException |
                             IllegalArgumentException e) {

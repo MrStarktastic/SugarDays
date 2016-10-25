@@ -503,7 +503,6 @@ public class EditLogActivity extends AppCompatActivity
             if (chosenServing.getCaption() != null)
                 servingStr += " - " + chosenServing.getCaption();
 
-            Toast.makeText(this, Float.toString(food.getQuantity()), Toast.LENGTH_SHORT).show();
             quantityText.setText(String.format("%s \u00D7 %s",
                     NumericTextUtil.trimNumber(food.getQuantity()), servingStr));
             quantityText.setVisibility(View.VISIBLE);

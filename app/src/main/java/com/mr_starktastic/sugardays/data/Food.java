@@ -70,7 +70,6 @@ public class Food implements Serializable {
     private float carbs;
 
     private Food oldInstance;
-    private OnFoodChangeListener listener;
 
     private Food(JSONObject jsonObject) throws JSONException {
         id = jsonObject.getLong(JSON_FOOD_ID_KEY);
@@ -101,8 +100,17 @@ public class Food implements Serializable {
         oldInstance = other;
     }
 
-    public boolean isNew() {
-        return oldInstance == null;
+    public Food getOldInstance() {
+        return oldInstance;
+    }
+
+    public boolean isSameAsOld() {
+        return oldInstance != null && name.equals(oldInstance.name) &&
+                quantity == oldInstance.quantity &&
+                ((servings == null && oldInstance.servings == null) ||
+                        (servings != null && oldInstance.servings != null &&
+                                getChosenServing().equals(oldInstance.getChosenServing()))) &&
+                carbs == oldInstance.carbs;
     }
 
     public long getId() {
@@ -118,9 +126,7 @@ public class Food implements Serializable {
     }
 
     public void setName(String name) {
-        if (!(this.name = name).isEmpty() && shouldCheckIfChanged() &&
-                !name.equals(oldInstance.name))
-            listener.onFoodChange();
+        this.name = name;
     }
 
     public Serving[] getServings() {
@@ -128,17 +134,15 @@ public class Food implements Serializable {
     }
 
     public void setServings(Serving[] servings) {
-        if ((this.servings = servings) != null) {
-            final Serving serving = servings[chosenServingPosition = 0];
-            carbs = (quantity = serving.getDefaultQuantity()) * serving.getCarbs() /
-                    serving.getDefaultQuantity();
+        this.servings = servings;
+    }
 
-            if (shouldCheckIfChanged() && (oldInstance.servings == null ||
-                    chosenServingPosition != oldInstance.chosenServingPosition ||
-                    quantity != oldInstance.quantity || carbs != oldInstance.carbs))
-                listener.onFoodChange();
-        } else if (shouldCheckIfChanged() && oldInstance.servings != null)
-            listener.onFoodChange();
+    public float getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(float quantity /* Assumes not 0 */) {
+        this.quantity = quantity;
     }
 
     public Serving getChosenServing() {
@@ -150,25 +154,7 @@ public class Food implements Serializable {
     }
 
     public void setChosenServingPosition(int position) {
-        final Serving serving = servings[chosenServingPosition = position];
-        carbs = quantity * serving.getCarbs() / serving.getDefaultQuantity();
-
-        if (shouldCheckIfChanged() && (chosenServingPosition != oldInstance.chosenServingPosition ||
-                carbs != oldInstance.carbs))
-            listener.onFoodChange();
-    }
-
-    public float getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(float quantity /* Assumes not 0 */) {
-        final Serving serving = servings[chosenServingPosition];
-        carbs = (this.quantity = quantity) * serving.getCarbs() / serving.getDefaultQuantity();
-
-        if (shouldCheckIfChanged() && (quantity != oldInstance.quantity ||
-                carbs != oldInstance.carbs))
-            listener.onFoodChange();
+        chosenServingPosition = position;
     }
 
     public float getCarbs() {
@@ -177,25 +163,10 @@ public class Food implements Serializable {
 
     public void setCarbs(float carbs) {
         this.carbs = carbs;
-
-        if (shouldCheckIfChanged() && carbs != oldInstance.carbs)
-            listener.onFoodChange();
-    }
-
-    private boolean shouldCheckIfChanged() {
-        return oldInstance != null && listener != null;
-    }
-
-    public void setOnFoodChangeListener(OnFoodChangeListener listener) {
-        this.listener = listener;
     }
 
     @Override
     public String toString() {
         return name;
-    }
-
-    public interface OnFoodChangeListener {
-        void onFoodChange();
     }
 }
