@@ -205,7 +205,9 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                     if (!TextUtils.isEmpty(str) && (q = Float.parseFloat(str)) != 0) {
                         food.setChosenServingPosition(servingSpinner.getSelectedItemPosition());
                         food.setQuantity(q);
-                        carbsEdit.setText(NumericTextUtil.trimNumber(food.getCarbs()));
+                        final Serving serving = food.getChosenServing();
+                        carbsEdit.setText(NumericTextUtil.trimNumber(
+                                serving.getCarbs() * q / serving.getDefaultQuantity()));
                     } else positiveButton.setEnabled(false);
                 }
 
@@ -249,7 +251,7 @@ public class FoodDialogFragment extends AppCompatDialogFragment
             if (servings != null) {
                 quantityEdit.setText(NumericTextUtil.trimNumber(food.getQuantity()));
                 servingSpinner.setAdapter(new ServingAdapter(getContext(), servings));
-                servingSpinner.setSelection(food.getChosenServingPosition());
+                servingSpinner.setSelection(food.getChosenServingPosition(), false);
             } else qtyContainer.setVisibility(View.GONE);
 
             final float carbs = food.getCarbs();
@@ -277,15 +279,18 @@ public class FoodDialogFragment extends AppCompatDialogFragment
     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
         switch (which) {
             case NEUTRAL:
-                if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.CAMERA) !=
-                        PackageManager.PERMISSION_GRANTED) {
-                    requestPermissions(new String[]{Manifest.permission.CAMERA},
-                            PERMISSION_REQ_CAMERA);
-                    return;
-                }
+                if (getContext().getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
+                    if (ContextCompat.checkSelfPermission(getContext(),
+                            Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                        requestPermissions(new String[]{Manifest.permission.CAMERA},
+                                PERMISSION_REQ_CAMERA);
+                        return;
+                    }
 
-                startActivityForResult(new Intent(getContext(), BarcodeScanActivity.class),
-                        REQ_SCAN_BARCODE);
+                    startActivityForResult(new Intent(getContext(), BarcodeScanActivity.class),
+                            REQ_SCAN_BARCODE);
+                }
                 break;
 
             case POSITIVE:

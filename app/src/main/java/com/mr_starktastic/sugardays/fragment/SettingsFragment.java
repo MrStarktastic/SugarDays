@@ -144,11 +144,16 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 
             if (PrefUtil.getBolusPredictSwitch(preferences)) {
                 final float minVal = targetRangePref.getSelectedMinValue().floatValue();
-                final float val = preferences.getFloat(PrefKeys.OPTIMAL_NORM_BG, 0) / 100 *
-                        (targetRangePref.getSelectedMaxValue().floatValue() - minVal);
+                final float maxVal = targetRangePref.getSelectedMaxValue().floatValue();
+                float normVal = preferences.getFloat(PrefKeys.OPTIMAL_NORM_BG, 0);
+                final float stp = bgSeekBarSteps[bgUnitIdx] / (maxVal - minVal) * 100;
+                final double mod = normVal % stp;
+                normVal -= mod > stp / 2 ? mod - stp : mod;
+                final float val = normVal / 100 * (maxVal - minVal) + minVal;
+
                 preferences.edit().putString(PrefKeys.OPTIMAL_BG, PrefUtil.toJson(
-                        new BloodSugar(bgUnitIdx == BloodSugar.MGDL_IDX ? (int) val : val)))
-                        .commit();
+                        bgUnitIdx == BloodSugar.MGDL_IDX ?
+                                new BloodSugar((int) val) : new BloodSugar(val))).commit();
             }
         } else if (prefScrKey.equals(PrefKeys.SCR_BOLUS_PREDICT))
             if (bolusPredictSwitchPref.isChecked()) {
@@ -158,10 +163,10 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 
                 preferences.edit()
                         .putFloat(PrefKeys.OPTIMAL_NORM_BG, optimalNorm)
-                        .putString(PrefKeys.OPTIMAL_BG, PrefUtil.toJson(
-                                new BloodSugar(bgUnitIdx == BloodSugar.MGDL_IDX ?
-                                        optimalPref.getSelectedMaxValue().intValue() :
-                                        optimalPref.getSelectedMaxValue().floatValue())))
+                        .putString(PrefKeys.OPTIMAL_BG, PrefUtil.toJson(bgUnitIdx ==
+                                BloodSugar.MGDL_IDX ?
+                                new BloodSugar(optimalPref.getSelectedMaxValue().intValue()) :
+                                new BloodSugar(optimalPref.getSelectedMaxValue().floatValue())))
                         .putFloat(PrefKeys.CORRECTION_FACTOR, correctionFactor)
                         .putFloat(PrefKeys.CARB_TO_INSULIN, carbToInsulin)
                         .commit();

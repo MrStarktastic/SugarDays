@@ -39,6 +39,9 @@
     <string name="scan_barcode">Scan barcode</string>
     <string name="barcode_food_not_found">Food not found</string>
 
+    <string name="correction">correction</string>
+    <string name="meal">meal</string>
+
     <!-- TODO: Remove this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 

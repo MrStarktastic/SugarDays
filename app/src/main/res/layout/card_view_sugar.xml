@@ -74,10 +74,12 @@
             android:layout_height="wrap_content"
             android:layout_alignBottom="@id/log_location_text"
             android:layout_alignParentEnd="true"
-            android:background="@drawable/round_rect_green"
+            android:background="@drawable/round_rect"
             android:padding="@dimen/tiny_margin"
             android:text="100 mg/dL"
-            android:textColor="@android:color/white" />
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            app:backgroundTint="@color/colorGoodBloodGlucose" />
 
     </RelativeLayout>
 </android.support.v7.widget.CardView>

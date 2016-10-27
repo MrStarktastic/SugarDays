@@ -1,7 +1,7 @@
 package com.mr_starktastic.sugardays.activity;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
+import android.animation.LayoutTransition;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
@@ -132,8 +132,9 @@ public class EditLogActivity extends AppCompatActivity
     private GregorianCalendar calendar;
     private GoogleApiClient googleApiClient;
     private String currentPhotoPath;
-    private boolean photoCompressEnabled;
+    private boolean photoCompressEnabled, bolusPredictEnabled;
     private ArrayList<Food> foods;
+    private float carbSum = 0;
 
     /**
      * Views
@@ -145,6 +146,7 @@ public class EditLogActivity extends AppCompatActivity
     private ImageView photoThumbnailView;
     private LabeledEditText bloodSugarEdit;
     private LinearLayout foodEntryContainer;
+    private LabeledEditText correctionBolus, mealBolus;
 
     /**
      * @param file File to extract path from.
@@ -175,26 +177,37 @@ public class EditLogActivity extends AppCompatActivity
             actionBar.setTitle(getString(R.string.action_title_add_log));
         }
 
-        googleApiClient = new GoogleApiClient
-                .Builder(this)
+        googleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this, this)
                 .addApi(Places.PLACE_DETECTION_API)
                 .addOnConnectionFailedListener(this)
                 .build();
 
         // Wiring-up views
-        typeSpinner = (AppCompatSpinner) findViewById(R.id.log_type_spinner);
-        dateText = (TextView) findViewById(R.id.date_text);
-        timeText = (TextView) findViewById(R.id.time_text);
-        locationEdit = (EditText) findViewById(R.id.location_edit_text);
-        final ImageView placePickerButton = (ImageView) findViewById(R.id.current_location_button);
-        final AppCompatButton changePhotoButton = (AppCompatButton) findViewById(R.id.photo_button);
+        final LinearLayout root = (LinearLayout) findViewById(R.id.scroll_view_content);
+        root.getLayoutTransition().enableTransitionType(LayoutTransition.CHANGING);
+        typeSpinner = (AppCompatSpinner) root.findViewById(R.id.log_type_spinner);
+        dateText = (TextView) root.findViewById(R.id.date_text);
+        timeText = (TextView) root.findViewById(R.id.time_text);
+        locationEdit = (EditText) root.findViewById(R.id.location_edit_text);
+        final ImageView placePickerButton =
+                (ImageView) root.findViewById(R.id.current_location_button);
+        final AppCompatButton changePhotoButton =
+                (AppCompatButton) root.findViewById(R.id.photo_button);
         final PopupMenu popupMenu = new PopupMenu(this, changePhotoButton);
         popupMenu.inflate(R.menu.photo_change);
         final Menu changePhotoMenu = popupMenu.getMenu();
-        photoThumbnailView = (ImageView) findViewById(R.id.thumbnail_photo);
-        bloodSugarEdit = (LabeledEditText) findViewById(R.id.blood_sugar_edit_text);
-        foodEntryContainer = (LinearLayout) findViewById(R.id.food_entry_container);
+        photoThumbnailView = (ImageView) root.findViewById(R.id.thumbnail_photo);
+        bloodSugarEdit = (LabeledEditText) root.findViewById(R.id.blood_sugar_edit_text);
+        foodEntryContainer = (LinearLayout) root.findViewById(R.id.food_entry_container);
+        final View insulinEditContainer = root.findViewById(R.id.insulin_edit_container);
+        correctionBolus =
+                (LabeledEditText) insulinEditContainer.findViewById(R.id.bolus_correction_edit);
+        correctionBolus.setLabels(
+                (TextView) insulinEditContainer.findViewById(R.id.bolus_correction_label));
+        mealBolus =
+                (LabeledEditText) insulinEditContainer.findViewById(R.id.bolus_meal_edit);
+        mealBolus.setLabels((TextView) insulinEditContainer.findViewById(R.id.bolus_meal_label));
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -348,11 +361,52 @@ public class EditLogActivity extends AppCompatActivity
             }
         });
 
+        if (bolusPredictEnabled = PrefUtil.getBolusPredictSwitch(preferences))
+            bloodSugarEdit.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    final float bloodSugar;
+
+                    try {
+                        bloodSugar = Float.parseFloat(s.toString());
+                    } catch (NumberFormatException e) {
+                        correctionBolus.setText(null);
+                        return;
+                    }
+
+                    final float val =
+                            (bloodSugar - PrefUtil.getOptimalBg(preferences).get(bgUnitIdx)) /
+                                    PrefUtil.getCorrectionFactor(preferences);
+                    correctionBolus.setText(val >= 0 ? NumericTextUtil.trimNumber(val) : null);
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+
+                }
+            });
+
         // Food
+        final LayoutTransition foodTransition = foodEntryContainer.getLayoutTransition();
+        foodTransition.setStartDelay(LayoutTransition.DISAPPEARING, 0);
+        foodTransition.setAnimateParentHierarchy(false);
+
         foods = new ArrayList<>();
         final AppCompatButton addFoodButton =
                 (AppCompatButton) foodEntryContainer.findViewById(R.id.food_add_button);
         addFoodButton.setOnClickListener(this);
+
+        // Insulin
+        final int therapy = PrefUtil.getInsulinTherapy(preferences);
+
+        if (therapy != PrefUtil.THERAPY_NO_INSULIN) {
+            // TODO Stuff
+        } else insulinEditContainer.setVisibility(View.GONE);
     }
 
     /**
@@ -481,7 +535,6 @@ public class EditLogActivity extends AppCompatActivity
         Picasso.with(this).load(currentPhotoPath).fit().centerCrop().into(photoThumbnailView);
     }
 
-    @SuppressLint("SetTextI18n")
     public void setFood(final int position, @NonNull Food food) {
         final View entry;
 
@@ -509,19 +562,24 @@ public class EditLogActivity extends AppCompatActivity
         } else quantityText.setVisibility(View.GONE);
 
         final float carbs = food.getCarbs();
+        carbSum += carbs;
         final TextView carbsText = (TextView) entry.findViewById(R.id.carbs_text);
 
         if (carbs != Food.NO_CARBS) {
-            carbsText.setText(NumericTextUtil.trimNumber(carbs) +
+            carbsText.setText(NumericTextUtil.trimNumber(carbs) + " " +
                     getString(R.string.grams_of_carb));
             carbsText.setVisibility(View.VISIBLE);
         } else carbsText.setVisibility(View.GONE);
 
         entry.setOnClickListener(this);
         foods.add(position, food);
+
+        if (bolusPredictEnabled)
+            mealBolus.setText(NumericTextUtil.trimNumber(carbSum / PrefUtil.getCarbToInsulin(
+                    PreferenceManager.getDefaultSharedPreferences(this))));
     }
 
-    private void openFoodEntry(int index, Food food) {
+    private void showFoodEntry(int index, Food food) {
         checkPermission(PERMISSION_REQ_IGNORED, Manifest.permission.INTERNET);
         final DialogFragment fragment = new FoodDialogFragment();
         final Bundle args = new Bundle();
@@ -695,18 +753,24 @@ public class EditLogActivity extends AppCompatActivity
                 break;
 
             case R.id.food_add_button:
-                openFoodEntry(foodEntryContainer.getChildCount() - 1, null);
+                showFoodEntry(foodEntryContainer.getChildCount() - 1, null);
                 break;
 
             case R.id.food_delete_button:
                 final int indexToRemove = foodEntryContainer.indexOfChild((View) view.getParent());
                 foodEntryContainer.removeViewAt(indexToRemove);
-                foods.remove(indexToRemove);
+                carbSum -= foods.remove(indexToRemove).getCarbs();
+
+                if (bolusPredictEnabled)
+                    mealBolus.setText(NumericTextUtil.trimNumber(
+                            carbSum / PrefUtil.getCarbToInsulin(
+                                    PreferenceManager.getDefaultSharedPreferences(this))));
                 break;
 
             case R.id.food_entry:
                 final int indexToView = foodEntryContainer.indexOfChild(view);
-                openFoodEntry(indexToView, foods.get(indexToView));
+                showFoodEntry(indexToView, foods.get(indexToView));
+                break;
         }
     }
 

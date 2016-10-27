@@ -10,6 +10,7 @@ import com.mr_starktastic.sugardays.data.PrefKeys;
  * A utility class for fetching {@link android.support.v7.preference.Preference}s.
  */
 public class PrefUtil {
+    public static final int THERAPY_NO_INSULIN = 0, THERAPY_PEN = 1, THERAPY_PUMP = 3;
     private static final Gson GSON = new Gson();
     private static final String DEFAULT_HYPO_STR = GSON.toJson(BloodSugar.DEFAULT_HYPO);
     private static final String DEFAULT_TARGET_RNG_STR = GSON.toJson(BloodSugar.DEFAULT_TARGET_RNG);
@@ -51,6 +52,12 @@ public class PrefUtil {
         return preferences.getBoolean(PrefKeys.BOLUS_PREDICT_SWITCH, DEFAULT_BOOLEAN_VALUE);
     }
 
+    public static BloodSugar getOptimalBg(SharedPreferences preferences) {
+        return GSON.fromJson(
+                preferences.getString(PrefKeys.OPTIMAL_BG, null),
+                BloodSugar.class);
+    }
+
     public static float getCorrectionFactor(SharedPreferences preferences) {
         return preferences.getFloat(PrefKeys.CORRECTION_FACTOR, DEFAULT_INT_VALUE);
     }
@@ -65,6 +72,11 @@ public class PrefUtil {
 
     public static boolean getPhotoCompressEnabled(SharedPreferences preferences) {
         return preferences.getBoolean(PrefKeys.COMPRESS_PHOTOS, DEFAULT_BOOLEAN_VALUE);
+    }
+
+    public static int getInsulinTherapy(SharedPreferences preferences) {
+        return Integer.parseInt(preferences
+                .getString(PrefKeys.INSULIN, Integer.toString(THERAPY_NO_INSULIN)));
     }
 
     public static String toJson(Object obj) {
