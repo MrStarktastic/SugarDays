@@ -16,6 +16,7 @@ public class PrefKeys {
     public static final String OPTIMAL_BG = "pref_optimal_bg";
     public static final String CORRECTION_FACTOR = "pref_correction_factor";
     public static final String CARB_TO_INSULIN = "pref_carb_to_insulin";
+    public static final String INSULIN_INCREMENT = "pref_insulin_increment";
     public static final String AUTO_LOCATION = "pref_auto_location";
     public static final String COMPRESS_PHOTOS = "pref_compress_photos";
 }

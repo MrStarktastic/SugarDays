@@ -63,7 +63,8 @@
             android:name=".activity.PillManagerActivity"
             android:label="@string/pref_pills_title"
             android:parentActivityName=".activity.SettingsActivity"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait"
+            android:theme="@style/Base.AppTheme">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.mr_starktastic.sugardays.activity.SettingsActivity" />

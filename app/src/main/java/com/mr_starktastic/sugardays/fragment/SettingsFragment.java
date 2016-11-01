@@ -48,6 +48,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     private SwitchStripPreference bolusPredictSwitchPref;
     private SeekBarPreference optimalPref;
     private InlineEditTextPreference correctionFactorPref, carbToInsulinPref;
+    private ListPreference insulinIncrementPref;
     private SwitchPreferenceCompat savePhotosPref, autoLocationPref;
 
     @Override
@@ -118,6 +119,9 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                     perInsulinUnit);
             carbToInsulinPref = new InlineEditTextPreference(context,
                     getString(R.string.grams_of_carb) + " " + perInsulinUnit);
+            insulinIncrementPref = (ListPreference) findPreference(PrefKeys.INSULIN_INCREMENT);
+            insulinIncrementPref.setOrder(4);
+            insulinIncrementPref.setVisible(false);
         }
     }
 
@@ -260,6 +264,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             screen.addPreference(optimalPref);
             screen.addPreference(correctionFactorPref);
             screen.addPreference(carbToInsulinPref);
+            insulinIncrementPref.setVisible(true);
         }
 
         bolusPredictSwitchPref.setOnCheckedChangeListener(
@@ -270,10 +275,14 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                             screen.addPreference(optimalPref);
                             screen.addPreference(correctionFactorPref);
                             screen.addPreference(carbToInsulinPref);
+                            screen.addPreference(insulinIncrementPref);
+                            insulinIncrementPref.setVisible(true);
                         } else {
                             screen.removePreference(optimalPref);
                             screen.removePreference(correctionFactorPref);
                             screen.removePreference(carbToInsulinPref);
+                            screen.removePreference(insulinIncrementPref);
+                            insulinIncrementPref.setVisible(false);
                         }
                     }
                 });

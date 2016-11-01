@@ -18,6 +18,7 @@
         <item>Lunch</item>
         <item>Dinner</item>
         <item>Bedtime</item>
+        <item>Other</item>
     </array>
 
     <string name="location_hint">Location</string>
@@ -39,8 +40,14 @@
     <string name="scan_barcode">Scan barcode</string>
     <string name="barcode_food_not_found">Food not found</string>
 
-    <string name="correction">correction</string>
-    <string name="meal">meal</string>
+    <string name="correction">corr. bolus</string>
+    <string name="meal">meal bolus</string>
+
+    <string name="basal_label">basal</string>
+    <string name="temp_basal_label">temp basal</string>
+    <string name="temp_basal_dialog_title">Set temp basal</string>
+    <string name="temp_basal_duration_label">duration (hh:mm)</string>
+    <string name="temp_basal_rate_label">rate (%)</string>
 
     <!-- TODO: Remove this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
@@ -92,6 +99,23 @@
     <string name="pref_carb_to_insulin_title">Carb-to-insulin ratio</string>
     <string name="per_insulin_unit">per insulin unit</string>
     <string name="grams_of_carb">g of carb</string>
+    <string name="pref_insulin_increment_title">Insulin increment</string>
+    <string-array name="pref_insulin_increment_entries">
+        <item>1</item>
+        <item>0.5</item>
+        <item>0.25</item>
+        <item>0.1</item>
+        <item>0.05</item>
+        <item>0.025</item>
+    </string-array>
+    <string-array name="pref_insulin_increment_entryValues">
+        <item>1</item>
+        <item>0.5</item>
+        <item>0.25</item>
+        <item>0.1</item>
+        <item>0.05</item>
+        <item>0.025</item>
+    </string-array>
 
     <string name="pref_cat_extras_title">Extras</string>
 

@@ -12,13 +12,10 @@ import android.support.design.widget.TextInputEditText;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatDialogFragment;
 import android.support.v7.widget.AppCompatSpinner;
-import android.text.Editable;
 import android.text.TextUtils;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ProgressBar;
@@ -33,8 +30,9 @@ import com.mr_starktastic.sugardays.activity.BarcodeScanActivity;
 import com.mr_starktastic.sugardays.activity.EditLogActivity;
 import com.mr_starktastic.sugardays.data.Food;
 import com.mr_starktastic.sugardays.data.Serving;
-import com.mr_starktastic.sugardays.internet.FatSecretRequestBuilder;
 import com.mr_starktastic.sugardays.internet.FetchAndParseJSONTask;
+import com.mr_starktastic.sugardays.text.SimpleTextWatcher;
+import com.mr_starktastic.sugardays.util.FatSecretRequestBuilder;
 import com.mr_starktastic.sugardays.util.NumericTextUtil;
 import com.mr_starktastic.sugardays.widget.FoodAutoCompleteAdapter;
 import com.mr_starktastic.sugardays.widget.LoadingAutoCompleteTextView;
@@ -60,18 +58,14 @@ public class FoodDialogFragment extends AppCompatDialogFragment
     private TextInputEditText quantityEdit;
     private AppCompatSpinner servingSpinner;
     private TextInputEditText carbsEdit;
+
     /**
-     * This {@link TextWatcher} operates with the assumption that it's never triggered
+     * This {@link SimpleTextWatcher} operates with the assumption that it's never triggered
      * upon an item selection from the autocomplete dropdown.
      */
-    private final TextWatcher foodNameWatcher = new TextWatcher() {
+    private final SimpleTextWatcher foodNameWatcher = new SimpleTextWatcher() {
         @Override
-        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-        }
-
-        @Override
-        public void onTextChanged(CharSequence s, int start, int before, int count) {
+        public void onTextChanged(CharSequence s) {
             qtyContainer.setVisibility(View.GONE);
             final String str = s.toString().trim();
             food.setName(str);
@@ -91,11 +85,6 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                 carbsEdit.setEnabled(true);
                 positiveButton.setEnabled(!food.isSameAsOld());
             }
-        }
-
-        @Override
-        public void afterTextChanged(Editable s) {
-
         }
     };
 
@@ -142,14 +131,9 @@ public class FoodDialogFragment extends AppCompatDialogFragment
         loadData();
 
         foodNameEdit.addTextChangedListener(foodNameWatcher);
-        carbsEdit.addTextChangedListener(new TextWatcher() {
+        carbsEdit.addTextChangedListener(new SimpleTextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int stat, int before, int count) {
+            public void onTextChanged(CharSequence s) {
                 try {
                     food.setCarbs(Float.parseFloat(s.toString()));
                 } catch (NumberFormatException e) {
@@ -157,11 +141,6 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                 }
 
                 positiveButton.setEnabled(!food.isSameAsOld());
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
             }
         });
 
@@ -191,14 +170,9 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                 }
             });
 
-            quantityEdit.addTextChangedListener(new TextWatcher() {
+            quantityEdit.addTextChangedListener(new SimpleTextWatcher() {
                 @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-                }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                public void onTextChanged(CharSequence s) {
                     final String str = s.toString();
                     final float q;
 
@@ -206,14 +180,9 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                         food.setChosenServingPosition(servingSpinner.getSelectedItemPosition());
                         food.setQuantity(q);
                         final Serving serving = food.getChosenServing();
-                        carbsEdit.setText(NumericTextUtil.trimNumber(
+                        carbsEdit.setText(NumericTextUtil.trim(
                                 serving.getCarbs() * q / serving.getDefaultQuantity()));
                     } else positiveButton.setEnabled(false);
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {
-
                 }
             });
 
@@ -223,8 +192,8 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                                            int position, long id) {
                     food.setChosenServingPosition(position);
                     final Serving serving = food.getChosenServing();
-                    quantityEdit.setText(NumericTextUtil.trimNumber(serving.getDefaultQuantity()));
-                    carbsEdit.setText(NumericTextUtil.trimNumber(serving.getCarbs()));
+                    quantityEdit.setText(NumericTextUtil.trim(serving.getDefaultQuantity()));
+                    carbsEdit.setText(NumericTextUtil.trim(serving.getCarbs()));
                 }
 
                 @Override
@@ -233,10 +202,6 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                 }
             });
         }
-
-        // noinspection ConstantConditions
-        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNCHANGED |
-                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         return dialog;
     }
@@ -249,7 +214,7 @@ public class FoodDialogFragment extends AppCompatDialogFragment
             final Serving[] servings = food.getServings();
 
             if (servings != null) {
-                quantityEdit.setText(NumericTextUtil.trimNumber(food.getQuantity()));
+                quantityEdit.setText(NumericTextUtil.trim(food.getQuantity()));
                 servingSpinner.setAdapter(new ServingAdapter(getContext(), servings));
                 servingSpinner.setSelection(food.getChosenServingPosition(), false);
             } else qtyContainer.setVisibility(View.GONE);
@@ -257,7 +222,7 @@ public class FoodDialogFragment extends AppCompatDialogFragment
             final float carbs = food.getCarbs();
 
             if (carbs != Food.NO_CARBS)
-                carbsEdit.setText(NumericTextUtil.trimNumber(carbs));
+                carbsEdit.setText(NumericTextUtil.trim(carbs));
         } else {
             qtyContainer.setVisibility(View.GONE);
             carbsEdit.setEnabled(false);

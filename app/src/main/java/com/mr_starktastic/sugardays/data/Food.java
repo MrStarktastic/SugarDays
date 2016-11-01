@@ -2,8 +2,8 @@ package com.mr_starktastic.sugardays.data;
 
 import android.os.AsyncTask;
 
-import com.mr_starktastic.sugardays.internet.FatSecretRequestBuilder;
 import com.mr_starktastic.sugardays.internet.FetchAndParseJSONTask;
+import com.mr_starktastic.sugardays.util.FatSecretRequestBuilder;
 
 import org.json.JSONArray;
 import org.json.JSONException;

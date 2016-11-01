@@ -10,7 +10,7 @@ import com.mr_starktastic.sugardays.data.PrefKeys;
  * A utility class for fetching {@link android.support.v7.preference.Preference}s.
  */
 public class PrefUtil {
-    public static final int THERAPY_NO_INSULIN = 0, THERAPY_PEN = 1, THERAPY_PUMP = 3;
+    public static final int THERAPY_NO_INSULIN = 0, THERAPY_PEN = 1, THERAPY_PUMP = 2;
     private static final Gson GSON = new Gson();
     private static final String DEFAULT_HYPO_STR = GSON.toJson(BloodSugar.DEFAULT_HYPO);
     private static final String DEFAULT_TARGET_RNG_STR = GSON.toJson(BloodSugar.DEFAULT_TARGET_RNG);
@@ -64,6 +64,10 @@ public class PrefUtil {
 
     public static float getCarbToInsulin(SharedPreferences preferences) {
         return preferences.getFloat(PrefKeys.CARB_TO_INSULIN, DEFAULT_INT_VALUE);
+    }
+
+    public static float getInsulinIncrement(SharedPreferences preferences) {
+        return Float.parseFloat(preferences.getString(PrefKeys.INSULIN_INCREMENT, "1"));
     }
 
     public static boolean getAutoLocation(SharedPreferences preferences) {

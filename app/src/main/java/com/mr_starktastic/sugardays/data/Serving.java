@@ -73,7 +73,7 @@ public class Serving implements Serializable {
         final String weight, weightUnit;
 
         try {
-            weight = NumericTextUtil.trimNumber(jsonObject.getString(JSON_WEIGHT_KEY));
+            weight = NumericTextUtil.trim(jsonObject.getString(JSON_WEIGHT_KEY));
             weightUnit = jsonObject.getString(JSON_WEIGHT_UNIT_KEY);
         } catch (JSONException e) {
             caption = jsonObject.getString(JSON_SERVING_DESCRIPTION_KEY);
@@ -100,7 +100,7 @@ public class Serving implements Serializable {
         return defaultQuantity;
     }
 
-    public boolean equals(Serving other) {
+    boolean equals(Serving other) {
         return description.equals(other.description) &&
                 ((caption == null && other.caption == null) ||
                         (caption != null && other.caption != null && caption.equals(other.caption))) &&

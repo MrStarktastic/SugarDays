@@ -32,7 +32,7 @@ public class InlineEditTextPreference extends Preference {
         numberEditText = (EditText) holder.findViewById(R.id.number_edit);
 
         if (value != 0)
-            numberEditText.setText(NumericTextUtil.trimNumber(value));
+            numberEditText.setText(NumericTextUtil.trim(value));
 
         final TextView numberEditLabel = (TextView) holder.findViewById(R.id.number_label);
         numberEditLabel.setText(label);

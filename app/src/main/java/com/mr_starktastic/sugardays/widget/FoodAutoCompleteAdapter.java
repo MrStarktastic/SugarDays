@@ -8,8 +8,8 @@ import android.widget.Filter;
 
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.Food;
-import com.mr_starktastic.sugardays.internet.FatSecretRequestBuilder;
 import com.mr_starktastic.sugardays.internet.FetchAndParseJSONTask;
+import com.mr_starktastic.sugardays.util.FatSecretRequestBuilder;
 
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;

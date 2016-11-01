@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="?android:listPreferredItemHeightSmall"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.mr_starktastic.sugardays.widget.LabeledEditText
+            android:id="@+id/hours_edit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ems="2"
+            android:inputType="number"
+            android:maxLength="2"
+            android:nextFocusDown="@+id/minutes_edit" />
+
+        <TextView
+            android:id="@+id/duration_delim_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=":"
+            tools:ignore="HardcodedText" />
+
+        <com.mr_starktastic.sugardays.widget.LabeledEditText
+            android:id="@+id/minutes_edit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/tiny_margin"
+            android:ems="2"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            android:id="@+id/duration_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/temp_basal_duration_label" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="?android:listPreferredItemHeightSmall"
+        android:gravity="center_vertical">
+
+        <com.mr_starktastic.sugardays.widget.LabeledEditText
+            android:id="@+id/rate_edit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/tiny_margin"
+            android:ems="2"
+            android:inputType="number"
+            android:maxLength="3" />
+
+        <TextView
+            android:id="@+id/rate_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/temp_basal_rate_label" />
+
+    </LinearLayout>
+
+</LinearLayout>

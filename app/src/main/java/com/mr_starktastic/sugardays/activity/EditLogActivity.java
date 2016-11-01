@@ -27,7 +27,6 @@ import android.support.v7.widget.PopupMenu;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
-import android.text.Spanned;
 import android.text.TextWatcher;
 import android.text.format.DateFormat;
 import android.view.Menu;
@@ -36,6 +35,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -56,7 +56,10 @@ import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.BloodSugar;
 import com.mr_starktastic.sugardays.data.Food;
 import com.mr_starktastic.sugardays.data.Serving;
+import com.mr_starktastic.sugardays.data.TempBasal;
 import com.mr_starktastic.sugardays.fragment.FoodDialogFragment;
+import com.mr_starktastic.sugardays.fragment.TempBasalDialogFragment;
+import com.mr_starktastic.sugardays.text.InputFilterMax;
 import com.mr_starktastic.sugardays.util.NumericTextUtil;
 import com.mr_starktastic.sugardays.util.PrefUtil;
 import com.mr_starktastic.sugardays.widget.LabeledEditText;
@@ -135,6 +138,7 @@ public class EditLogActivity extends AppCompatActivity
     private boolean photoCompressEnabled, bolusPredictEnabled;
     private ArrayList<Food> foods;
     private float carbSum = 0;
+    private TempBasal tempBasal;
 
     /**
      * Views
@@ -146,7 +150,9 @@ public class EditLogActivity extends AppCompatActivity
     private ImageView photoThumbnailView;
     private LabeledEditText bloodSugarEdit;
     private LinearLayout foodEntryContainer;
-    private LabeledEditText correctionBolus, mealBolus;
+    private LabeledEditText corrBolusEdit, mealBolusEdit, basalEdit;
+    private TextView tempBasalText;
+    private ImageButton clearTempBasalButton;
 
     /**
      * @param file File to extract path from.
@@ -201,13 +207,18 @@ public class EditLogActivity extends AppCompatActivity
         bloodSugarEdit = (LabeledEditText) root.findViewById(R.id.blood_sugar_edit_text);
         foodEntryContainer = (LinearLayout) root.findViewById(R.id.food_entry_container);
         final View insulinEditContainer = root.findViewById(R.id.insulin_edit_container);
-        correctionBolus =
+        corrBolusEdit =
                 (LabeledEditText) insulinEditContainer.findViewById(R.id.bolus_correction_edit);
-        correctionBolus.setLabels(
+        corrBolusEdit.setLabels(
                 (TextView) insulinEditContainer.findViewById(R.id.bolus_correction_label));
-        mealBolus =
+        mealBolusEdit =
                 (LabeledEditText) insulinEditContainer.findViewById(R.id.bolus_meal_edit);
-        mealBolus.setLabels((TextView) insulinEditContainer.findViewById(R.id.bolus_meal_label));
+        mealBolusEdit.setLabels(
+                (TextView) insulinEditContainer.findViewById(R.id.bolus_meal_label));
+        final View basalEditContainer =
+                insulinEditContainer.findViewById(R.id.basal_edit_container);
+        final View tempBasalEditContainer =
+                insulinEditContainer.findViewById(R.id.temp_basal_edit_container);
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -335,6 +346,7 @@ public class EditLogActivity extends AppCompatActivity
             });
         }
 
+        bolusPredictEnabled = PrefUtil.getBolusPredictSwitch(preferences);
         bloodSugarEdit.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -353,6 +365,18 @@ public class EditLogActivity extends AppCompatActivity
 
                 bloodSugarEdit.setTextColor(val <= hypo || val >= hyper ? badBgColor :
                         val >= minTargetRng && val <= maxTargetRng ? goodBgColor : medBgColor);
+
+                if (bolusPredictEnabled) {
+                    final float factor = PrefUtil.getCorrectionFactor(preferences);
+
+                    if (factor > 0) {
+                        final float corr =
+                                (val - PrefUtil.getOptimalBg(preferences).get(bgUnitIdx)) / factor;
+                        corrBolusEdit.setText(corr > 0 ?
+                                NumericTextUtil.roundToIncrement(
+                                        corr, PrefUtil.getInsulinIncrement(preferences)) : null);
+                    }
+                }
             }
 
             @Override
@@ -360,36 +384,6 @@ public class EditLogActivity extends AppCompatActivity
 
             }
         });
-
-        if (bolusPredictEnabled = PrefUtil.getBolusPredictSwitch(preferences))
-            bloodSugarEdit.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-                }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    final float bloodSugar;
-
-                    try {
-                        bloodSugar = Float.parseFloat(s.toString());
-                    } catch (NumberFormatException e) {
-                        correctionBolus.setText(null);
-                        return;
-                    }
-
-                    final float val =
-                            (bloodSugar - PrefUtil.getOptimalBg(preferences).get(bgUnitIdx)) /
-                                    PrefUtil.getCorrectionFactor(preferences);
-                    correctionBolus.setText(val >= 0 ? NumericTextUtil.trimNumber(val) : null);
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {
-
-                }
-            });
 
         // Food
         final LayoutTransition foodTransition = foodEntryContainer.getLayoutTransition();
@@ -402,11 +396,28 @@ public class EditLogActivity extends AppCompatActivity
         addFoodButton.setOnClickListener(this);
 
         // Insulin
-        final int therapy = PrefUtil.getInsulinTherapy(preferences);
+        switch (PrefUtil.getInsulinTherapy(preferences)) {
+            case PrefUtil.THERAPY_PEN:
+                tempBasalEditContainer.setVisibility(View.GONE);
+                basalEdit = (LabeledEditText) basalEditContainer.findViewById(R.id.basal_edit);
+                basalEdit.setLabels((TextView) basalEditContainer.findViewById(R.id.basal_label));
+                break;
 
-        if (therapy != PrefUtil.THERAPY_NO_INSULIN) {
-            // TODO Stuff
-        } else insulinEditContainer.setVisibility(View.GONE);
+            case PrefUtil.THERAPY_PUMP:
+                basalEditContainer.setVisibility(View.GONE);
+                tempBasalText =
+                        (TextView) tempBasalEditContainer.findViewById(R.id.temp_basal_text);
+                tempBasalText.setOnClickListener(this);
+                clearTempBasalButton = (ImageButton)
+                        tempBasalEditContainer.findViewById(R.id.temp_basal_clear_button);
+                clearTempBasalButton.setOnClickListener(this);
+                setTempBasal(tempBasal);
+                break;
+
+            case PrefUtil.THERAPY_NO_INSULIN:
+                insulinEditContainer.setVisibility(View.GONE);
+                break;
+        }
     }
 
     /**
@@ -557,7 +568,7 @@ public class EditLogActivity extends AppCompatActivity
                 servingStr += " - " + chosenServing.getCaption();
 
             quantityText.setText(String.format("%s \u00D7 %s",
-                    NumericTextUtil.trimNumber(food.getQuantity()), servingStr));
+                    NumericTextUtil.trim(food.getQuantity()), servingStr));
             quantityText.setVisibility(View.VISIBLE);
         } else quantityText.setVisibility(View.GONE);
 
@@ -566,17 +577,14 @@ public class EditLogActivity extends AppCompatActivity
         final TextView carbsText = (TextView) entry.findViewById(R.id.carbs_text);
 
         if (carbs != Food.NO_CARBS) {
-            carbsText.setText(NumericTextUtil.trimNumber(carbs) + " " +
+            carbsText.setText(NumericTextUtil.trim(carbs) + " " +
                     getString(R.string.grams_of_carb));
             carbsText.setVisibility(View.VISIBLE);
         } else carbsText.setVisibility(View.GONE);
 
         entry.setOnClickListener(this);
         foods.add(position, food);
-
-        if (bolusPredictEnabled)
-            mealBolus.setText(NumericTextUtil.trimNumber(carbSum / PrefUtil.getCarbToInsulin(
-                    PreferenceManager.getDefaultSharedPreferences(this))));
+        setMealBolus();
     }
 
     private void showFoodEntry(int index, Food food) {
@@ -587,6 +595,33 @@ public class EditLogActivity extends AppCompatActivity
         args.putSerializable(FoodDialogFragment.EXTRA_FOOD, food);
         fragment.setArguments(args);
         fragment.show(getSupportFragmentManager(), null);
+    }
+
+    private void setMealBolus() {
+        if (bolusPredictEnabled) {
+            final SharedPreferences preferences =
+                    PreferenceManager.getDefaultSharedPreferences(this);
+            final float ratio = PrefUtil.getCarbToInsulin(preferences);
+
+            if (ratio > 0) {
+                final float val = carbSum / ratio;
+                mealBolusEdit.setText(val > 0 ?
+                        NumericTextUtil.roundToIncrement(
+                                val, PrefUtil.getInsulinIncrement(preferences)) : null);
+            }
+        }
+    }
+
+    public void setTempBasal(TempBasal tempBasal) {
+        if (tempBasal != null) {
+            tempBasalText.setText(tempBasal.toString());
+            clearTempBasalButton.setVisibility(View.VISIBLE);
+        } else {
+            tempBasalText.setText(null);
+            clearTempBasalButton.setVisibility(View.GONE);
+        }
+
+        this.tempBasal = tempBasal;
     }
 
     @Override
@@ -701,7 +736,7 @@ public class EditLogActivity extends AppCompatActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.edit_log, menu);
-        (saveButton = menu.findItem(R.id.action_save)).setEnabled(false);
+        (saveButton = menu.findItem(R.id.action_save)).setOnMenuItemClickListener(this);
 
         return true;
     }
@@ -760,16 +795,24 @@ public class EditLogActivity extends AppCompatActivity
                 final int indexToRemove = foodEntryContainer.indexOfChild((View) view.getParent());
                 foodEntryContainer.removeViewAt(indexToRemove);
                 carbSum -= foods.remove(indexToRemove).getCarbs();
-
-                if (bolusPredictEnabled)
-                    mealBolus.setText(NumericTextUtil.trimNumber(
-                            carbSum / PrefUtil.getCarbToInsulin(
-                                    PreferenceManager.getDefaultSharedPreferences(this))));
+                setMealBolus();
                 break;
 
             case R.id.food_entry:
                 final int indexToView = foodEntryContainer.indexOfChild(view);
                 showFoodEntry(indexToView, foods.get(indexToView));
+                break;
+
+            case R.id.temp_basal_text:
+                final TempBasalDialogFragment dialogFragment = new TempBasalDialogFragment();
+                final Bundle args = new Bundle();
+                args.putSerializable(TempBasalDialogFragment.EXTRA_TEMP_BASAL, tempBasal);
+                dialogFragment.setArguments(args);
+                dialogFragment.show(getSupportFragmentManager(), null);
+                break;
+
+            case R.id.temp_basal_clear_button:
+                setTempBasal(null);
                 break;
         }
     }
@@ -812,25 +855,5 @@ public class EditLogActivity extends AppCompatActivity
             setLocationText(likelyPlaces.get(0).getPlace());
 
         likelyPlaces.release();
-    }
-
-    private class InputFilterMax implements InputFilter {
-        private float max;
-
-        private InputFilterMax(float max) {
-            this.max = max;
-        }
-
-        @Override
-        public CharSequence filter(CharSequence source, int start, int end,
-                                   Spanned dest, int dstart, int dend) {
-            try {
-                if (Float.parseFloat(dest.toString() + source.toString()) <= max)
-                    return null;
-            } catch (NumberFormatException ignored) {
-            }
-
-            return "";
-        }
     }
 }

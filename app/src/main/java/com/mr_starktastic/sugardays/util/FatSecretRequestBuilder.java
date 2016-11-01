@@ -1,4 +1,4 @@
-package com.mr_starktastic.sugardays.internet;
+package com.mr_starktastic.sugardays.util;
 
 import android.net.Uri;
 import android.support.annotation.NonNull;

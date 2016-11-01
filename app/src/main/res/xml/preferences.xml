@@ -55,6 +55,14 @@
                 android:layout="@layout/preference_switch_strip"
                 android:summary="@string/pref_bolus_predict_off_summary" />
 
+            <ListPreference xmlns:android="http://schemas.android.com/apk/res/android"
+                android:defaultValue="1"
+                android:entries="@array/pref_insulin_increment_entries"
+                android:entryValues="@array/pref_insulin_increment_entryValues"
+                android:key="pref_insulin_increment"
+                android:summary="%s"
+                android:title="@string/pref_insulin_increment_title" />
+
         </android.support.v7.preference.PreferenceScreen>
 
     </android.support.v7.preference.PreferenceCategory>
