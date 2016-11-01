@@ -24,18 +24,16 @@ import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.AppCompatButton;
 import android.support.v7.widget.AppCompatSpinner;
 import android.support.v7.widget.PopupMenu;
-import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
-import android.text.TextWatcher;
 import android.text.format.DateFormat;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -60,6 +58,7 @@ import com.mr_starktastic.sugardays.data.TempBasal;
 import com.mr_starktastic.sugardays.fragment.FoodDialogFragment;
 import com.mr_starktastic.sugardays.fragment.TempBasalDialogFragment;
 import com.mr_starktastic.sugardays.text.InputFilterMax;
+import com.mr_starktastic.sugardays.text.SimpleTextWatcher;
 import com.mr_starktastic.sugardays.util.NumericTextUtil;
 import com.mr_starktastic.sugardays.util.PrefUtil;
 import com.mr_starktastic.sugardays.widget.LabeledEditText;
@@ -152,7 +151,7 @@ public class EditLogActivity extends AppCompatActivity
     private LinearLayout foodEntryContainer;
     private LabeledEditText corrBolusEdit, mealBolusEdit, basalEdit;
     private TextView tempBasalText;
-    private ImageButton clearTempBasalButton;
+    private Button clearTempBasalButton;
 
     /**
      * @param file File to extract path from.
@@ -347,14 +346,9 @@ public class EditLogActivity extends AppCompatActivity
         }
 
         bolusPredictEnabled = PrefUtil.getBolusPredictSwitch(preferences);
-        bloodSugarEdit.addTextChangedListener(new TextWatcher() {
+        bloodSugarEdit.addTextChangedListener(new SimpleTextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            public void onTextChanged(CharSequence s) {
                 final float val;
 
                 try {
@@ -377,11 +371,6 @@ public class EditLogActivity extends AppCompatActivity
                                         corr, PrefUtil.getInsulinIncrement(preferences)) : null);
                     }
                 }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
             }
         });
 
@@ -408,8 +397,8 @@ public class EditLogActivity extends AppCompatActivity
                 tempBasalText =
                         (TextView) tempBasalEditContainer.findViewById(R.id.temp_basal_text);
                 tempBasalText.setOnClickListener(this);
-                clearTempBasalButton = (ImageButton)
-                        tempBasalEditContainer.findViewById(R.id.temp_basal_clear_button);
+                clearTempBasalButton =
+                        (Button) tempBasalEditContainer.findViewById(R.id.temp_basal_clear_button);
                 clearTempBasalButton.setOnClickListener(this);
                 setTempBasal(tempBasal);
                 break;
