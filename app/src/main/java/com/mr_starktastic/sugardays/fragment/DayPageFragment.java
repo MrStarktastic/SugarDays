@@ -1,9 +1,18 @@
 package com.mr_starktastic.sugardays.fragment;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.view.ViewCompat;
+import android.support.v7.preference.PreferenceManager;
+import android.support.v7.widget.CardView;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,56 +20,62 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.mr_starktastic.sugardays.R;
+import com.mr_starktastic.sugardays.data.BloodSugar;
+import com.mr_starktastic.sugardays.data.Day;
+import com.mr_starktastic.sugardays.data.Log;
+import com.mr_starktastic.sugardays.util.NumericTextUtil;
+import com.mr_starktastic.sugardays.util.PrefUtil;
+import com.squareup.picasso.Picasso;
 
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link DayPageFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link DayPageFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
+import org.apache.commons.lang3.time.FastDateFormat;
+
+import java.util.ArrayList;
+
+import io.paperdb.Paper;
+
 public class DayPageFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    private static final String ARG_DAY_CODE = "DAY_CODE";
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private static final FastDateFormat TIME_FORMAT =
+            FastDateFormat.getTimeInstance(FastDateFormat.SHORT);
 
-    private OnFragmentInteractionListener mListener;
+    private static SpaceDecoration spaceDecoration;
+
+    private String dayCode;
+
+    private OnFragmentInteractionListener listener;
+
+    private RecyclerView recyclerView;
 
     public DayPageFragment() {
         // Required empty public constructor
     }
 
     /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
+     * A factory method creates a new instance of this fragment using the provided parameters.
      *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment DayPageFragment.
+     * @param dayCode A year + month + day_of_month combination of the required day.
+     * @return A new instance of fragment {@link DayPageFragment}.
      */
-    // TODO: Rename and change types and number of parameters
-    public static DayPageFragment newInstance(String param1, String param2) {
-        DayPageFragment fragment = new DayPageFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
+    public static DayPageFragment newInstance(String dayCode) {
+        final DayPageFragment fragment = new DayPageFragment();
+        final Bundle args = new Bundle();
+        args.putString(ARG_DAY_CODE, dayCode);
         fragment.setArguments(args);
+
         return fragment;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
+        final Bundle args = getArguments();
+
+        if (args != null)
+            dayCode = args.getString(ARG_DAY_CODE);
+        if (spaceDecoration == null)
+            spaceDecoration = new SpaceDecoration(
+                    getResources().getDimensionPixelSize(R.dimen.normal_margin));
     }
 
     @Override
@@ -68,26 +83,32 @@ public class DayPageFragment extends Fragment {
                              Bundle savedInstanceState) {
         final View root = inflater.inflate(R.layout.fragment_day_page, container, false);
 
-        final TextView textView = (TextView) root.findViewById(R.id.test_text);
-        textView.setText(textView.getText() + " " + mParam1 + " " + mParam2);
-        final ImageView imageView = (ImageView) root.findViewById(R.id.photo);
-        //Picasso.with(getContext()).load(R.drawable.london_1).fit().centerCrop().into(imageView);
+        recyclerView = (RecyclerView) root.findViewById(R.id.day_recycler_view);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        ViewCompat.setNestedScrollingEnabled(recyclerView, false);
+
+        final Day day = Paper.book().read(dayCode);
+        final ArrayList<Log> logs;
+
+        if (day != null && (logs = day.getLogs()) != null) {
+            recyclerView.setAdapter(new LogAdapter(logs));
+            recyclerView.addItemDecoration(spaceDecoration);
+        }
 
         return root;
     }
 
     // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
+        if (listener != null)
+            listener.onFragmentInteraction(uri);
     }
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
+            listener = (OnFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");
@@ -97,7 +118,7 @@ public class DayPageFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
-        mListener = null;
+        listener = null;
     }
 
     /**
@@ -113,5 +134,108 @@ public class DayPageFragment extends Fragment {
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
+    }
+
+    private static class SpaceDecoration extends RecyclerView.ItemDecoration {
+        private int space;
+
+        private SpaceDecoration(int space) {
+            this.space = space;
+        }
+
+        @Override
+        public void getItemOffsets(Rect outRect, View view, RecyclerView parent,
+                                   RecyclerView.State state) {
+            outRect.left = space;
+            outRect.right = space;
+            outRect.bottom = space;
+
+            if (parent.getChildAdapterPosition(view) == 0)
+                outRect.top = space;
+        }
+    }
+
+    // TODO: Fix odd behavior
+    private class LogAdapter extends RecyclerView.Adapter<LogAdapter.ViewHolder> {
+        private Context context;
+        private ArrayList<Log> logs;
+        private String[] types;
+        private int bgUnitIdx;
+        private String bgUnit;
+
+        private float hypo, minTargetRng, maxTargetRng, hyper;
+        private int badBgColor, medBgColor, goodBgColor;
+
+        private LogAdapter(ArrayList<Log> logs) {
+            context = getContext();
+            this.logs = logs;
+            types = getResources().getStringArray(R.array.log_types);
+            bgUnitIdx = PrefUtil.getBgUnitIdx(
+                    PreferenceManager.getDefaultSharedPreferences(getContext()));
+            bgUnit = getResources().getStringArray(R.array.pref_bgUnits_entries)[bgUnitIdx];
+            final SharedPreferences preferences =
+                    PreferenceManager.getDefaultSharedPreferences(context);
+            hypo = PrefUtil.getHypo(preferences).get(bgUnitIdx);
+            final BloodSugar[] targetRngBG = PrefUtil.getTargetRange(preferences);
+            minTargetRng = targetRngBG[0].get(bgUnitIdx);
+            maxTargetRng = targetRngBG[1].get(bgUnitIdx);
+            hyper = PrefUtil.getHyper(preferences).get(bgUnitIdx);
+            badBgColor = ContextCompat.getColor(context, R.color.colorBadBloodGlucose);
+            medBgColor = ContextCompat.getColor(context, R.color.colorIntermediateBloodGlucose);
+            goodBgColor = ContextCompat.getColor(context, R.color.colorGoodBloodGlucose);
+        }
+
+        @Override
+        public LogAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            return new ViewHolder((CardView) LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.card_view_sugar, parent, false));
+        }
+
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            final Log log = logs.get(position);
+            final String photoPath = log.getPhotoPath();
+
+            if (photoPath != null)
+                Picasso.with(context).load(photoPath).fit().centerCrop().into(holder.imgView);
+
+            holder.typeText.setText(types[log.getType()]);
+            holder.timeText.setText(TIME_FORMAT.format(log.getTime()));
+            final String location = log.getLocation();
+
+            if (location != null)
+                holder.locationText.setText(location);
+            else holder.locationText.setVisibility(View.GONE);
+
+            final BloodSugar bg = log.getBloodSugar();
+
+            if (bg != null) {
+                final float val = bg.get(bgUnitIdx);
+                ViewCompat.setBackgroundTintList(holder.bgText, ColorStateList.valueOf(
+                        val <= hypo || val >= hyper ? badBgColor : val >= minTargetRng &&
+                                val <= maxTargetRng ? goodBgColor : medBgColor));
+                holder.bgText.setText(NumericTextUtil.trim(val) + " " + bgUnit);
+            } else holder.bgText.setVisibility(View.GONE);
+        }
+
+        @Override
+        public int getItemCount() {
+            return logs.size();
+        }
+
+        class ViewHolder extends RecyclerView.ViewHolder {
+            private ImageView imgView;
+            private TextView typeText, timeText, locationText, bgText;
+
+            private ViewHolder(CardView cardView) {
+                super(cardView);
+
+                imgView = (ImageView) cardView.findViewById(R.id.photo);
+                typeText = (TextView) cardView.findViewById(R.id.log_type_text);
+                timeText = (TextView) cardView.findViewById(R.id.log_time_text);
+                locationText = (TextView) cardView.findViewById(R.id.log_location_text);
+                bgText = (TextView) cardView.findViewById(R.id.log_blood_glucose_text);
+            }
+        }
     }
 }

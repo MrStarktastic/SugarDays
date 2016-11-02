@@ -326,5 +326,59 @@
                 </FrameLayout>
             </LinearLayout>
         </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="?android:listPreferredItemHeightSmall"
+                android:layout_marginEnd="@dimen/icon_margin"
+                android:layout_marginStart="@dimen/icon_margin"
+                android:src="@drawable/ic_pill"
+                tools:ignore="ContentDescription" />
+
+            <LinearLayout
+                android:id="@+id/pill_entry_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/huge_margin"
+                android:animateLayoutChanges="true"
+                android:minHeight="?android:listPreferredItemHeightSmall"
+                android:orientation="vertical">
+
+                <android.support.v7.widget.AppCompatButton
+                    android:id="@+id/pill_add_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/icon_margin"
+                    android:text="@string/add_pill"
+                    app:backgroundTint="?colorBackgroundFloating" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/normal_margin"
+            android:minHeight="?android:listPreferredItemHeightSmall">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="?android:listPreferredItemHeightSmall"
+                android:layout_marginStart="@dimen/icon_margin"
+                android:src="@drawable/ic_notes"
+                tools:ignore="ContentDescription" />
+
+            <EditText
+                android:id="@+id/notes_edit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/normal_margin"
+                android:layout_marginStart="@dimen/huge_margin"
+                android:hint="@string/notes_hint"
+                android:minHeight="?android:listPreferredItemHeightSmall" />
+        </FrameLayout>
     </LinearLayout>
 </ScrollView>

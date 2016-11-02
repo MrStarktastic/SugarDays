@@ -21,6 +21,7 @@ import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
 import android.view.Menu;
@@ -31,6 +32,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.mr_starktastic.sugardays.R;
+import com.mr_starktastic.sugardays.data.Day;
 import com.mr_starktastic.sugardays.fragment.DayPageFragment;
 import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
@@ -39,10 +41,11 @@ import com.prolificinteractive.materialcalendarview.OnMonthChangedListener;
 
 import org.apache.commons.lang3.time.FastDateFormat;
 
-import java.io.File;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+
+import io.paperdb.Paper;
 
 /**
  * Main activity where the user can navigate between days and view his logs
@@ -56,14 +59,21 @@ public class DiaryActivity extends AppCompatActivity
      */
     public static final String EXTRA_TYPE = "TYPE";
     public static final String EXTRA_DATE = "DATE";
+    public static final String EXTRA_DAY_KEY = "DAY_KEY";
+    public static final String EXTRA_LOG_INDEX = "LOG_INDEX";
+
+    /**
+     * Request codes
+     */
+    public static final int REQ_DATE = 1;
 
     /**
      * Constants
      */
     private static final Calendar TODAY_CAL = CalendarDay.today().getCalendar(),
             MIN_CAL = CalendarDay.from(1900, 1, 1).getCalendar();
-    private static final int TODAY_IDX = daysBetween(TODAY_CAL, MIN_CAL),
-            ARROW_START_ANGLE = 0, ARROW_END_ANGLE = -180;
+    private static final int TODAY_IDX = Day.daysBetween(TODAY_CAL, MIN_CAL);
+    private static final int ARROW_START_ANGLE = 0, ARROW_END_ANGLE = -180;
     private static final long CALENDAR_RESIZE_ANIM_DURATION = 200;
 
     /**
@@ -109,37 +119,11 @@ public class DiaryActivity extends AppCompatActivity
                 monthAndDayNumFormat.substring(0, monthAndDayNumFormat.lastIndexOf(','));
     }
 
-    /**
-     * Calculates the amount of days between one date and another
-     *
-     * @param cal1 First older date
-     * @param cal2 Second date
-     * @return Calculation result
-     */
-    private static int daysBetween(Calendar cal1, Calendar cal2) {
-        final int cal2Year = cal2.get(Calendar.YEAR),
-                cal2DayOfYear = cal2.get(Calendar.DAY_OF_YEAR);
-
-        if (cal1.get(Calendar.YEAR) == cal2Year)
-            return cal1.get(Calendar.DAY_OF_YEAR) - cal2DayOfYear;
-
-        cal1 = (Calendar) cal1.clone();
-        cal2 = (Calendar) cal2.clone();
-        final int cal1OriginalDayOfYear = cal1.get(Calendar.DAY_OF_YEAR);
-        int extraDays = 0;
-
-        while (cal1.get(Calendar.YEAR) > cal2.get(Calendar.YEAR)) {
-            cal1.add(Calendar.YEAR, -1);
-            extraDays += cal1.getActualMaximum(Calendar.DAY_OF_YEAR);
-        }
-
-        return extraDays - cal2DayOfYear + cal1OriginalDayOfYear;
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_diary);
+        Paper.init(this);
 
         // Root layout
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -211,9 +195,17 @@ public class DiaryActivity extends AppCompatActivity
     private void addLog() {
         final CalendarDay day = calendarView.getSelectedDate();
         final Calendar currTime = Calendar.getInstance();
-        startActivity(new Intent(this, EditLogActivity.class).putExtra(EXTRA_DATE,
-                new GregorianCalendar(day.getYear(), day.getMonth(), day.getDay(),
-                        currTime.get(Calendar.HOUR_OF_DAY), currTime.get(Calendar.MINUTE))));
+        final RecyclerView.Adapter adapter =
+                ((RecyclerView) pager.findViewById(R.id.day_recycler_view)).getAdapter();
+        final int index = adapter != null ? adapter.getItemCount() : 0;
+
+        startActivityForResult(new Intent(this, EditLogActivity.class)
+                .putExtra(EXTRA_DATE,
+                        new GregorianCalendar(day.getYear(), day.getMonth(), day.getDay(),
+                                currTime.get(Calendar.HOUR_OF_DAY),
+                                currTime.get(Calendar.MINUTE)))
+                .putExtra(EXTRA_DAY_KEY, Integer.toString(day.hashCode()))
+                .putExtra(EXTRA_LOG_INDEX, index), REQ_DATE);
     }
 
     /**
@@ -247,7 +239,7 @@ public class DiaryActivity extends AppCompatActivity
      * @return Index of wanted page
      */
     private int getPageIndexFromDate(CalendarDay date) {
-        return TODAY_IDX - daysBetween(TODAY_CAL, date.getCalendar());
+        return TODAY_IDX - Day.daysBetween(TODAY_CAL, date.getCalendar());
     }
 
     /**
@@ -349,18 +341,18 @@ public class DiaryActivity extends AppCompatActivity
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case REQ_DATE:
+                if (resultCode == RESULT_OK) {
+                    pager.getAdapter().notifyDataSetChanged();
+                    pager.setCurrentItem(getPageIndexFromDate(
+                            CalendarDay.from((Calendar) data.getSerializableExtra(EXTRA_DATE))));
+                }
+                break;
 
-        // Clears the external cache directory
-        final File extCacheDir = getExternalCacheDir();
-
-        if (extCacheDir != null && extCacheDir.exists()) {
-            final File[] files = extCacheDir.listFiles();
-
-            if (files != null)
-                for (File f : files) // noinspection ResultOfMethodCallIgnored
-                    f.delete();
+            default:
+                super.onActivityResult(requestCode, resultCode, data);
         }
     }
 
@@ -470,12 +462,24 @@ public class DiaryActivity extends AppCompatActivity
 
         @Override
         public Fragment getItem(int position) {
-            return DayPageFragment.newInstance("Test", Integer.toString(position));
+            return DayPageFragment.newInstance(Integer.toString(positionToDayCode(position)));
+        }
+
+        @Override
+        public int getItemPosition(Object object) {
+            return POSITION_NONE;
         }
 
         @Override
         public int getCount() {
             return PAGE_COUNT;
+        }
+
+        private int positionToDayCode(int position) {
+            final Calendar tempCal = (Calendar) TODAY_CAL.clone();
+            tempCal.add(Calendar.DATE, position - TODAY_IDX);
+
+            return CalendarDay.from(tempCal).hashCode();
         }
     }
 }

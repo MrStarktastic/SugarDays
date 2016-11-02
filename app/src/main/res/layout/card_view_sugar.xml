@@ -3,7 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="@dimen/normal_margin"
     android:padding="@dimen/normal_margin">
 
     <android.support.percent.PercentFrameLayout
@@ -24,62 +23,64 @@
         android:layout_gravity="bottom"
         android:background="@drawable/shadow_gradient" />
 
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:layout_margin="@dimen/normal_margin"
-        android:orientation="vertical">
+        android:orientation="horizontal">
+
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/log_type_text"
+                style="@style/TextAppearance.AppCompat.Display1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:textColor="@android:color/white" />
+
+            <TextView
+                android:id="@+id/log_time_text"
+                style="@style/TextAppearance.AppCompat.Small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_below="@id/log_type_text"
+                android:drawablePadding="@dimen/tiny_margin"
+                android:drawableStart="@drawable/ic_time_small"
+                android:gravity="center_vertical"
+                android:textColor="@android:color/white" />
+
+            <TextView
+                android:id="@+id/log_location_text"
+                style="@style/TextAppearance.AppCompat.Small"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_below="@id/log_time_text"
+                android:layout_marginTop="@dimen/tiny_margin"
+                android:drawablePadding="@dimen/tiny_margin"
+                android:drawableStart="@drawable/ic_location_small"
+                android:ellipsize="end"
+                android:gravity="start|center_vertical"
+                android:maxLines="1"
+                android:textAlignment="viewStart"
+                android:textColor="@android:color/white" />
+        </RelativeLayout>
 
         <TextView
-            android:id="@+id/log_type_text"
-            style="@style/TextAppearance.AppCompat.Display1"
+            android:id="@+id/log_blood_glucose_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:text="Breakfast"
-            android:textColor="@android:color/white" />
-
-        <TextView
-            android:id="@+id/log_time_text"
-            style="@style/TextAppearance.AppCompat.Small"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_below="@id/log_type_text"
-            android:drawablePadding="@dimen/tiny_margin"
-            android:drawableStart="@drawable/ic_time_small"
-            android:gravity="center_vertical"
-            android:text="9:41 AM"
-            android:textColor="@android:color/white" />
-
-        <TextView
-            android:id="@+id/log_location_text"
-            style="@style/TextAppearance.AppCompat.Small"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_below="@id/log_time_text"
-            android:layout_gravity="center_vertical"
-            android:layout_marginTop="@dimen/tiny_margin"
-            android:drawablePadding="@dimen/tiny_margin"
-            android:drawableStart="@drawable/ic_location_small"
-            android:gravity="center_vertical"
-            android:text="Big Ben, London"
-            android:textColor="@android:color/white" />
-
-        <TextView
-            android:id="@+id/log_blood_glucose"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignBottom="@id/log_location_text"
-            android:layout_alignParentEnd="true"
+            android:layout_gravity="end|bottom"
+            android:layout_marginStart="@dimen/small_margin"
             android:background="@drawable/round_rect"
             android:padding="@dimen/tiny_margin"
-            android:text="100 mg/dL"
             android:textColor="@android:color/white"
-            android:textSize="14sp"
-            app:backgroundTint="@color/colorGoodBloodGlucose" />
-
-    </RelativeLayout>
+            android:textSize="14sp" />
+    </LinearLayout>
 </android.support.v7.widget.CardView>

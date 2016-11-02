@@ -11,6 +11,7 @@
 
     <string name="action_title_add_log">Add log</string>
     <string name="action_title_edit_log">Edit log</string>
+    <string name="delete_log">Delete log</string>
     <string name="action_save">Save</string>
     <string name="action_clear">Clear</string>
 
@@ -50,7 +51,51 @@
     <string name="temp_basal_duration_label">duration (hh:mm)</string>
     <string name="temp_basal_rate_label">rate (%)</string>
 
-    <string name="delete_log">Delete log</string>
+    <string name="add_pill">Add pill</string>
+    <string-array name="pill_quantities">
+        <item>0.5</item>
+        <item>1.0</item>
+        <item>1.5</item>
+        <item>2.0</item>
+        <item>2.5</item>
+        <item>3.0</item>
+        <item>3.5</item>
+        <item>4.0</item>
+        <item>4.5</item>
+        <item>5.0</item>
+        <item>5.5</item>
+        <item>6.0</item>
+        <item>6.5</item>
+        <item>7.0</item>
+        <item>7.5</item>
+        <item>8.0</item>
+        <item>8.5</item>
+        <item>9.0</item>
+        <item>9.5</item>
+        <item>10.0</item>
+        <item>10.5</item>
+        <item>11.0</item>
+        <item>11.5</item>
+        <item>12.0</item>
+        <item>12.5</item>
+        <item>13.0</item>
+        <item>13.5</item>
+        <item>14.0</item>
+        <item>14.5</item>
+        <item>15.0</item>
+        <item>15.5</item>
+        <item>16.0</item>
+        <item>16.5</item>
+        <item>17.0</item>
+        <item>17.5</item>
+        <item>18.0</item>
+        <item>18.5</item>
+        <item>19.0</item>
+        <item>19.5</item>
+        <item>20.0</item>
+    </string-array>
+
+    <string name="notes_hint">Notes</string>
 
     <!-- TODO: Remove this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

@@ -12,6 +12,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -31,9 +32,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -52,7 +56,10 @@ import com.google.android.gms.location.places.ui.PlacePicker;
 import com.mr_starktastic.sugardays.BuildConfig;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.BloodSugar;
+import com.mr_starktastic.sugardays.data.Day;
 import com.mr_starktastic.sugardays.data.Food;
+import com.mr_starktastic.sugardays.data.Log;
+import com.mr_starktastic.sugardays.data.Pill;
 import com.mr_starktastic.sugardays.data.Serving;
 import com.mr_starktastic.sugardays.data.TempBasal;
 import com.mr_starktastic.sugardays.fragment.FoodDialogFragment;
@@ -62,6 +69,7 @@ import com.mr_starktastic.sugardays.text.SimpleTextWatcher;
 import com.mr_starktastic.sugardays.util.NumericTextUtil;
 import com.mr_starktastic.sugardays.util.PrefUtil;
 import com.mr_starktastic.sugardays.widget.LabeledEditText;
+import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.squareup.picasso.Picasso;
 
 import org.apache.commons.io.FileUtils;
@@ -76,6 +84,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 
 import id.zelory.compressor.Compressor;
+import io.paperdb.Paper;
 
 /**
  * Activity for adding new logs or editing existing ones
@@ -131,18 +140,23 @@ public class EditLogActivity extends AppCompatActivity
     /**
      * Member variables
      */
+    private Day day;
+    private ArrayList<Log> logs;
+    private int logIdx;
     private GregorianCalendar calendar;
     private GoogleApiClient googleApiClient;
+    private Place place;
     private String currentPhotoPath;
     private boolean photoCompressEnabled, bolusPredictEnabled;
     private ArrayList<Food> foods;
     private float carbSum = 0;
     private TempBasal tempBasal;
+    private String[] pillNames;
+    private ArrayList<Pill> pills;
 
     /**
      * Views
      */
-    private MenuItem saveButton;
     private AppCompatSpinner typeSpinner;
     private TextView dateText, timeText;
     private EditText locationEdit;
@@ -152,6 +166,8 @@ public class EditLogActivity extends AppCompatActivity
     private LabeledEditText corrBolusEdit, mealBolusEdit, basalEdit;
     private TextView tempBasalText;
     private Button clearTempBasalButton;
+    private LinearLayout pillEntryContainer;
+    private EditText notesEdit;
 
     /**
      * @param file File to extract path from.
@@ -173,14 +189,20 @@ public class EditLogActivity extends AppCompatActivity
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         final Intent intent = getIntent();
-        final ActionBar actionBar = getSupportActionBar();
+        day = new Day((Day) Paper.book().read(intent.getStringExtra(DiaryActivity.EXTRA_DAY_KEY)));
+        logIdx = intent.getIntExtra(DiaryActivity.EXTRA_LOG_INDEX, 0);
+        logs = day.getLogs();
+
         // Setting the ActionBar
-        if (actionBar != null) {
-            actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setHomeAsUpIndicator(R.drawable.ic_close);
-            // TODO: Title should be either "Add log" or "Edit log", based on data from intent.
+        final ActionBar actionBar = getSupportActionBar();
+        assert actionBar != null;
+        actionBar.setDisplayHomeAsUpEnabled(true);
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_close);
+
+        if (logs.size() == 0) {
+            logs.add(new Log());
             actionBar.setTitle(getString(R.string.action_title_add_log));
-        }
+        } else actionBar.setTitle(getString(R.string.action_title_edit_log));
 
         googleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this, this)
@@ -218,6 +240,8 @@ public class EditLogActivity extends AppCompatActivity
                 insulinEditContainer.findViewById(R.id.basal_edit_container);
         final View tempBasalEditContainer =
                 insulinEditContainer.findViewById(R.id.temp_basal_edit_container);
+        pillEntryContainer = (LinearLayout) root.findViewById(R.id.pill_entry_container);
+        notesEdit = (EditText) root.findViewById(R.id.notes_edit);
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -407,6 +431,18 @@ public class EditLogActivity extends AppCompatActivity
                 insulinEditContainer.setVisibility(View.GONE);
                 break;
         }
+
+        // Pills
+        if ((pillNames = PrefUtil.getPills(preferences)) != null) {
+            final LayoutTransition pillTransition = pillEntryContainer.getLayoutTransition();
+            pillTransition.setStartDelay(LayoutTransition.DISAPPEARING, 0);
+            pillTransition.setAnimateParentHierarchy(false);
+
+            pills = new ArrayList<>();
+            final AppCompatButton addPillButton =
+                    (AppCompatButton) pillEntryContainer.findViewById(R.id.pill_add_button);
+            addPillButton.setOnClickListener(this);
+        } else ((View) pillEntryContainer.getParent()).setVisibility(View.GONE);
     }
 
     /**
@@ -457,9 +493,8 @@ public class EditLogActivity extends AppCompatActivity
      * @param place Was given to set the text with.
      */
     private void setLocationText(Place place) {
-        final String address = place.getAddress().toString(), name = place.getName().toString();
-        locationEdit.setText(!address.isEmpty() ? !address.contains(name) ?
-                name + ", " + address : address : name);
+        locationEdit.setText(Log.getLocationText(place));
+        this.place = place;
     }
 
     /**
@@ -535,6 +570,12 @@ public class EditLogActivity extends AppCompatActivity
         Picasso.with(this).load(currentPhotoPath).fit().centerCrop().into(photoThumbnailView);
     }
 
+    /**
+     * Modifies a food entry at a given position.
+     *
+     * @param position Index of the food entry.
+     * @param food     New food object for this entry.
+     */
     public void setFood(final int position, @NonNull Food food) {
         final View entry;
 
@@ -576,6 +617,12 @@ public class EditLogActivity extends AppCompatActivity
         setMealBolus();
     }
 
+    /**
+     * Opens a {@link FoodDialogFragment} for the relevant entry.
+     *
+     * @param index Index of entry.
+     * @param food  {@link Food} object representing the entry.
+     */
     private void showFoodEntry(int index, Food food) {
         checkPermission(PERMISSION_REQ_IGNORED, Manifest.permission.INTERNET);
         final DialogFragment fragment = new FoodDialogFragment();
@@ -586,6 +633,10 @@ public class EditLogActivity extends AppCompatActivity
         fragment.show(getSupportFragmentManager(), null);
     }
 
+    /**
+     * If the user has set the bolus prediction feature on,
+     * then the bolus is calculated and set in the appropriate {@link EditText}.
+     */
     private void setMealBolus() {
         if (bolusPredictEnabled) {
             final SharedPreferences preferences =
@@ -601,6 +652,11 @@ public class EditLogActivity extends AppCompatActivity
         }
     }
 
+    /**
+     * {@link TempBasal} data is set in the appropriate {@link TextView}s.
+     *
+     * @param tempBasal The data to be set.
+     */
     public void setTempBasal(TempBasal tempBasal) {
         if (tempBasal != null) {
             tempBasalText.setText(tempBasal.toString());
@@ -611,6 +667,192 @@ public class EditLogActivity extends AppCompatActivity
         }
 
         this.tempBasal = tempBasal;
+    }
+
+    /**
+     * Adds a {@link Pill} entry to the layout (and to the {@link ArrayList} respectively)
+     * and sets all the required listeners for the {@link View} components.
+     */
+    private void addPillEntry() {
+        final View entry =
+                getLayoutInflater().inflate(R.layout.pill_entry, pillEntryContainer, false);
+        final AppCompatSpinner quantitySpinner =
+                (AppCompatSpinner) entry.findViewById(R.id.pill_quantity_spinner);
+        final AppCompatSpinner nameSpinner =
+                (AppCompatSpinner) entry.findViewById(R.id.pill_name_spinner);
+        final ImageButton removeButton = (ImageButton) entry.findViewById(R.id.pill_delete_button);
+
+        final Pill pill = new Pill(
+                Float.parseFloat((String) quantitySpinner.getSelectedItem()),
+                pillNames[0]);
+        pills.add(pill);
+        final ArrayAdapter<String> nameAdapter =
+                new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, pillNames);
+        nameAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        nameSpinner.setAdapter(nameAdapter);
+
+        nameSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                pill.setName(pillNames[position]);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
+        quantitySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                pill.setQuantity(Float.parseFloat((String) quantitySpinner.getSelectedItem()));
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
+        removeButton.setOnClickListener(this);
+
+        pillEntryContainer.addView(entry, pillEntryContainer.getChildCount() - 1);
+    }
+
+    /**
+     * Obvious method is obvious.
+     */
+    private void save() {
+        String photoPath = null;
+
+        if (currentPhotoPath != null) {
+            final File cacheFile = new File(Uri.parse(currentPhotoPath).getPath());
+            final File newFile = new File(
+                    getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+                    cacheFile.getName());
+            // noinspection ResultOfMethodCallIgnored
+            cacheFile.renameTo(newFile);
+            photoPath = getFilePath(newFile);
+        }
+
+        BloodSugar bg = null;
+        Float corrBolus = null, mealBolus = null, basal = null;
+
+        try {
+            final float val = Float.parseFloat(bloodSugarEdit.getText().toString());
+            if (bloodSugarEdit.getInputType() == InputType.TYPE_CLASS_NUMBER)
+                bg = new BloodSugar((int) val);
+            else bg = new BloodSugar(val);
+
+            corrBolus = Float.valueOf(corrBolusEdit.getText().toString());
+            mealBolus = Float.valueOf(mealBolusEdit.getText().toString());
+            basal = Float.valueOf(basalEdit.getText().toString());
+        } catch (NumberFormatException | NullPointerException ignored) {
+
+        }
+
+        if (logIdx == logs.size())
+            logs.add(new Log());
+
+        logs.get(logIdx)
+                .setType(typeSpinner.getSelectedItemPosition())
+                .setTime(calendar.getTime().getTime())
+                .setLocation(locationEdit.getText().toString())
+                .setPlace(place)
+                .setPhotoPath(photoPath)
+                .setBloodSugar(bg)
+                .setFoods(foods)
+                .setCarbSum(carbSum)
+                .setCorrBolus(corrBolus)
+                .setMealBolus(mealBolus)
+                .setBasal(basal)
+                .setTempBasal(tempBasal)
+                .setPills(pills)
+                .setNotes(notesEdit.getText().toString());
+
+        Paper.book().write(Integer.toString(CalendarDay.from(calendar).hashCode()), day);
+    }
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.current_location_button:
+                if (checkPermission(PERMISSION_REQ_PLACE_PICKER,
+                        Manifest.permission.ACCESS_FINE_LOCATION))
+                    openPlacePicker();
+                break;
+
+            case R.id.food_add_button:
+                showFoodEntry(foodEntryContainer.getChildCount() - 1, null);
+                break;
+
+            case R.id.food_delete_button:
+                final int foodIdx = foodEntryContainer.indexOfChild((View) view.getParent());
+                foodEntryContainer.removeViewAt(foodIdx);
+                carbSum -= foods.remove(foodIdx).getCarbs();
+                setMealBolus();
+                break;
+
+            case R.id.food_entry:
+                final int indexToView = foodEntryContainer.indexOfChild(view);
+                showFoodEntry(indexToView, foods.get(indexToView));
+                break;
+
+            case R.id.temp_basal_text:
+                final TempBasalDialogFragment dialogFragment = new TempBasalDialogFragment();
+                final Bundle args = new Bundle();
+                args.putSerializable(TempBasalDialogFragment.EXTRA_TEMP_BASAL, tempBasal);
+                dialogFragment.setArguments(args);
+                dialogFragment.show(getSupportFragmentManager(), null);
+                break;
+
+            case R.id.temp_basal_clear_button:
+                setTempBasal(null);
+                break;
+
+            case R.id.pill_add_button:
+                addPillEntry();
+                break;
+
+            case R.id.pill_delete_button:
+                final int pillIdx = pillEntryContainer.indexOfChild((View) view.getParent());
+                pillEntryContainer.removeViewAt(pillIdx);
+                pills.remove(pillIdx);
+                break;
+        }
+    }
+
+    @Override
+    public boolean onMenuItemClick(MenuItem menuItem) {
+        switch (menuItem.getItemId()) {
+            case R.id.menu_remove_photo:
+                // noinspection ResultOfMethodCallIgnored
+                new File(Uri.parse(currentPhotoPath).getPath()).delete();
+                currentPhotoPath = null;
+                photoThumbnailView.setImageBitmap(null);
+                return true;
+
+            case R.id.menu_take_photo:
+                if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
+                    if (!checkPermission(PERMISSION_REQ_CAMERA, Manifest.permission.CAMERA))
+                        break;
+
+                    dispatchTakePictureIntent();
+                    return true;
+                }
+                break;
+
+            case R.id.menu_choose_photo:
+                if (!checkPermission(PERMISSION_REQ_CHOOSE_PHOTO,
+                        Manifest.permission.READ_EXTERNAL_STORAGE))
+                    break;
+
+                openPhotoChooser();
+                return true;
+        }
+
+        return false;
     }
 
     @Override
@@ -725,8 +967,6 @@ public class EditLogActivity extends AppCompatActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.edit_log, menu);
-        (saveButton = menu.findItem(R.id.action_save)).setOnMenuItemClickListener(this);
-
         return true;
     }
 
@@ -738,12 +978,21 @@ public class EditLogActivity extends AppCompatActivity
                 return true;
 
             case R.id.action_save:
+                save();
+                setResult(RESULT_OK, new Intent().putExtra(DiaryActivity.EXTRA_DATE, calendar));
                 finish();
                 return true;
 
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        // TODO: Ask user to confirm
+
+        super.onBackPressed();
     }
 
     @Override
@@ -765,77 +1014,6 @@ public class EditLogActivity extends AppCompatActivity
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Toast.makeText(this, connectionResult.getErrorMessage(), Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.current_location_button:
-                if (checkPermission(PERMISSION_REQ_PLACE_PICKER,
-                        Manifest.permission.ACCESS_FINE_LOCATION))
-                    openPlacePicker();
-                break;
-
-            case R.id.food_add_button:
-                showFoodEntry(foodEntryContainer.getChildCount() - 1, null);
-                break;
-
-            case R.id.food_delete_button:
-                final int indexToRemove = foodEntryContainer.indexOfChild((View) view.getParent());
-                foodEntryContainer.removeViewAt(indexToRemove);
-                carbSum -= foods.remove(indexToRemove).getCarbs();
-                setMealBolus();
-                break;
-
-            case R.id.food_entry:
-                final int indexToView = foodEntryContainer.indexOfChild(view);
-                showFoodEntry(indexToView, foods.get(indexToView));
-                break;
-
-            case R.id.temp_basal_text:
-                final TempBasalDialogFragment dialogFragment = new TempBasalDialogFragment();
-                final Bundle args = new Bundle();
-                args.putSerializable(TempBasalDialogFragment.EXTRA_TEMP_BASAL, tempBasal);
-                dialogFragment.setArguments(args);
-                dialogFragment.show(getSupportFragmentManager(), null);
-                break;
-
-            case R.id.temp_basal_clear_button:
-                setTempBasal(null);
-                break;
-        }
-    }
-
-    @Override
-    public boolean onMenuItemClick(MenuItem menuItem) {
-        switch (menuItem.getItemId()) {
-            case R.id.menu_remove_photo:
-                // noinspection ResultOfMethodCallIgnored
-                new File(Uri.parse(currentPhotoPath).getPath()).delete();
-                currentPhotoPath = null;
-                photoThumbnailView.setImageBitmap(null);
-                return true;
-
-            case R.id.menu_take_photo:
-                if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
-                    if (!checkPermission(PERMISSION_REQ_CAMERA, Manifest.permission.CAMERA))
-                        break;
-
-                    dispatchTakePictureIntent();
-                    return true;
-                }
-                break;
-
-            case R.id.menu_choose_photo:
-                if (!checkPermission(PERMISSION_REQ_CHOOSE_PHOTO,
-                        Manifest.permission.READ_EXTERNAL_STORAGE))
-                    break;
-
-                openPhotoChooser();
-                return true;
-        }
-
-        return false;
     }
 
     @Override
