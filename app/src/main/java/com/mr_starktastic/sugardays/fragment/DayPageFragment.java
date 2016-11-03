@@ -86,14 +86,14 @@ public class DayPageFragment extends Fragment {
         recyclerView = (RecyclerView) root.findViewById(R.id.day_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         ViewCompat.setNestedScrollingEnabled(recyclerView, false);
+        recyclerView.addItemDecoration(spaceDecoration);
 
         final Day day = Paper.book().read(dayCode);
         final ArrayList<Log> logs;
 
         if (day != null && (logs = day.getLogs()) != null) {
-            recyclerView.setAdapter(new LogAdapter(logs));
-            recyclerView.addItemDecoration(spaceDecoration);
-        }
+            recyclerView.setAdapter(new LogAdapter(getContext(), logs));
+        } else recyclerView.setAdapter(new LogAdapter(getContext()));
 
         return root;
     }
@@ -155,8 +155,7 @@ public class DayPageFragment extends Fragment {
         }
     }
 
-    // TODO: Fix odd behavior
-    private class LogAdapter extends RecyclerView.Adapter<LogAdapter.ViewHolder> {
+    private static class LogAdapter extends RecyclerView.Adapter<LogAdapter.ViewHolder> {
         private Context context;
         private ArrayList<Log> logs;
         private String[] types;
@@ -166,13 +165,18 @@ public class DayPageFragment extends Fragment {
         private float hypo, minTargetRng, maxTargetRng, hyper;
         private int badBgColor, medBgColor, goodBgColor;
 
-        private LogAdapter(ArrayList<Log> logs) {
-            context = getContext();
+        private LogAdapter(Context context) {
+            this.context = context;
+            logs = new ArrayList<>();
+        }
+
+        private LogAdapter(Context context, ArrayList<Log> logs) {
+            this.context = context;
             this.logs = logs;
-            types = getResources().getStringArray(R.array.log_types);
+            types = context.getResources().getStringArray(R.array.log_types);
             bgUnitIdx = PrefUtil.getBgUnitIdx(
-                    PreferenceManager.getDefaultSharedPreferences(getContext()));
-            bgUnit = getResources().getStringArray(R.array.pref_bgUnits_entries)[bgUnitIdx];
+                    PreferenceManager.getDefaultSharedPreferences(context));
+            bgUnit = context.getResources().getStringArray(R.array.pref_bgUnits_entries)[bgUnitIdx];
             final SharedPreferences preferences =
                     PreferenceManager.getDefaultSharedPreferences(context);
             hypo = PrefUtil.getHypo(preferences).get(bgUnitIdx);

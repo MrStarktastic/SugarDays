@@ -6,8 +6,8 @@ import java.util.Calendar;
 public class Day {
     private ArrayList<Log> logs;
 
-    public Day(Day other) {
-        logs = other != null ? new ArrayList<>(other.logs) : new ArrayList<Log>();
+    public Day() {
+        logs = new ArrayList<>();
     }
 
     /**

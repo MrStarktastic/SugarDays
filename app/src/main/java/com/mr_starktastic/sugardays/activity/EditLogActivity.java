@@ -94,6 +94,14 @@ public class EditLogActivity extends AppCompatActivity
         View.OnClickListener, MenuItem.OnMenuItemClickListener,
         ResultCallback<PlaceLikelihoodBuffer> {
     /**
+     * Extra keys for {@link Intent}s
+     */
+    public static final String EXTRA_DAY_KEY = "DAY_KEY";
+    public static final String EXTRA_LOG_INDEX = "LOG_INDEX";
+    public static final String EXTRA_TYPE = "TYPE";
+    public static final String EXTRA_DATE = "DATE";
+
+    /**
      * Request codes
      */
     private static final int REQ_PLACE_PICKER = 1;
@@ -140,9 +148,9 @@ public class EditLogActivity extends AppCompatActivity
     /**
      * Member variables
      */
-    private Day day;
-    private ArrayList<Log> logs;
-    private int logIdx;
+    private String origDayKey;
+    private int origLogIdx;
+    private Log log;
     private GregorianCalendar calendar;
     private GoogleApiClient googleApiClient;
     private Place place;
@@ -189,20 +197,18 @@ public class EditLogActivity extends AppCompatActivity
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         final Intent intent = getIntent();
-        day = new Day((Day) Paper.book().read(intent.getStringExtra(DiaryActivity.EXTRA_DAY_KEY)));
-        logIdx = intent.getIntExtra(DiaryActivity.EXTRA_LOG_INDEX, 0);
-        logs = day.getLogs();
+        final ArrayList<Log> logs = (Paper.book().read(
+                origDayKey = intent.getStringExtra(EXTRA_DAY_KEY), new Day()))
+                .getLogs();
+        origLogIdx = intent.getIntExtra(EXTRA_LOG_INDEX, 0);
+        log = origLogIdx < logs.size() ? logs.get(origLogIdx) : new Log();
 
         // Setting the ActionBar
         final ActionBar actionBar = getSupportActionBar();
         assert actionBar != null;
         actionBar.setDisplayHomeAsUpEnabled(true);
         actionBar.setHomeAsUpIndicator(R.drawable.ic_close);
-
-        if (logs.size() == 0) {
-            logs.add(new Log());
-            actionBar.setTitle(getString(R.string.action_title_add_log));
-        } else actionBar.setTitle(getString(R.string.action_title_edit_log));
+        actionBar.setTitle(intent.getAction());
 
         googleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this, this)
@@ -246,10 +252,10 @@ public class EditLogActivity extends AppCompatActivity
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         // Log type
-        typeSpinner.setSelection(intent.getIntExtra(DiaryActivity.EXTRA_TYPE, 0));
+        typeSpinner.setSelection(intent.getIntExtra(EXTRA_TYPE, 0));
 
         // Date
-        calendar = (GregorianCalendar) intent.getSerializableExtra(DiaryActivity.EXTRA_DATE);
+        calendar = (GregorianCalendar) intent.getSerializableExtra(EXTRA_DATE);
         dateText.setText(DATE_FORMAT.format(calendar));
         final DatePickerDialog dateDialog = new DatePickerDialog(this,
                 new DatePickerDialog.OnDateSetListener() {
@@ -721,7 +727,7 @@ public class EditLogActivity extends AppCompatActivity
     }
 
     /**
-     * Obvious method is obvious.
+     * Saves the log into the database and deletes the previous instance.
      */
     private void save() {
         String photoPath = null;
@@ -752,26 +758,31 @@ public class EditLogActivity extends AppCompatActivity
 
         }
 
-        if (logIdx == logs.size())
-            logs.add(new Log());
+        final Day origDay = Paper.book().read(origDayKey);
 
-        logs.get(logIdx)
-                .setType(typeSpinner.getSelectedItemPosition())
+        if (origDay != null) {
+            final ArrayList<Log> logs = origDay.getLogs();
+
+            try {
+                logs.remove(origLogIdx);
+            } catch (IndexOutOfBoundsException ignored) {
+
+            }
+
+            if (logs.size() > 0)
+                Paper.book().write(origDayKey, origDay);
+            else Paper.book().delete(origDayKey);
+        }
+
+        final String key = Integer.toString(CalendarDay.from(calendar).hashCode());
+        final Day day = Paper.book().read(key, new Day());
+        day.getLogs().add(log.setType(typeSpinner.getSelectedItemPosition())
                 .setTime(calendar.getTime().getTime())
-                .setLocation(locationEdit.getText().toString())
-                .setPlace(place)
-                .setPhotoPath(photoPath)
-                .setBloodSugar(bg)
-                .setFoods(foods)
-                .setCarbSum(carbSum)
-                .setCorrBolus(corrBolus)
-                .setMealBolus(mealBolus)
-                .setBasal(basal)
-                .setTempBasal(tempBasal)
-                .setPills(pills)
-                .setNotes(notesEdit.getText().toString());
-
-        Paper.book().write(Integer.toString(CalendarDay.from(calendar).hashCode()), day);
+                .setLocation(locationEdit.getText().toString()).setPlace(place)
+                .setPhotoPath(photoPath).setBloodSugar(bg).setFoods(foods).setCarbSum(carbSum)
+                .setCorrBolus(corrBolus).setMealBolus(mealBolus).setBasal(basal)
+                .setTempBasal(tempBasal).setPills(pills).setNotes(notesEdit.getText().toString()));
+        Paper.book().write(key, day);
     }
 
     @Override
@@ -979,7 +990,7 @@ public class EditLogActivity extends AppCompatActivity
 
             case R.id.action_save:
                 save();
-                setResult(RESULT_OK, new Intent().putExtra(DiaryActivity.EXTRA_DATE, calendar));
+                setResult(RESULT_OK, new Intent().putExtra(EXTRA_DATE, calendar));
                 finish();
                 return true;
 

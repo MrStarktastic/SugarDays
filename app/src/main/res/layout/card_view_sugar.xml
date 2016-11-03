@@ -13,6 +13,7 @@
             android:id="@+id/photo"
             android:background="@color/colorSecondary"
             android:contentDescription="@string/content_desc_photo"
+            android:scaleType="centerCrop"
             app:layout_aspectRatio="178%"
             app:layout_widthPercent="100%" />
     </android.support.percent.PercentFrameLayout>

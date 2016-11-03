@@ -21,7 +21,6 @@ import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
 import android.view.Menu;
@@ -55,17 +54,9 @@ public class DiaryActivity extends AppCompatActivity
         AppBarLayout.OnOffsetChangedListener, OnMonthChangedListener, OnDateSelectedListener,
         ViewPager.OnPageChangeListener, DayPageFragment.OnFragmentInteractionListener {
     /**
-     * Extra keys for {@link Intent}s
-     */
-    public static final String EXTRA_TYPE = "TYPE";
-    public static final String EXTRA_DATE = "DATE";
-    public static final String EXTRA_DAY_KEY = "DAY_KEY";
-    public static final String EXTRA_LOG_INDEX = "LOG_INDEX";
-
-    /**
      * Request codes
      */
-    public static final int REQ_DATE = 1;
+    public static final int REQ_NEW_LOG = 1;
 
     /**
      * Constants
@@ -193,19 +184,19 @@ public class DiaryActivity extends AppCompatActivity
     }
 
     private void addLog() {
-        final CalendarDay day = calendarView.getSelectedDate();
+        final CalendarDay dayCal = calendarView.getSelectedDate();
         final Calendar currTime = Calendar.getInstance();
-        final RecyclerView.Adapter adapter =
-                ((RecyclerView) pager.findViewById(R.id.day_recycler_view)).getAdapter();
-        final int index = adapter != null ? adapter.getItemCount() : 0;
+        final String dayHash = Integer.toString(dayCal.hashCode());
+        final Day day = Paper.book().read(dayHash);
 
         startActivityForResult(new Intent(this, EditLogActivity.class)
-                .putExtra(EXTRA_DATE,
-                        new GregorianCalendar(day.getYear(), day.getMonth(), day.getDay(),
+                .putExtra(EditLogActivity.EXTRA_DATE,
+                        new GregorianCalendar(dayCal.getYear(), dayCal.getMonth(), dayCal.getDay(),
                                 currTime.get(Calendar.HOUR_OF_DAY),
                                 currTime.get(Calendar.MINUTE)))
-                .putExtra(EXTRA_DAY_KEY, Integer.toString(day.hashCode()))
-                .putExtra(EXTRA_LOG_INDEX, index), REQ_DATE);
+                .putExtra(EditLogActivity.EXTRA_DAY_KEY, dayHash)
+                .putExtra(EditLogActivity.EXTRA_LOG_INDEX, day != null ? day.getLogs().size() : 0)
+                .setAction(getString(R.string.action_title_add_log)), REQ_NEW_LOG);
     }
 
     /**
@@ -343,11 +334,12 @@ public class DiaryActivity extends AppCompatActivity
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
-            case REQ_DATE:
+            case REQ_NEW_LOG:
                 if (resultCode == RESULT_OK) {
                     pager.getAdapter().notifyDataSetChanged();
                     pager.setCurrentItem(getPageIndexFromDate(
-                            CalendarDay.from((Calendar) data.getSerializableExtra(EXTRA_DATE))));
+                            CalendarDay.from((Calendar) data
+                                    .getSerializableExtra(EditLogActivity.EXTRA_DATE))));
                 }
                 break;
 
