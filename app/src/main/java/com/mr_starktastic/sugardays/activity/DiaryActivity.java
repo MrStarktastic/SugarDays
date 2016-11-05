@@ -184,16 +184,14 @@ public class DiaryActivity extends AppCompatActivity
     private void addLog() {
         final CalendarDay cal = calendarView.getSelectedDate();
         final Calendar currTime = Calendar.getInstance();
-        final int dayId = Day.generateId(cal.getCalendar());
-        final Day day = Day.findById(dayId);
 
-        startActivityForResult(new Intent(this, EditLogActivity.class)
-                .putExtra(EditLogActivity.EXTRA_DATE_TIME, new GregorianCalendar(
-                        cal.getYear(), cal.getMonth(), cal.getDay(),
-                        currTime.get(Calendar.HOUR_OF_DAY), currTime.get(Calendar.MINUTE)))
-                .putExtra(EditLogActivity.EXTRA_DAY_ID, dayId)
-                .putExtra(EditLogActivity.EXTRA_LOG_INDEX,
-                        day == null ? 0 : day.getLogs().length), REQ_NEW_LOG);
+        startActivityForResult(
+                new Intent(this, EditLogActivity.class)
+                        .putExtra(EditLogActivity.EXTRA_IS_EDIT, false)
+                        .putExtra(EditLogActivity.EXTRA_DATE_TIME,
+                                new GregorianCalendar(cal.getYear(), cal.getMonth(), cal.getDay(),
+                                        currTime.get(Calendar.HOUR_OF_DAY),
+                                        currTime.get(Calendar.MINUTE))), REQ_NEW_LOG);
     }
 
     /**

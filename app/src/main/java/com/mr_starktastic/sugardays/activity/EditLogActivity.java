@@ -100,10 +100,11 @@ public class EditLogActivity extends AppCompatActivity
     /**
      * Extra keys for {@link Intent}s
      */
+    public static final String EXTRA_IS_EDIT = "EDIT";
+    public static final String EXTRA_DATE_TIME = "DATE_TIME";
     public static final String EXTRA_DAY_ID = "DAY_KEY";
     public static final String EXTRA_LOG_INDEX = "LOG_INDEX";
     public static final String EXTRA_TYPE = "TYPE";
-    public static final String EXTRA_DATE_TIME = "DATE";
 
     /**
      * Request codes
@@ -152,10 +153,10 @@ public class EditLogActivity extends AppCompatActivity
     /**
      * Member variables
      */
+    private GregorianCalendar calendar;
+    private boolean isEdit;
     private Day oldDay;
     private int oldLogIdx;
-    private boolean isOld;
-    private GregorianCalendar calendar;
     private GoogleApiClient googleApiClient;
     private String currentPhotoPath;
     private boolean photoCompressEnabled, bolusPredictEnabled;
@@ -206,7 +207,6 @@ public class EditLogActivity extends AppCompatActivity
         assert actionBar != null;
         actionBar.setDisplayHomeAsUpEnabled(true);
         actionBar.setHomeAsUpIndicator(R.drawable.ic_close);
-        actionBar.setTitle(intent.getAction());
 
         googleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this, this)
@@ -248,14 +248,12 @@ public class EditLogActivity extends AppCompatActivity
         notesEdit = (EditText) root.findViewById(R.id.notes_edit);
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-
         loadOldData(intent);
 
         // SugarLog type
         typeSpinner.setSelection(intent.getIntExtra(EXTRA_TYPE, 0));
 
         // Date
-        calendar = (GregorianCalendar) intent.getSerializableExtra(EXTRA_DATE_TIME);
         dateText.setText(DATE_FORMAT.format(calendar));
         final DatePickerDialog dateDialog = new DatePickerDialog(this,
                 new DatePickerDialog.OnDateSetListener() {
@@ -455,16 +453,15 @@ public class EditLogActivity extends AppCompatActivity
     }
 
     private void loadOldData(Intent data) {
-        oldDay = Day.findById(data.getIntExtra(EXTRA_DAY_ID, 0));
+        calendar = (GregorianCalendar) data.getSerializableExtra(EXTRA_DATE_TIME);
 
-        if (oldDay != null) {
-            final SugarLog[] logs = oldDay.getLogs();
-
-            if (isOld = logs.length > (oldLogIdx = data.getIntExtra(EXTRA_LOG_INDEX, 0))) {
-                final SugarLog log = logs[oldLogIdx];
-                // TODO: Load old data here
-            }
-        }
+        if (isEdit = data.getBooleanExtra(EXTRA_IS_EDIT, false)) {
+            setTitle(R.string.action_title_edit_log);
+            oldDay = Day.findById(data.getIntExtra(EXTRA_DAY_ID, 0));
+            assert oldDay != null;
+            final SugarLog log = oldDay.getLogs()[oldLogIdx = data.getIntExtra(EXTRA_LOG_INDEX, 0)];
+            // TODO: Load old data here
+        } else setTitle(R.string.action_title_add_log);
     }
 
     /**
@@ -778,13 +775,10 @@ public class EditLogActivity extends AppCompatActivity
 
         }
 
-        if (isOld)
+        if (isEdit)
             deleteLog();
 
-        final int dayId = Day.generateId(
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH));
+        final int dayId = Day.generateId(calendar);
         Day day = Day.findById(dayId);
 
         if (day == null)
@@ -1006,7 +1000,7 @@ public class EditLogActivity extends AppCompatActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.edit_log, menu);
-        menu.findItem(R.id.action_delete).setEnabled(isOld);
+        menu.findItem(R.id.action_delete).setEnabled(isEdit);
 
         return true;
     }
