@@ -27,4 +27,5 @@
     <dimen name="preference_strip_height">56dp</dimen>
 
     <dimen name="divider_height">1dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
 </resources>

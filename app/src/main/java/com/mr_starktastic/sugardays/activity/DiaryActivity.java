@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.AppBarLayout;
@@ -29,6 +28,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.Day;
@@ -44,19 +44,18 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
-import io.paperdb.Paper;
-
 /**
  * Main activity where the user can navigate between days and view his logs
  */
 public class DiaryActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, View.OnClickListener,
         AppBarLayout.OnOffsetChangedListener, OnMonthChangedListener, OnDateSelectedListener,
-        ViewPager.OnPageChangeListener, DayPageFragment.OnFragmentInteractionListener {
+        ViewPager.OnPageChangeListener, DayPageFragment.OnLogCardSelectedListener {
     /**
      * Request codes
      */
     public static final int REQ_NEW_LOG = 1;
+    public static final int REQ_SETTINGS_CHANGE = 2;
 
     /**
      * Constants
@@ -114,7 +113,6 @@ public class DiaryActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_diary);
-        Paper.init(this);
 
         // Root layout
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -184,19 +182,18 @@ public class DiaryActivity extends AppCompatActivity
     }
 
     private void addLog() {
-        final CalendarDay dayCal = calendarView.getSelectedDate();
+        final CalendarDay cal = calendarView.getSelectedDate();
         final Calendar currTime = Calendar.getInstance();
-        final String dayHash = Integer.toString(dayCal.hashCode());
-        final Day day = Paper.book().read(dayHash);
+        final int dayId = Day.generateId(cal.getCalendar());
+        final Day day = Day.findById(dayId);
 
         startActivityForResult(new Intent(this, EditLogActivity.class)
-                .putExtra(EditLogActivity.EXTRA_DATE,
-                        new GregorianCalendar(dayCal.getYear(), dayCal.getMonth(), dayCal.getDay(),
-                                currTime.get(Calendar.HOUR_OF_DAY),
-                                currTime.get(Calendar.MINUTE)))
-                .putExtra(EditLogActivity.EXTRA_DAY_KEY, dayHash)
-                .putExtra(EditLogActivity.EXTRA_LOG_INDEX, day != null ? day.getLogs().size() : 0)
-                .setAction(getString(R.string.action_title_add_log)), REQ_NEW_LOG);
+                .putExtra(EditLogActivity.EXTRA_DATE_TIME, new GregorianCalendar(
+                        cal.getYear(), cal.getMonth(), cal.getDay(),
+                        currTime.get(Calendar.HOUR_OF_DAY), currTime.get(Calendar.MINUTE)))
+                .putExtra(EditLogActivity.EXTRA_DAY_ID, dayId)
+                .putExtra(EditLogActivity.EXTRA_LOG_INDEX,
+                        day == null ? 0 : day.getLogs().length), REQ_NEW_LOG);
     }
 
     /**
@@ -323,7 +320,8 @@ public class DiaryActivity extends AppCompatActivity
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.nav_settings:
-                startActivity(new Intent(this, SettingsActivity.class));
+                startActivityForResult(new Intent(this, SettingsActivity.class),
+                        REQ_SETTINGS_CHANGE);
                 break;
         }
 
@@ -339,8 +337,12 @@ public class DiaryActivity extends AppCompatActivity
                     pager.getAdapter().notifyDataSetChanged();
                     pager.setCurrentItem(getPageIndexFromDate(
                             CalendarDay.from((Calendar) data
-                                    .getSerializableExtra(EditLogActivity.EXTRA_DATE))));
+                                    .getSerializableExtra(EditLogActivity.EXTRA_DATE_TIME))));
                 }
+                break;
+
+            case REQ_SETTINGS_CHANGE:
+                pager.getAdapter().notifyDataSetChanged();
                 break;
 
             default:
@@ -425,11 +427,6 @@ public class DiaryActivity extends AppCompatActivity
     }
 
     @Override
-    public void onFragmentInteraction(Uri uri) {
-
-    }
-
-    @Override
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.fab:
@@ -440,6 +437,12 @@ public class DiaryActivity extends AppCompatActivity
                 appBar.setExpanded(isCalendarHidden());
                 break;
         }
+    }
+
+    @Override
+    public void onLogCardSelected(int index) {
+        Toast.makeText(this, "Index: " + Integer.toString(index), Toast.LENGTH_SHORT).show();
+        startActivity(new Intent(this, ViewLogActivity.class));
     }
 
     /**
@@ -454,7 +457,7 @@ public class DiaryActivity extends AppCompatActivity
 
         @Override
         public Fragment getItem(int position) {
-            return DayPageFragment.newInstance(Integer.toString(positionToDayCode(position)));
+            return DayPageFragment.newInstance(positionToDayId(position));
         }
 
         @Override
@@ -467,11 +470,11 @@ public class DiaryActivity extends AppCompatActivity
             return PAGE_COUNT;
         }
 
-        private int positionToDayCode(int position) {
+        private int positionToDayId(int position) {
             final Calendar tempCal = (Calendar) TODAY_CAL.clone();
             tempCal.add(Calendar.DATE, position - TODAY_IDX);
 
-            return CalendarDay.from(tempCal).hashCode();
+            return Day.generateId(tempCal);
         }
     }
 }

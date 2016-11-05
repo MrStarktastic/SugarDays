@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -21,6 +22,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.graphics.Palette;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.AppCompatButton;
 import android.support.v7.widget.AppCompatSpinner;
@@ -44,6 +46,8 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
@@ -58,9 +62,9 @@ import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.BloodSugar;
 import com.mr_starktastic.sugardays.data.Day;
 import com.mr_starktastic.sugardays.data.Food;
-import com.mr_starktastic.sugardays.data.Log;
 import com.mr_starktastic.sugardays.data.Pill;
 import com.mr_starktastic.sugardays.data.Serving;
+import com.mr_starktastic.sugardays.data.SugarLog;
 import com.mr_starktastic.sugardays.data.TempBasal;
 import com.mr_starktastic.sugardays.fragment.FoodDialogFragment;
 import com.mr_starktastic.sugardays.fragment.TempBasalDialogFragment;
@@ -69,7 +73,6 @@ import com.mr_starktastic.sugardays.text.SimpleTextWatcher;
 import com.mr_starktastic.sugardays.util.NumericTextUtil;
 import com.mr_starktastic.sugardays.util.PrefUtil;
 import com.mr_starktastic.sugardays.widget.LabeledEditText;
-import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.squareup.picasso.Picasso;
 
 import org.apache.commons.io.FileUtils;
@@ -79,12 +82,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
 import id.zelory.compressor.Compressor;
-import io.paperdb.Paper;
 
 /**
  * Activity for adding new logs or editing existing ones
@@ -96,10 +100,10 @@ public class EditLogActivity extends AppCompatActivity
     /**
      * Extra keys for {@link Intent}s
      */
-    public static final String EXTRA_DAY_KEY = "DAY_KEY";
+    public static final String EXTRA_DAY_ID = "DAY_KEY";
     public static final String EXTRA_LOG_INDEX = "LOG_INDEX";
     public static final String EXTRA_TYPE = "TYPE";
-    public static final String EXTRA_DATE = "DATE";
+    public static final String EXTRA_DATE_TIME = "DATE";
 
     /**
      * Request codes
@@ -148,12 +152,11 @@ public class EditLogActivity extends AppCompatActivity
     /**
      * Member variables
      */
-    private String origDayKey;
-    private int origLogIdx;
-    private Log log;
+    private Day oldDay;
+    private int oldLogIdx;
+    private boolean isOld;
     private GregorianCalendar calendar;
     private GoogleApiClient googleApiClient;
-    private Place place;
     private String currentPhotoPath;
     private boolean photoCompressEnabled, bolusPredictEnabled;
     private ArrayList<Food> foods;
@@ -197,11 +200,6 @@ public class EditLogActivity extends AppCompatActivity
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         final Intent intent = getIntent();
-        final ArrayList<Log> logs = (Paper.book().read(
-                origDayKey = intent.getStringExtra(EXTRA_DAY_KEY), new Day()))
-                .getLogs();
-        origLogIdx = intent.getIntExtra(EXTRA_LOG_INDEX, 0);
-        log = origLogIdx < logs.size() ? logs.get(origLogIdx) : new Log();
 
         // Setting the ActionBar
         final ActionBar actionBar = getSupportActionBar();
@@ -251,11 +249,13 @@ public class EditLogActivity extends AppCompatActivity
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        // Log type
+        loadOldData(intent);
+
+        // SugarLog type
         typeSpinner.setSelection(intent.getIntExtra(EXTRA_TYPE, 0));
 
         // Date
-        calendar = (GregorianCalendar) intent.getSerializableExtra(EXTRA_DATE);
+        calendar = (GregorianCalendar) intent.getSerializableExtra(EXTRA_DATE_TIME);
         dateText.setText(DATE_FORMAT.format(calendar));
         final DatePickerDialog dateDialog = new DatePickerDialog(this,
                 new DatePickerDialog.OnDateSetListener() {
@@ -298,12 +298,15 @@ public class EditLogActivity extends AppCompatActivity
         });
 
         // Automatic current location fetch
-        if (savedInstanceState == null && PrefUtil.getAutoLocation(preferences) &&
+        if (locationEdit.getText().length() == 0 && savedInstanceState == null &&
+                PrefUtil.getAutoLocation(preferences) &&
                 checkPermission(PERMISSION_REQ_PLACE_DETECT,
-                        Manifest.permission.ACCESS_FINE_LOCATION))
+                        Manifest.permission.ACCESS_FINE_LOCATION)) {
+            googleApiClient.connect();
             Places.PlaceDetectionApi
                     .getCurrentPlace(googleApiClient, null)
                     .setResultCallback(this);
+        }
 
         // Listener for invoking the PlacePicker
         placePickerButton.setOnClickListener(this);
@@ -451,6 +454,19 @@ public class EditLogActivity extends AppCompatActivity
         } else ((View) pillEntryContainer.getParent()).setVisibility(View.GONE);
     }
 
+    private void loadOldData(Intent data) {
+        oldDay = Day.findById(data.getIntExtra(EXTRA_DAY_ID, 0));
+
+        if (oldDay != null) {
+            final SugarLog[] logs = oldDay.getLogs();
+
+            if (isOld = logs.length > (oldLogIdx = data.getIntExtra(EXTRA_LOG_INDEX, 0))) {
+                final SugarLog log = logs[oldLogIdx];
+                // TODO: Load old data here
+            }
+        }
+    }
+
     /**
      * Check if the given permissions were granted for the user.
      * If not, delegates them to be requested.
@@ -499,8 +515,9 @@ public class EditLogActivity extends AppCompatActivity
      * @param place Was given to set the text with.
      */
     private void setLocationText(Place place) {
-        locationEdit.setText(Log.getLocationText(place));
-        this.place = place;
+        final String address = place.getAddress().toString(), name = place.getName().toString();
+        locationEdit.setText(!address.isEmpty() ?
+                !address.contains(name) ? name + ", " + address : address : name);
     }
 
     /**
@@ -729,8 +746,9 @@ public class EditLogActivity extends AppCompatActivity
     /**
      * Saves the log into the database and deletes the previous instance.
      */
-    private void save() {
+    private void saveLog() {
         String photoPath = null;
+        Palette.Swatch swatch = null;
 
         if (currentPhotoPath != null) {
             final File cacheFile = new File(Uri.parse(currentPhotoPath).getPath());
@@ -740,6 +758,8 @@ public class EditLogActivity extends AppCompatActivity
             // noinspection ResultOfMethodCallIgnored
             cacheFile.renameTo(newFile);
             photoPath = getFilePath(newFile);
+            swatch = Palette.from(BitmapFactory.decodeFile(newFile.getPath())).generate()
+                    .getVibrantSwatch();
         }
 
         BloodSugar bg = null;
@@ -758,31 +778,39 @@ public class EditLogActivity extends AppCompatActivity
 
         }
 
-        final Day origDay = Paper.book().read(origDayKey);
+        if (isOld)
+            deleteLog();
 
-        if (origDay != null) {
-            final ArrayList<Log> logs = origDay.getLogs();
+        final int dayId = Day.generateId(
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH));
+        Day day = Day.findById(dayId);
 
-            try {
-                logs.remove(origLogIdx);
-            } catch (IndexOutOfBoundsException ignored) {
+        if (day == null)
+            day = new Day(dayId);
 
-            }
-
-            if (logs.size() > 0)
-                Paper.book().write(origDayKey, origDay);
-            else Paper.book().delete(origDayKey);
-        }
-
-        final String key = Integer.toString(CalendarDay.from(calendar).hashCode());
-        final Day day = Paper.book().read(key, new Day());
-        day.getLogs().add(log.setType(typeSpinner.getSelectedItemPosition())
+        final ArrayList<SugarLog> logs = new ArrayList<>(Arrays.asList(day.getLogs()));
+        logs.add(new SugarLog().setType(typeSpinner.getSelectedItemPosition())
                 .setTime(calendar.getTime().getTime())
-                .setLocation(locationEdit.getText().toString()).setPlace(place)
-                .setPhotoPath(photoPath).setBloodSugar(bg).setFoods(foods).setCarbSum(carbSum)
+                .setLocation(locationEdit.getText().toString().trim()).setPhotoPath(photoPath)
+                .setSwatch(swatch).setBloodSugar(bg).setFoods(foods).setCarbSum(carbSum)
                 .setCorrBolus(corrBolus).setMealBolus(mealBolus).setBasal(basal)
-                .setTempBasal(tempBasal).setPills(pills).setNotes(notesEdit.getText().toString()));
-        Paper.book().write(key, day);
+                .setTempBasal(tempBasal).setPills(pills)
+                .setNotes(notesEdit.getText().toString().trim()));
+        Collections.sort(logs, SugarLog.getCompByTime());
+
+        day.setLogs(logs.toArray(new SugarLog[logs.size()]));
+        day.save();
+    }
+
+    private void deleteLog() {
+        final ArrayList<SugarLog> logs = new ArrayList<>(Arrays.asList(oldDay.getLogs()));
+        logs.remove(oldLogIdx);
+
+        if (logs.size() == 0)
+            oldDay.delete();
+        else oldDay.setLogs(logs.toArray(new SugarLog[logs.size()]));
     }
 
     @Override
@@ -978,6 +1006,8 @@ public class EditLogActivity extends AppCompatActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.edit_log, menu);
+        menu.findItem(R.id.action_delete).setEnabled(isOld);
+
         return true;
     }
 
@@ -989,9 +1019,25 @@ public class EditLogActivity extends AppCompatActivity
                 return true;
 
             case R.id.action_save:
-                save();
-                setResult(RESULT_OK, new Intent().putExtra(EXTRA_DATE, calendar));
+                saveLog();
+                setResult(RESULT_OK, new Intent().putExtra(EXTRA_DATE_TIME, calendar));
                 finish();
+                return true;
+
+            case R.id.action_delete:
+                new MaterialDialog.Builder(this)
+                        .canceledOnTouchOutside(false)
+                        .positiveText(R.string.action_delete)
+                        .negativeText(android.R.string.cancel)
+                        .title(R.string.question_delete_log)
+                        .onPositive(new MaterialDialog.SingleButtonCallback() {
+                            @Override
+                            public void onClick(@NonNull MaterialDialog dialog,
+                                                @NonNull DialogAction which) {
+                                deleteLog();
+                                finish();
+                            }
+                        }).build().show();
                 return true;
 
             default:
@@ -1001,25 +1047,28 @@ public class EditLogActivity extends AppCompatActivity
 
     @Override
     public void onBackPressed() {
-        // TODO: Ask user to confirm
-
-        super.onBackPressed();
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        if (googleApiClient != null)
-            googleApiClient.connect();
-    }
-
-    @Override
-    protected void onStop() {
-        if (googleApiClient != null && googleApiClient.isConnected())
-            googleApiClient.disconnect();
-
-        super.onStop();
+        new MaterialDialog.Builder(this)
+                .canceledOnTouchOutside(false)
+                .positiveText(R.string.action_save)
+                .neutralText(android.R.string.cancel)
+                .negativeText(R.string.action_discard)
+                .title(R.string.question_save_changes)
+                .onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog,
+                                        @NonNull DialogAction which) {
+                        saveLog();
+                        setResult(RESULT_OK, new Intent().putExtra(EXTRA_DATE_TIME, calendar));
+                        finish();
+                    }
+                })
+                .onNegative(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog,
+                                        @NonNull DialogAction which) {
+                        EditLogActivity.super.onBackPressed();
+                    }
+                }).build().show();
     }
 
     @Override
@@ -1029,9 +1078,11 @@ public class EditLogActivity extends AppCompatActivity
 
     @Override
     public void onResult(@NonNull PlaceLikelihoodBuffer likelyPlaces) {
-        if (likelyPlaces.getCount() != 0)
+        if (likelyPlaces.getCount() > 0)
             setLocationText(likelyPlaces.get(0).getPlace());
 
         likelyPlaces.release();
+        googleApiClient.disconnect();
+        googleApiClient = null;
     }
 }

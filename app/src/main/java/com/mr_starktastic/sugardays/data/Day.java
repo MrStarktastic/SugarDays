@@ -1,13 +1,53 @@
 package com.mr_starktastic.sugardays.data;
 
-import java.util.ArrayList;
+import android.support.annotation.NonNull;
+
+import com.google.gson.Gson;
+import com.orm.SugarRecord;
+import com.orm.dsl.Ignore;
+import com.orm.dsl.Unique;
+
 import java.util.Calendar;
+import java.util.List;
 
-public class Day {
-    private ArrayList<Log> logs;
+public class Day extends SugarRecord {
+    private static final String WHERE_CLAUSE = "d_id = ?";
 
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
+    @Unique
+    private int dId;
+    @Ignore
+    private SugarLog[] logs;
+    private String logArrayJSON;
+
+    @SuppressWarnings("unused")
     public Day() {
-        logs = new ArrayList<>();
+        // Required empty constructor
+    }
+
+    public Day(Calendar calendar) {
+        this(generateId(calendar));
+    }
+
+    public Day(int dId) {
+        this.dId = dId;
+        logs = new SugarLog[]{};
+    }
+
+    public static int generateId(int year, int month, int dayOfMonth) {
+        return year * 10000 + month * 100 + dayOfMonth;
+    }
+
+    public static int generateId(Calendar calendar) {
+        return generateId(
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH));
+    }
+
+    public static Day findById(int dId) {
+        final List<Day> list = find(Day.class, WHERE_CLAUSE, Integer.toString(dId));
+        return !list.isEmpty() ? list.get(0) : null;
     }
 
     /**
@@ -37,7 +77,15 @@ public class Day {
         return extraDays - cal2DayOfYear + cal1OriginalDayOfYear;
     }
 
-    public ArrayList<Log> getLogs() {
+    @NonNull
+    public SugarLog[] getLogs() {
+        if (logs == null)
+            logs = new Gson().fromJson(logArrayJSON, SugarLog[].class);
+
         return logs;
+    }
+
+    public void setLogs(@NonNull SugarLog[] logs) {
+        logArrayJSON = new Gson().toJson(this.logs = logs);
     }
 }

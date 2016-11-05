@@ -34,6 +34,14 @@
             android:visibility="gone" />
     </LinearLayout>
 
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginEnd="@dimen/tiny_margin"
+        android:contentDescription="@string/content_desc_fatsecret_attribution"
+        android:src="@drawable/ic_powered_by_fatsecret" />
+
     <LinearLayout
         android:id="@+id/quantity_container"
         android:layout_width="match_parent"

@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Rect;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
@@ -22,28 +21,24 @@ import android.widget.TextView;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.BloodSugar;
 import com.mr_starktastic.sugardays.data.Day;
-import com.mr_starktastic.sugardays.data.Log;
+import com.mr_starktastic.sugardays.data.SugarLog;
 import com.mr_starktastic.sugardays.util.NumericTextUtil;
 import com.mr_starktastic.sugardays.util.PrefUtil;
 import com.squareup.picasso.Picasso;
 
 import org.apache.commons.lang3.time.FastDateFormat;
 
-import java.util.ArrayList;
-
-import io.paperdb.Paper;
-
 public class DayPageFragment extends Fragment {
-    private static final String ARG_DAY_CODE = "DAY_CODE";
+    private static final String ARG_DAY_ID = "DAY_CODE";
 
     private static final FastDateFormat TIME_FORMAT =
             FastDateFormat.getTimeInstance(FastDateFormat.SHORT);
 
     private static SpaceDecoration spaceDecoration;
 
-    private String dayCode;
+    private int dayId;
 
-    private OnFragmentInteractionListener listener;
+    private OnLogCardSelectedListener listener;
 
     private RecyclerView recyclerView;
 
@@ -54,13 +49,13 @@ public class DayPageFragment extends Fragment {
     /**
      * A factory method creates a new instance of this fragment using the provided parameters.
      *
-     * @param dayCode A year + month + day_of_month combination of the required day.
+     * @param dayId The required day's ID.
      * @return A new instance of fragment {@link DayPageFragment}.
      */
-    public static DayPageFragment newInstance(String dayCode) {
+    public static DayPageFragment newInstance(int dayId) {
         final DayPageFragment fragment = new DayPageFragment();
         final Bundle args = new Bundle();
-        args.putString(ARG_DAY_CODE, dayCode);
+        args.putInt(ARG_DAY_ID, dayId);
         fragment.setArguments(args);
 
         return fragment;
@@ -72,7 +67,7 @@ public class DayPageFragment extends Fragment {
         final Bundle args = getArguments();
 
         if (args != null)
-            dayCode = args.getString(ARG_DAY_CODE);
+            dayId = args.getInt(ARG_DAY_ID);
         if (spaceDecoration == null)
             spaceDecoration = new SpaceDecoration(
                     getResources().getDimensionPixelSize(R.dimen.normal_margin));
@@ -82,37 +77,32 @@ public class DayPageFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         final View root = inflater.inflate(R.layout.fragment_day_page, container, false);
+        final Context context = getContext();
 
         recyclerView = (RecyclerView) root.findViewById(R.id.day_recycler_view);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        ViewCompat.setNestedScrollingEnabled(recyclerView, false);
+        recyclerView.setLayoutManager(new LinearLayoutManager(context));
         recyclerView.addItemDecoration(spaceDecoration);
+        // Nested scrolling causes odd behavior with the calendar view; workaround needed
+        ViewCompat.setNestedScrollingEnabled(recyclerView, false);
 
-        final Day day = Paper.book().read(dayCode);
-        final ArrayList<Log> logs;
+        final Day day = Day.findById(dayId);
 
-        if (day != null && (logs = day.getLogs()) != null) {
-            recyclerView.setAdapter(new LogAdapter(getContext(), logs));
-        } else recyclerView.setAdapter(new LogAdapter(getContext()));
+        if (day != null) {
+            recyclerView.setAdapter(new LogAdapter(context, day.getLogs()));
+            root.findViewById(R.id.empty_day_text).setVisibility(View.GONE);
+        } else root.findViewById(R.id.empty_day_text).setVisibility(View.VISIBLE);
 
         return root;
-    }
-
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (listener != null)
-            listener.onFragmentInteraction(uri);
     }
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            listener = (OnFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
+
+        if (context instanceof OnLogCardSelectedListener)
+            listener = (OnLogCardSelectedListener) context;
+        else throw new RuntimeException(context.toString() +
+                " must implement OnLogCardSelectedListener");
     }
 
     @Override
@@ -121,19 +111,8 @@ public class DayPageFragment extends Fragment {
         listener = null;
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
+    public interface OnLogCardSelectedListener {
+        void onLogCardSelected(int index);
     }
 
     private static class SpaceDecoration extends RecyclerView.ItemDecoration {
@@ -155,9 +134,9 @@ public class DayPageFragment extends Fragment {
         }
     }
 
-    private static class LogAdapter extends RecyclerView.Adapter<LogAdapter.ViewHolder> {
+    private class LogAdapter extends RecyclerView.Adapter<LogAdapter.ViewHolder> {
         private Context context;
-        private ArrayList<Log> logs;
+        private SugarLog[] logs;
         private String[] types;
         private int bgUnitIdx;
         private String bgUnit;
@@ -165,12 +144,7 @@ public class DayPageFragment extends Fragment {
         private float hypo, minTargetRng, maxTargetRng, hyper;
         private int badBgColor, medBgColor, goodBgColor;
 
-        private LogAdapter(Context context) {
-            this.context = context;
-            logs = new ArrayList<>();
-        }
-
-        private LogAdapter(Context context, ArrayList<Log> logs) {
+        private LogAdapter(Context context, SugarLog[] logs) {
             this.context = context;
             this.logs = logs;
             types = context.getResources().getStringArray(R.array.log_types);
@@ -197,7 +171,7 @@ public class DayPageFragment extends Fragment {
 
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
-            final Log log = logs.get(position);
+            final SugarLog log = logs[position];
             final String photoPath = log.getPhotoPath();
 
             if (photoPath != null)
@@ -224,21 +198,28 @@ public class DayPageFragment extends Fragment {
 
         @Override
         public int getItemCount() {
-            return logs.size();
+            return logs.length;
         }
 
-        class ViewHolder extends RecyclerView.ViewHolder {
+        class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
             private ImageView imgView;
             private TextView typeText, timeText, locationText, bgText;
 
             private ViewHolder(CardView cardView) {
                 super(cardView);
+                cardView.setOnClickListener(this);
 
                 imgView = (ImageView) cardView.findViewById(R.id.photo);
                 typeText = (TextView) cardView.findViewById(R.id.log_type_text);
                 timeText = (TextView) cardView.findViewById(R.id.log_time_text);
                 locationText = (TextView) cardView.findViewById(R.id.log_location_text);
                 bgText = (TextView) cardView.findViewById(R.id.log_blood_glucose_text);
+            }
+
+            @Override
+            public void onClick(View view) {
+                if (listener != null)
+                    listener.onLogCardSelected(getAdapterPosition());
             }
         }
     }

@@ -1,17 +1,17 @@
 package com.mr_starktastic.sugardays.data;
 
+import android.support.v7.graphics.Palette;
 import android.text.TextUtils;
 
-import com.google.android.gms.location.places.Place;
-
 import java.util.ArrayList;
+import java.util.Comparator;
 
-public class Log {
+public class SugarLog {
     private int type;
     private long time;
-    private Place place;
     private String location;
     private String photoPath;
+    private Palette.Swatch swatch;
     private BloodSugar bg;
     private ArrayList<Food> foods;
     private Float carbSum, corrBolus, mealBolus, basal;
@@ -19,21 +19,25 @@ public class Log {
     private ArrayList<Pill> pills;
     private String notes;
 
-    public Log() {
+    public SugarLog() {
         // Empty default constructor
     }
 
-    public static String getLocationText(Place place) {
-        final String address = place.getAddress().toString(), name = place.getName().toString();
-        return !address.isEmpty() ?
-                !address.contains(name) ? name + ", " + address : address : name;
+    public static Comparator<SugarLog> getCompByTime() {
+        return new Comparator<SugarLog>() {
+            @Override
+            public int compare(SugarLog l1, SugarLog l2) {
+                final long diff = l1.time - l2.time;
+                return diff < 0 ? -1 : diff > 0 ? 1 : 0;
+            }
+        };
     }
 
     public int getType() {
         return type;
     }
 
-    public Log setType(int type) {
+    public SugarLog setType(int type) {
         this.type = type;
         return this;
     }
@@ -42,22 +46,17 @@ public class Log {
         return time;
     }
 
-    public Log setTime(long time) {
+    public SugarLog setTime(long time) {
         this.time = time;
         return this;
     }
 
     public String getLocation() {
-        return place != null ? getLocationText(place) : location;
+        return location;
     }
 
-    public Log setLocation(String location) {
-        this.location = !TextUtils.isEmpty(location) ? location.trim() : null;
-        return this;
-    }
-
-    public Log setPlace(Place place) {
-        this.place = place;
+    public SugarLog setLocation(String location) {
+        this.location = !TextUtils.isEmpty(location) ? location : null;
         return this;
     }
 
@@ -65,8 +64,17 @@ public class Log {
         return photoPath;
     }
 
-    public Log setPhotoPath(String photoPath) {
+    public SugarLog setPhotoPath(String photoPath) {
         this.photoPath = photoPath;
+        return this;
+    }
+
+    public Palette.Swatch getSwatch() {
+        return swatch;
+    }
+
+    public SugarLog setSwatch(Palette.Swatch swatch) {
+        this.swatch = swatch;
         return this;
     }
 
@@ -74,7 +82,7 @@ public class Log {
         return bg;
     }
 
-    public Log setBloodSugar(BloodSugar bg) {
+    public SugarLog setBloodSugar(BloodSugar bg) {
         this.bg = bg;
         return this;
     }
@@ -83,7 +91,7 @@ public class Log {
         return foods;
     }
 
-    public Log setFoods(ArrayList<Food> foods) {
+    public SugarLog setFoods(ArrayList<Food> foods) {
         this.foods = foods;
         return this;
     }
@@ -92,7 +100,7 @@ public class Log {
         return carbSum;
     }
 
-    public Log setCarbSum(Float carbSum) {
+    public SugarLog setCarbSum(Float carbSum) {
         this.carbSum = carbSum;
         return this;
     }
@@ -101,7 +109,7 @@ public class Log {
         return corrBolus;
     }
 
-    public Log setCorrBolus(Float corrBolus) {
+    public SugarLog setCorrBolus(Float corrBolus) {
         this.corrBolus = corrBolus;
         return this;
     }
@@ -110,7 +118,7 @@ public class Log {
         return mealBolus;
     }
 
-    public Log setMealBolus(Float mealBolus) {
+    public SugarLog setMealBolus(Float mealBolus) {
         this.mealBolus = mealBolus;
         return this;
     }
@@ -119,7 +127,7 @@ public class Log {
         return basal;
     }
 
-    public Log setBasal(Float basal) {
+    public SugarLog setBasal(Float basal) {
         this.basal = basal;
         return this;
     }
@@ -128,7 +136,7 @@ public class Log {
         return tempBasal;
     }
 
-    public Log setTempBasal(TempBasal tempBasal) {
+    public SugarLog setTempBasal(TempBasal tempBasal) {
         this.tempBasal = tempBasal;
         return this;
     }
@@ -137,7 +145,7 @@ public class Log {
         return pills;
     }
 
-    public Log setPills(ArrayList<Pill> pills) {
+    public SugarLog setPills(ArrayList<Pill> pills) {
         this.pills = pills;
         return this;
     }
@@ -146,8 +154,8 @@ public class Log {
         return notes;
     }
 
-    public Log setNotes(String notes) {
-        this.notes = notes;
+    public SugarLog setNotes(String notes) {
+        this.notes = !TextUtils.isEmpty(notes) ? notes : null;
         return this;
     }
 }
