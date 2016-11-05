@@ -19,18 +19,18 @@ import javax.crypto.spec.SecretKeySpec;
 @SuppressWarnings("SpellCheckingInspection")
 public class FatSecretRequestBuilder {
     private static final byte[] SECRET_KEY_BYTES = "310e56e441724afb933cf2c2cce50a83&".getBytes();
-    private static final String FOODS_SEARCH_PRE_SIGNATURE_PREFIX =
+    private static final String FOODS_SEARCH_PRE_SIGNATURE =
             "format=json&max_results=10&method=foods.search&oauth_consumer_key=572148ea582941e5b6d2559084fd86dc&oauth_nonce=";
     private static final String POST_SIGNATURE_1 =
             "&oauth_signature_method=HMAC-SHA1&oauth_timestamp=";
     private static final String FOODS_SEARCH_POST_SIGNATURE_2 =
             "&oauth_version=1.0&search_expression=";
-    private static final String FOOD_GET_PRE_SIGNATURE_PREFIX_1 = "food_id=";
-    private static final String FOOD_GET_PRE_SIGNATURE_PREFIX_2 =
+    private static final String FOOD_GET_PRE_SIGN_1 = "food_id=";
+    private static final String FOOD_GET_PRE_SIGN_2 =
             "&format=json&method=food.get&oauth_consumer_key=572148ea582941e5b6d2559084fd86dc&oauth_nonce=";
     private static final String POST_SIGNATURE_2 = "&oauth_version=1.0";
-    private static final String FOOD_BARCODE_PRE_SIGNATURE_PREFIX_1 = "barcode=";
-    private static final String FOOD_BARCODE_PRE_SIGNATURE_PREFIX_2 =
+    private static final String FOOD_BARCODE_PRE_SIGN_1 = "barcode=";
+    private static final String FOOD_BARCODE_PRE_SIGN_2 =
             "&format=json&method=food.find_id_for_barcode&oauth_consumer_key=572148ea582941e5b6d2559084fd86dc&oauth_nonce=";
 
     private static final String OAUTH_SIGNATURE_METHOD = "HmacSHA1";
@@ -87,18 +87,17 @@ public class FatSecretRequestBuilder {
     }
 
     public String buildFoodSearchUrl(String query) {
-        return buildUrl(FOODS_SEARCH_PRE_SIGNATURE_PREFIX + nonce(),
+        return buildUrl(FOODS_SEARCH_PRE_SIGNATURE + nonce(),
                 POST_SIGNATURE_1 + timestamp() + FOODS_SEARCH_POST_SIGNATURE_2 + encode(query));
     }
 
     public String buildFoodGetUrl(String id) {
-        return buildUrl(FOOD_GET_PRE_SIGNATURE_PREFIX_1 + id + FOOD_GET_PRE_SIGNATURE_PREFIX_2 +
-                nonce(), POST_SIGNATURE_1 + timestamp() + POST_SIGNATURE_2);
+        return buildUrl(FOOD_GET_PRE_SIGN_1 + id + FOOD_GET_PRE_SIGN_2 + nonce(),
+                POST_SIGNATURE_1 + timestamp() + POST_SIGNATURE_2);
     }
 
     public String buildFindIdForBarcodeUrl(String barcode) {
-        return buildUrl(FOOD_BARCODE_PRE_SIGNATURE_PREFIX_1 + barcode +
-                        FOOD_BARCODE_PRE_SIGNATURE_PREFIX_2 + nonce(),
+        return buildUrl(FOOD_BARCODE_PRE_SIGN_1 + barcode + FOOD_BARCODE_PRE_SIGN_2 + nonce(),
                 POST_SIGNATURE_1 + timestamp() + POST_SIGNATURE_2);
     }
 
