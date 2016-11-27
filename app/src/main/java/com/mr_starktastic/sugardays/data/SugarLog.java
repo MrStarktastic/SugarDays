@@ -1,17 +1,24 @@
 package com.mr_starktastic.sugardays.data;
 
-import android.support.v7.graphics.Palette;
 import android.text.TextUtils;
+
+import org.apache.commons.lang3.time.FastDateFormat;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 
 public class SugarLog {
+    public static FastDateFormat TIME_FORMAT =
+            FastDateFormat.getTimeInstance(FastDateFormat.SHORT);
+    public static FastDateFormat DATE_FORMAT =
+            FastDateFormat.getInstance(FastDateFormat.getInstance("EEE, ").getPattern() +
+                    FastDateFormat.getDateInstance(FastDateFormat.MEDIUM).getPattern());
+
     private int type;
     private long time;
     private String location;
     private String photoPath;
-    private Palette.Swatch swatch;
+    private int primaryColor;
     private BloodSugar bg;
     private ArrayList<Food> foods;
     private Float carbSum, corrBolus, mealBolus, basal;
@@ -69,12 +76,12 @@ public class SugarLog {
         return this;
     }
 
-    public Palette.Swatch getSwatch() {
-        return swatch;
+    public int getPrimaryColor() {
+        return primaryColor;
     }
 
-    public SugarLog setSwatch(Palette.Swatch swatch) {
-        this.swatch = swatch;
+    public SugarLog setPrimaryColor(int primaryColor) {
+        this.primaryColor = primaryColor;
         return this;
     }
 

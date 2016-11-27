@@ -7,14 +7,17 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.util.Pair;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
@@ -26,9 +29,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.Day;
@@ -51,6 +54,15 @@ public class DiaryActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, View.OnClickListener,
         AppBarLayout.OnOffsetChangedListener, OnMonthChangedListener, OnDateSelectedListener,
         ViewPager.OnPageChangeListener, DayPageFragment.OnLogCardSelectedListener {
+    /**
+     * Extra keys for {@link Intent}s
+     */
+    public static final String EXTRA_IS_EDIT = "EDIT";
+    public static final String EXTRA_CALENDAR = "DATE_TIME";
+    public static final String EXTRA_DAY_ID = "DAY_KEY";
+    public static final String EXTRA_LOG_INDEX = "LOG_INDEX";
+    public static final String EXTRA_TYPE = "TYPE";
+
     /**
      * Request codes
      */
@@ -187,8 +199,8 @@ public class DiaryActivity extends AppCompatActivity
 
         startActivityForResult(
                 new Intent(this, EditLogActivity.class)
-                        .putExtra(EditLogActivity.EXTRA_IS_EDIT, false)
-                        .putExtra(EditLogActivity.EXTRA_DATE_TIME,
+                        .putExtra(EXTRA_IS_EDIT, false)
+                        .putExtra(EXTRA_CALENDAR,
                                 new GregorianCalendar(cal.getYear(), cal.getMonth(), cal.getDay(),
                                         currTime.get(Calendar.HOUR_OF_DAY),
                                         currTime.get(Calendar.MINUTE))), REQ_NEW_LOG);
@@ -333,9 +345,8 @@ public class DiaryActivity extends AppCompatActivity
             case REQ_NEW_LOG:
                 if (resultCode == RESULT_OK) {
                     pager.getAdapter().notifyDataSetChanged();
-                    pager.setCurrentItem(getPageIndexFromDate(
-                            CalendarDay.from((Calendar) data
-                                    .getSerializableExtra(EditLogActivity.EXTRA_DATE_TIME))));
+                    pager.setCurrentItem(getPageIndexFromDate(CalendarDay.from(
+                            (Calendar) data.getSerializableExtra(EXTRA_CALENDAR))));
                 }
                 break;
 
@@ -438,9 +449,20 @@ public class DiaryActivity extends AppCompatActivity
     }
 
     @Override
-    public void onLogCardSelected(int index) {
-        Toast.makeText(this, "Index: " + Integer.toString(index), Toast.LENGTH_SHORT).show();
-        startActivity(new Intent(this, ViewLogActivity.class));
+    public void onLogCardSelected(int dayId, int logIndex, View sharedView) {
+        final Bundle sceneTransition;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            // noinspection unchecked
+            sceneTransition = ActivityOptionsCompat.makeSceneTransitionAnimation(this,
+                    Pair.create(sharedView, sharedView.getTransitionName()),
+                    Pair.create(findViewById(android.R.id.navigationBarBackground),
+                            Window.NAVIGATION_BAR_BACKGROUND_TRANSITION_NAME)).toBundle();
+        else sceneTransition = null;
+
+        startActivity(new Intent(this, ViewLogActivity.class)
+                .putExtra(EXTRA_DAY_ID, dayId)
+                .putExtra(EXTRA_LOG_INDEX, logIndex), sceneTransition);
     }
 
     /**

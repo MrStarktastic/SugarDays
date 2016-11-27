@@ -112,7 +112,7 @@ public class DayPageFragment extends Fragment {
     }
 
     public interface OnLogCardSelectedListener {
-        void onLogCardSelected(int index);
+        void onLogCardSelected(int dayId, int logIndex, View sharedView);
     }
 
     private static class SpaceDecoration extends RecyclerView.ItemDecoration {
@@ -219,7 +219,7 @@ public class DayPageFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 if (listener != null)
-                    listener.onLogCardSelected(getAdapterPosition());
+                    listener.onLogCardSelected(dayId, getAdapterPosition(), view);
             }
         }
     }

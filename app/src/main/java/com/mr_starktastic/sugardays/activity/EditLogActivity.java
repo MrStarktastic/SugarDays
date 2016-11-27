@@ -98,15 +98,6 @@ public class EditLogActivity extends AppCompatActivity
         View.OnClickListener, MenuItem.OnMenuItemClickListener,
         ResultCallback<PlaceLikelihoodBuffer> {
     /**
-     * Extra keys for {@link Intent}s
-     */
-    public static final String EXTRA_IS_EDIT = "EDIT";
-    public static final String EXTRA_DATE_TIME = "DATE_TIME";
-    public static final String EXTRA_DAY_ID = "DAY_KEY";
-    public static final String EXTRA_LOG_INDEX = "LOG_INDEX";
-    public static final String EXTRA_TYPE = "TYPE";
-
-    /**
      * Request codes
      */
     private static final int REQ_PLACE_PICKER = 1;
@@ -140,14 +131,6 @@ public class EditLogActivity extends AppCompatActivity
      */
     private static final String KEY_INSTANCE_PHOTO_PATH = "path", KEY_INSTANCE_BITMAP = "bitmap";
 
-    /**
-     * Formats
-     */
-    private static FastDateFormat TIME_FORMAT =
-            FastDateFormat.getTimeInstance(FastDateFormat.SHORT);
-    private static FastDateFormat DATE_FORMAT =
-            FastDateFormat.getInstance(FastDateFormat.getInstance("EEE, ").getPattern() +
-                    FastDateFormat.getDateInstance(FastDateFormat.MEDIUM).getPattern());
     private static FastDateFormat FILE_DATE_FORMAT = FastDateFormat.getInstance("yyyyMMdd_HHmmss");
 
     /**
@@ -251,16 +234,16 @@ public class EditLogActivity extends AppCompatActivity
         loadOldData(intent);
 
         // SugarLog type
-        typeSpinner.setSelection(intent.getIntExtra(EXTRA_TYPE, 0));
+        typeSpinner.setSelection(intent.getIntExtra(DiaryActivity.EXTRA_TYPE, 0));
 
         // Date
-        dateText.setText(DATE_FORMAT.format(calendar));
+        dateText.setText(SugarLog.DATE_FORMAT.format(calendar));
         final DatePickerDialog dateDialog = new DatePickerDialog(this,
                 new DatePickerDialog.OnDateSetListener() {
                     @Override
                     public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
                         calendar.set(year, month, dayOfMonth);
-                        dateText.setText(DATE_FORMAT.format(calendar));
+                        dateText.setText(SugarLog.DATE_FORMAT.format(calendar));
                     }
                 },
                 calendar.get(Calendar.YEAR),
@@ -275,14 +258,14 @@ public class EditLogActivity extends AppCompatActivity
         });
 
         // Time
-        timeText.setText(TIME_FORMAT.format(calendar));
+        timeText.setText(SugarLog.TIME_FORMAT.format(calendar));
         final TimePickerDialog timeDialog = new TimePickerDialog(this,
                 new TimePickerDialog.OnTimeSetListener() {
                     @Override
                     public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
                         calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
                         calendar.set(Calendar.MINUTE, minute);
-                        timeText.setText(TIME_FORMAT.format(calendar));
+                        timeText.setText(SugarLog.TIME_FORMAT.format(calendar));
                     }
                 },
                 calendar.get(Calendar.HOUR_OF_DAY),
@@ -453,13 +436,14 @@ public class EditLogActivity extends AppCompatActivity
     }
 
     private void loadOldData(Intent data) {
-        calendar = (GregorianCalendar) data.getSerializableExtra(EXTRA_DATE_TIME);
+        calendar = (GregorianCalendar) data.getSerializableExtra(DiaryActivity.EXTRA_CALENDAR);
 
-        if (isEdit = data.getBooleanExtra(EXTRA_IS_EDIT, false)) {
+        if (isEdit = data.getBooleanExtra(DiaryActivity.EXTRA_IS_EDIT, false)) {
             setTitle(R.string.action_title_edit_log);
-            oldDay = Day.findById(data.getIntExtra(EXTRA_DAY_ID, 0));
+            oldDay = Day.findById(data.getIntExtra(DiaryActivity.EXTRA_DAY_ID, 0));
             assert oldDay != null;
-            final SugarLog log = oldDay.getLogs()[oldLogIdx = data.getIntExtra(EXTRA_LOG_INDEX, 0)];
+            final SugarLog log = oldDay.getLogs()[oldLogIdx =
+                    data.getIntExtra(DiaryActivity.EXTRA_LOG_INDEX, 0)];
             // TODO: Load old data here
         } else setTitle(R.string.action_title_add_log);
     }
@@ -743,9 +727,9 @@ public class EditLogActivity extends AppCompatActivity
     /**
      * Saves the log into the database and deletes the previous instance.
      */
-    private void saveLog() {
+    private void saveAndExit() {
         String photoPath = null;
-        Palette.Swatch swatch = null;
+        int primaryColor = 0;
 
         if (currentPhotoPath != null) {
             final File cacheFile = new File(Uri.parse(currentPhotoPath).getPath());
@@ -755,8 +739,11 @@ public class EditLogActivity extends AppCompatActivity
             // noinspection ResultOfMethodCallIgnored
             cacheFile.renameTo(newFile);
             photoPath = getFilePath(newFile);
-            swatch = Palette.from(BitmapFactory.decodeFile(newFile.getPath())).generate()
-                    .getVibrantSwatch();
+            final Palette.Swatch swatch = Palette.from(BitmapFactory.decodeFile(newFile.getPath()))
+                    .generate().getVibrantSwatch();
+
+            if (swatch != null)
+                primaryColor = swatch.getRgb();
         }
 
         BloodSugar bg = null;
@@ -788,7 +775,7 @@ public class EditLogActivity extends AppCompatActivity
         logs.add(new SugarLog().setType(typeSpinner.getSelectedItemPosition())
                 .setTime(calendar.getTime().getTime())
                 .setLocation(locationEdit.getText().toString().trim()).setPhotoPath(photoPath)
-                .setSwatch(swatch).setBloodSugar(bg).setFoods(foods).setCarbSum(carbSum)
+                .setPrimaryColor(primaryColor).setBloodSugar(bg).setFoods(foods).setCarbSum(carbSum)
                 .setCorrBolus(corrBolus).setMealBolus(mealBolus).setBasal(basal)
                 .setTempBasal(tempBasal).setPills(pills)
                 .setNotes(notesEdit.getText().toString().trim()));
@@ -796,6 +783,9 @@ public class EditLogActivity extends AppCompatActivity
 
         day.setLogs(logs.toArray(new SugarLog[logs.size()]));
         day.save();
+
+        setResult(RESULT_OK, new Intent().putExtra(DiaryActivity.EXTRA_CALENDAR, calendar));
+        finish();
     }
 
     private void deleteLog() {
@@ -1013,9 +1003,7 @@ public class EditLogActivity extends AppCompatActivity
                 return true;
 
             case R.id.action_save:
-                saveLog();
-                setResult(RESULT_OK, new Intent().putExtra(EXTRA_DATE_TIME, calendar));
-                finish();
+                saveAndExit();
                 return true;
 
             case R.id.action_delete:
@@ -1051,9 +1039,7 @@ public class EditLogActivity extends AppCompatActivity
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog,
                                         @NonNull DialogAction which) {
-                        saveLog();
-                        setResult(RESULT_OK, new Intent().putExtra(EXTRA_DATE_TIME, calendar));
-                        finish();
+                        saveAndExit();
                     }
                 })
                 .onNegative(new MaterialDialog.SingleButtonCallback() {
