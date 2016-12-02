@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.mr_starktastic.sugardays.activity.EditLogActivity">
+    tools:context="com.mr_starktastic.sugardays.activity.EditEntryActivity">
 
     <LinearLayout
         android:id="@+id/scroll_view_content"
@@ -14,13 +14,13 @@
         android:orientation="vertical">
 
         <android.support.v7.widget.AppCompatSpinner
-            android:id="@+id/log_type_spinner"
+            android:id="@+id/entry_type_spinner"
             style="@style/Widget.AppCompat.Spinner"
             android:layout_width="match_parent"
             android:layout_height="?android:listPreferredItemHeightSmall"
             android:layout_marginLeft="@dimen/normal_margin"
             android:layout_marginRight="@dimen/normal_margin"
-            android:entries="@array/log_types" />
+            android:entries="@array/entry_types" />
 
         <include layout="@layout/divider" />
 

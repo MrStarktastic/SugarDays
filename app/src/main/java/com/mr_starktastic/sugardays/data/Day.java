@@ -17,7 +17,7 @@ public class Day extends SugarRecord {
     @Unique
     private int dId;
     @Ignore
-    private SugarLog[] logs;
+    private SugarEntry[] entries;
     private String logArrayJSON;
 
     @SuppressWarnings("unused")
@@ -31,7 +31,7 @@ public class Day extends SugarRecord {
 
     public Day(int dId) {
         this.dId = dId;
-        logs = new SugarLog[]{};
+        entries = new SugarEntry[]{};
     }
 
     public static int generateId(int year, int month, int dayOfMonth) {
@@ -78,14 +78,14 @@ public class Day extends SugarRecord {
     }
 
     @NonNull
-    public SugarLog[] getLogs() {
-        if (logs == null)
-            logs = new Gson().fromJson(logArrayJSON, SugarLog[].class);
+    public SugarEntry[] getEntries() {
+        if (entries == null)
+            entries = new Gson().fromJson(logArrayJSON, SugarEntry[].class);
 
-        return logs;
+        return entries;
     }
 
-    public void setLogs(@NonNull SugarLog[] logs) {
-        logArrayJSON = new Gson().toJson(this.logs = logs);
+    public void setEntries(@NonNull SugarEntry[] entries) {
+        logArrayJSON = new Gson().toJson(this.entries = entries);
     }
 }

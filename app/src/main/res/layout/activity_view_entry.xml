@@ -37,6 +37,12 @@
                     app:layout_widthPercent="100%" />
             </android.support.percent.PercentFrameLayout>
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="96dp"
+                android:layout_gravity="bottom"
+                android:background="@drawable/shadow_gradient" />
+
             <android.support.v7.widget.Toolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
@@ -60,7 +66,7 @@
 
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="?android:listPreferredItemHeight">
+                android:layout_height="?android:listPreferredItemHeightSmall">
 
                 <ImageView
                     android:id="@+id/date_time_icon"
@@ -99,7 +105,7 @@
                 <ImageView
                     android:id="@+id/location_icon"
                     android:layout_width="wrap_content"
-                    android:layout_height="?android:listPreferredItemHeight"
+                    android:layout_height="?android:listPreferredItemHeightSmall"
                     android:layout_marginStart="@dimen/normal_margin"
                     android:src="@drawable/ic_location"
                     tools:ignore="ContentDescription" />
@@ -108,19 +114,42 @@
                     android:id="@+id/location_text"
                     style="@style/TextAppearance.AppCompat.Subhead"
                     android:layout_width="match_parent"
-                    android:layout_height="?android:listPreferredItemHeight"
+                    android:layout_height="?android:listPreferredItemHeightSmall"
                     android:background="?android:selectableItemBackground"
                     android:gravity="center_vertical"
                     android:paddingEnd="@dimen/normal_margin"
                     android:paddingStart="@dimen/huge_margin" />
             </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="?android:listPreferredItemHeightSmall">
+
+                <ImageView
+                    android:id="@+id/blood_sugar_icon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="@dimen/normal_margin"
+                    android:src="@drawable/ic_blood_sugar"
+                    tools:ignore="ContentDescription" />
+
+                <TextView
+                    android:id="@+id/blood_sugar_text"
+                    style="@style/TextAppearance.AppCompat.Subhead"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="@dimen/huge_margin" />
+            </FrameLayout>
         </LinearLayout>
     </android.support.v4.widget.NestedScrollView>
 
     <android.support.design.widget.FloatingActionButton
+        android:id="@+id/edit_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="@dimen/normal_margin"
+        android:src="@drawable/ic_edit"
         app:layout_anchor="@id/app_bar"
         app:layout_anchorGravity="end|bottom" />
 </android.support.design.widget.CoordinatorLayout>

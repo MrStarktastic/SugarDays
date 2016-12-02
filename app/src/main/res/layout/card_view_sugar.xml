@@ -41,7 +41,7 @@
             android:layout_weight="1">
 
             <TextView
-                android:id="@+id/log_type_text"
+                android:id="@+id/entry_type_text"
                 style="@style/TextAppearance.AppCompat.Display1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -49,24 +49,24 @@
                 android:textColor="@android:color/white" />
 
             <TextView
-                android:id="@+id/log_time_text"
+                android:id="@+id/entry_time_text"
                 style="@style/TextAppearance.AppCompat.Small"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
-                android:layout_below="@id/log_type_text"
+                android:layout_below="@id/entry_type_text"
                 android:drawablePadding="@dimen/tiny_margin"
                 android:drawableStart="@drawable/ic_time_small"
                 android:gravity="center_vertical"
                 android:textColor="@android:color/white" />
 
             <TextView
-                android:id="@+id/log_location_text"
+                android:id="@+id/entry_location_text"
                 style="@style/TextAppearance.AppCompat.Small"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
-                android:layout_below="@id/log_time_text"
+                android:layout_below="@id/entry_time_text"
                 android:layout_marginTop="@dimen/tiny_margin"
                 android:drawablePadding="@dimen/tiny_margin"
                 android:drawableStart="@drawable/ic_location_small"
@@ -78,7 +78,7 @@
         </RelativeLayout>
 
         <TextView
-            android:id="@+id/log_blood_glucose_text"
+            android:id="@+id/entry_blood_glucose_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end|bottom"

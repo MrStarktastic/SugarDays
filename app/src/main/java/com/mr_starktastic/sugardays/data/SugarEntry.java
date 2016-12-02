@@ -7,7 +7,7 @@ import org.apache.commons.lang3.time.FastDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 
-public class SugarLog {
+public class SugarEntry {
     public static FastDateFormat TIME_FORMAT =
             FastDateFormat.getTimeInstance(FastDateFormat.SHORT);
     public static FastDateFormat DATE_FORMAT =
@@ -26,14 +26,14 @@ public class SugarLog {
     private ArrayList<Pill> pills;
     private String notes;
 
-    public SugarLog() {
+    public SugarEntry() {
         // Empty default constructor
     }
 
-    public static Comparator<SugarLog> getCompByTime() {
-        return new Comparator<SugarLog>() {
+    public static Comparator<SugarEntry> getCompByTime() {
+        return new Comparator<SugarEntry>() {
             @Override
-            public int compare(SugarLog l1, SugarLog l2) {
+            public int compare(SugarEntry l1, SugarEntry l2) {
                 final long diff = l1.time - l2.time;
                 return diff < 0 ? -1 : diff > 0 ? 1 : 0;
             }
@@ -44,7 +44,7 @@ public class SugarLog {
         return type;
     }
 
-    public SugarLog setType(int type) {
+    public SugarEntry setType(int type) {
         this.type = type;
         return this;
     }
@@ -53,7 +53,7 @@ public class SugarLog {
         return time;
     }
 
-    public SugarLog setTime(long time) {
+    public SugarEntry setTime(long time) {
         this.time = time;
         return this;
     }
@@ -62,7 +62,7 @@ public class SugarLog {
         return location;
     }
 
-    public SugarLog setLocation(String location) {
+    public SugarEntry setLocation(String location) {
         this.location = !TextUtils.isEmpty(location) ? location : null;
         return this;
     }
@@ -71,7 +71,7 @@ public class SugarLog {
         return photoPath;
     }
 
-    public SugarLog setPhotoPath(String photoPath) {
+    public SugarEntry setPhotoPath(String photoPath) {
         this.photoPath = photoPath;
         return this;
     }
@@ -80,7 +80,7 @@ public class SugarLog {
         return primaryColor;
     }
 
-    public SugarLog setPrimaryColor(int primaryColor) {
+    public SugarEntry setPrimaryColor(int primaryColor) {
         this.primaryColor = primaryColor;
         return this;
     }
@@ -89,7 +89,7 @@ public class SugarLog {
         return bg;
     }
 
-    public SugarLog setBloodSugar(BloodSugar bg) {
+    public SugarEntry setBloodSugar(BloodSugar bg) {
         this.bg = bg;
         return this;
     }
@@ -98,7 +98,7 @@ public class SugarLog {
         return foods;
     }
 
-    public SugarLog setFoods(ArrayList<Food> foods) {
+    public SugarEntry setFoods(ArrayList<Food> foods) {
         this.foods = foods;
         return this;
     }
@@ -107,7 +107,7 @@ public class SugarLog {
         return carbSum;
     }
 
-    public SugarLog setCarbSum(Float carbSum) {
+    public SugarEntry setCarbSum(Float carbSum) {
         this.carbSum = carbSum;
         return this;
     }
@@ -116,7 +116,7 @@ public class SugarLog {
         return corrBolus;
     }
 
-    public SugarLog setCorrBolus(Float corrBolus) {
+    public SugarEntry setCorrBolus(Float corrBolus) {
         this.corrBolus = corrBolus;
         return this;
     }
@@ -125,7 +125,7 @@ public class SugarLog {
         return mealBolus;
     }
 
-    public SugarLog setMealBolus(Float mealBolus) {
+    public SugarEntry setMealBolus(Float mealBolus) {
         this.mealBolus = mealBolus;
         return this;
     }
@@ -134,7 +134,7 @@ public class SugarLog {
         return basal;
     }
 
-    public SugarLog setBasal(Float basal) {
+    public SugarEntry setBasal(Float basal) {
         this.basal = basal;
         return this;
     }
@@ -143,7 +143,7 @@ public class SugarLog {
         return tempBasal;
     }
 
-    public SugarLog setTempBasal(TempBasal tempBasal) {
+    public SugarEntry setTempBasal(TempBasal tempBasal) {
         this.tempBasal = tempBasal;
         return this;
     }
@@ -152,7 +152,7 @@ public class SugarLog {
         return pills;
     }
 
-    public SugarLog setPills(ArrayList<Pill> pills) {
+    public SugarEntry setPills(ArrayList<Pill> pills) {
         this.pills = pills;
         return this;
     }
@@ -161,7 +161,7 @@ public class SugarLog {
         return notes;
     }
 
-    public SugarLog setNotes(String notes) {
+    public SugarEntry setNotes(String notes) {
         this.notes = !TextUtils.isEmpty(notes) ? notes : null;
         return this;
     }

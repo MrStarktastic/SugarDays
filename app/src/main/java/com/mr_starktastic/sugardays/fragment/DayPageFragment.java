@@ -21,7 +21,7 @@ import android.widget.TextView;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.BloodSugar;
 import com.mr_starktastic.sugardays.data.Day;
-import com.mr_starktastic.sugardays.data.SugarLog;
+import com.mr_starktastic.sugardays.data.SugarEntry;
 import com.mr_starktastic.sugardays.util.NumericTextUtil;
 import com.mr_starktastic.sugardays.util.PrefUtil;
 import com.squareup.picasso.Picasso;
@@ -82,13 +82,13 @@ public class DayPageFragment extends Fragment {
         recyclerView = (RecyclerView) root.findViewById(R.id.day_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
         recyclerView.addItemDecoration(spaceDecoration);
-        // Nested scrolling causes odd behavior with the calendar view; workaround needed
-        ViewCompat.setNestedScrollingEnabled(recyclerView, false);
+        /*// Nested scrolling causes odd behavior with the calendar view; workaround needed
+        ViewCompat.setNestedScrollingEnabled(recyclerView, false);*/
 
         final Day day = Day.findById(dayId);
 
         if (day != null) {
-            recyclerView.setAdapter(new LogAdapter(context, day.getLogs()));
+            recyclerView.setAdapter(new LogAdapter(context, day.getEntries()));
             root.findViewById(R.id.empty_day_text).setVisibility(View.GONE);
         } else root.findViewById(R.id.empty_day_text).setVisibility(View.VISIBLE);
 
@@ -112,7 +112,7 @@ public class DayPageFragment extends Fragment {
     }
 
     public interface OnLogCardSelectedListener {
-        void onLogCardSelected(int dayId, int logIndex, View sharedView);
+        void onLogCardSelected(int dayId, int entryIndex, View sharedView);
     }
 
     private static class SpaceDecoration extends RecyclerView.ItemDecoration {
@@ -136,7 +136,7 @@ public class DayPageFragment extends Fragment {
 
     private class LogAdapter extends RecyclerView.Adapter<LogAdapter.ViewHolder> {
         private Context context;
-        private SugarLog[] logs;
+        private SugarEntry[] entries;
         private String[] types;
         private int bgUnitIdx;
         private String bgUnit;
@@ -144,10 +144,10 @@ public class DayPageFragment extends Fragment {
         private float hypo, minTargetRng, maxTargetRng, hyper;
         private int badBgColor, medBgColor, goodBgColor;
 
-        private LogAdapter(Context context, SugarLog[] logs) {
+        private LogAdapter(Context context, SugarEntry[] entries) {
             this.context = context;
-            this.logs = logs;
-            types = context.getResources().getStringArray(R.array.log_types);
+            this.entries = entries;
+            types = context.getResources().getStringArray(R.array.entry_types);
             bgUnitIdx = PrefUtil.getBgUnitIdx(
                     PreferenceManager.getDefaultSharedPreferences(context));
             bgUnit = context.getResources().getStringArray(R.array.pref_bgUnits_entries)[bgUnitIdx];
@@ -171,21 +171,21 @@ public class DayPageFragment extends Fragment {
 
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
-            final SugarLog log = logs[position];
-            final String photoPath = log.getPhotoPath();
+            final SugarEntry entry = entries[position];
+            final String photoPath = entry.getPhotoPath();
 
             if (photoPath != null)
                 Picasso.with(context).load(photoPath).fit().centerCrop().into(holder.imgView);
 
-            holder.typeText.setText(types[log.getType()]);
-            holder.timeText.setText(TIME_FORMAT.format(log.getTime()));
-            final String location = log.getLocation();
+            holder.typeText.setText(types[entry.getType()]);
+            holder.timeText.setText(TIME_FORMAT.format(entry.getTime()));
+            final String location = entry.getLocation();
 
             if (location != null)
                 holder.locationText.setText(location);
             else holder.locationText.setVisibility(View.GONE);
 
-            final BloodSugar bg = log.getBloodSugar();
+            final BloodSugar bg = entry.getBloodSugar();
 
             if (bg != null) {
                 final float val = bg.get(bgUnitIdx);
@@ -198,7 +198,7 @@ public class DayPageFragment extends Fragment {
 
         @Override
         public int getItemCount() {
-            return logs.length;
+            return entries.length;
         }
 
         class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -210,10 +210,10 @@ public class DayPageFragment extends Fragment {
                 cardView.setOnClickListener(this);
 
                 imgView = (ImageView) cardView.findViewById(R.id.photo);
-                typeText = (TextView) cardView.findViewById(R.id.log_type_text);
-                timeText = (TextView) cardView.findViewById(R.id.log_time_text);
-                locationText = (TextView) cardView.findViewById(R.id.log_location_text);
-                bgText = (TextView) cardView.findViewById(R.id.log_blood_glucose_text);
+                typeText = (TextView) cardView.findViewById(R.id.entry_type_text);
+                timeText = (TextView) cardView.findViewById(R.id.entry_time_text);
+                locationText = (TextView) cardView.findViewById(R.id.entry_location_text);
+                bgText = (TextView) cardView.findViewById(R.id.entry_blood_glucose_text);
             }
 
             @Override

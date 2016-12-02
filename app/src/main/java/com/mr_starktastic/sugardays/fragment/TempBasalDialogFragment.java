@@ -14,7 +14,7 @@ import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.afollestad.materialdialogs.internal.MDButton;
 import com.mr_starktastic.sugardays.R;
-import com.mr_starktastic.sugardays.activity.EditLogActivity;
+import com.mr_starktastic.sugardays.activity.EditEntryActivity;
 import com.mr_starktastic.sugardays.data.TempBasal;
 import com.mr_starktastic.sugardays.text.InputFilterMax;
 import com.mr_starktastic.sugardays.text.SimpleTextWatcher;
@@ -55,7 +55,7 @@ public class TempBasalDialogFragment extends AppCompatDialogFragment {
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog,
                                         @NonNull DialogAction which) {
-                        ((EditLogActivity) getActivity()).setTempBasal(tempBasal);
+                        ((EditEntryActivity) getActivity()).setTempBasal(tempBasal);
                         dismiss();
                     }
                 }).build();

@@ -59,7 +59,7 @@
             android:name=".activity.SettingsActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".activity.EditLogActivity"
+            android:name=".activity.EditEntryActivity"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name=".activity.PillManagerActivity"
@@ -75,7 +75,7 @@
             android:name=".activity.BarcodeScanActivity"
             android:theme="@style/Theme.AppCompat.NoActionBar" />
         <activity
-            android:name=".activity.ViewLogActivity"
+            android:name=".activity.ViewEntryActivity"
             android:theme="@style/AppTheme.NoActionBar" />
     </application>
 

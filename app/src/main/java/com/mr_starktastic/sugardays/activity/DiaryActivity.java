@@ -7,17 +7,14 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
-import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
-import android.support.v4.util.Pair;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
@@ -29,7 +26,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -48,7 +44,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 
 /**
- * Main activity where the user can navigate between days and view his logs
+ * Main activity where the user can navigate between days and view his entries
  */
 public class DiaryActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, View.OnClickListener,
@@ -60,7 +56,7 @@ public class DiaryActivity extends AppCompatActivity
     public static final String EXTRA_IS_EDIT = "EDIT";
     public static final String EXTRA_CALENDAR = "DATE_TIME";
     public static final String EXTRA_DAY_ID = "DAY_KEY";
-    public static final String EXTRA_LOG_INDEX = "LOG_INDEX";
+    public static final String EXTRA_ENTRY_INDEX = "LOG_INDEX";
     public static final String EXTRA_TYPE = "TYPE";
 
     /**
@@ -184,7 +180,7 @@ public class DiaryActivity extends AppCompatActivity
         toggle.syncState();
 
         /*
-        The ViewPager will display each page as a day with its logs.
+        The ViewPager will display each page as a day with its entries.
         Its onPageSelected is the master listener method behind the date navigation mechanism.
          */
         pager = (ViewPager) drawerLayout.findViewById(R.id.diary_pager);
@@ -198,7 +194,7 @@ public class DiaryActivity extends AppCompatActivity
         final Calendar currTime = Calendar.getInstance();
 
         startActivityForResult(
-                new Intent(this, EditLogActivity.class)
+                new Intent(this, EditEntryActivity.class)
                         .putExtra(EXTRA_IS_EDIT, false)
                         .putExtra(EXTRA_CALENDAR,
                                 new GregorianCalendar(cal.getYear(), cal.getMonth(), cal.getDay(),
@@ -449,20 +445,21 @@ public class DiaryActivity extends AppCompatActivity
     }
 
     @Override
-    public void onLogCardSelected(int dayId, int logIndex, View sharedView) {
+    public void onLogCardSelected(int dayId, int entryIndex, View sharedView) {
         final Bundle sceneTransition;
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+        /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             // noinspection unchecked
             sceneTransition = ActivityOptionsCompat.makeSceneTransitionAnimation(this,
                     Pair.create(sharedView, sharedView.getTransitionName()),
                     Pair.create(findViewById(android.R.id.navigationBarBackground),
                             Window.NAVIGATION_BAR_BACKGROUND_TRANSITION_NAME)).toBundle();
-        else sceneTransition = null;
+        else */
+        sceneTransition = null;
 
-        startActivity(new Intent(this, ViewLogActivity.class)
+        startActivity(new Intent(this, ViewEntryActivity.class)
                 .putExtra(EXTRA_DAY_ID, dayId)
-                .putExtra(EXTRA_LOG_INDEX, logIndex), sceneTransition);
+                .putExtra(EXTRA_ENTRY_INDEX, entryIndex), sceneTransition);
     }
 
     /**

@@ -16,6 +16,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ProgressBar;
@@ -27,7 +28,7 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import com.afollestad.materialdialogs.internal.MDButton;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.activity.BarcodeScanActivity;
-import com.mr_starktastic.sugardays.activity.EditLogActivity;
+import com.mr_starktastic.sugardays.activity.EditEntryActivity;
 import com.mr_starktastic.sugardays.data.Food;
 import com.mr_starktastic.sugardays.data.Serving;
 import com.mr_starktastic.sugardays.internet.FetchAndParseJSONTask;
@@ -116,6 +117,9 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                 .positiveText(android.R.string.ok)
                 .negativeText(android.R.string.cancel)
                 .build();
+
+        // noinspection ConstantConditions
+        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         (positiveButton = dialog.getActionButton(DialogAction.POSITIVE)).setEnabled(false);
         final View root = dialog.getCustomView();
@@ -259,7 +263,7 @@ public class FoodDialogFragment extends AppCompatDialogFragment
                 break;
 
             case POSITIVE:
-                ((EditLogActivity) getActivity())
+                ((EditEntryActivity) getActivity())
                         .setFood(getArguments().getInt(EXTRA_POSITION), food);
                 dismiss();
                 break;

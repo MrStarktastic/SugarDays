@@ -9,19 +9,19 @@
     <string name="today">Today</string>
     <string name="calendar_dropdown_arrow_desc">Calendar dropdown arrow</string>
 
-    <string name="action_title_add_log">Add log</string>
-    <string name="action_title_edit_log">Edit log</string>
-    <string name="delete_log">Delete log</string>
+    <string name="action_title_add_entry">Add entry</string>
+    <string name="action_title_edit_entry">Edit entry</string>
+    <string name="delete_entry">Delete entry</string>
     <string name="action_save">Save</string>
     <string name="action_discard">Discard</string>
     <string name="action_clear">Clear</string>
     <string name="action_delete">Delete</string>
     <string name="empty">Empty</string>
 
-    <string name="question_save_changes">Save this log?</string>
-    <string name="question_delete_log">Delete this log?</string>
+    <string name="question_save_changes">Save this entry?</string>
+    <string name="question_delete_entry">Delete this entry?</string>
 
-    <array name="log_types">
+    <array name="entry_types">
         <item>Breakfast</item>
         <item>Lunch</item>
         <item>Dinner</item>
