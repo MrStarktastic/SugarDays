@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/food_entry"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?selectableItemBackground"
+    android:paddingBottom="@dimen/small_margin"
+    android:paddingTop="@dimen/small_margin">
+
+    <ImageButton
+        android:id="@+id/food_delete_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|end"
+        android:layout_marginEnd="@dimen/normal_margin"
+        android:background="?selectableItemBackgroundBorderless"
+        android:contentDescription="@string/content_desc_clear"
+        android:src="@drawable/ic_remove"
+        android:tint="@color/colorAccent" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/medium_margin"
+        android:gravity="center_vertical"
+        android:minHeight="@dimen/normal_image_button_size"
+        android:orientation="vertical">
+
+        <include layout="@layout/food_properties" />
+    </LinearLayout>
+</FrameLayout>

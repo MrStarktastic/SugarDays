@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -22,7 +21,6 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.graphics.Palette;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.AppCompatButton;
 import android.support.v7.widget.AppCompatSpinner;
@@ -585,9 +583,16 @@ public class EditEntryActivity extends AppCompatActivity
 
         if (position == foodEntryContainer.getChildCount() - 1) {
             entry = getLayoutInflater()
-                    .inflate(R.layout.food_entry, foodEntryContainer, false);
+                    .inflate(R.layout.food_entry_editable, foodEntryContainer, false);
             foodEntryContainer.addView(entry, position);
-        } else entry = foodEntryContainer.getChildAt(position);
+            foods.add(position, food);
+        } else {
+            entry = foodEntryContainer.getChildAt(position);
+            final float prevCarbs = foods.set(position, food).getCarbs();
+
+            if (prevCarbs != Food.NO_CARBS)
+                carbSum -= prevCarbs;
+        }
 
         entry.findViewById(R.id.food_delete_button).setOnClickListener(this);
         ((TextView) entry.findViewById(R.id.food_name_text)).setText(food.getName());
@@ -603,21 +608,18 @@ public class EditEntryActivity extends AppCompatActivity
 
             quantityText.setText(String.format("%s \u00D7 %s",
                     NumericTextUtil.trim(food.getQuantity()), servingStr));
-            quantityText.setVisibility(View.VISIBLE);
         } else quantityText.setVisibility(View.GONE);
 
-        final float carbs = food.getCarbs();
-        carbSum += carbs;
         final TextView carbsText = (TextView) entry.findViewById(R.id.carbs_text);
+        final float carbs = food.getCarbs();
 
         if (carbs != Food.NO_CARBS) {
+            carbSum += carbs;
             carbsText.setText(NumericTextUtil.trim(carbs) + " " +
                     getString(R.string.grams_of_carb));
-            carbsText.setVisibility(View.VISIBLE);
         } else carbsText.setVisibility(View.GONE);
 
         entry.setOnClickListener(this);
-        foods.add(position, food);
         setMealBolus();
     }
 
@@ -729,7 +731,6 @@ public class EditEntryActivity extends AppCompatActivity
      */
     private void saveAndExit() {
         String photoPath = null;
-        int primaryColor = 0;
 
         if (currentPhotoPath != null) {
             final File cacheFile = new File(Uri.parse(currentPhotoPath).getPath());
@@ -739,11 +740,6 @@ public class EditEntryActivity extends AppCompatActivity
             // noinspection ResultOfMethodCallIgnored
             cacheFile.renameTo(newFile);
             photoPath = getFilePath(newFile);
-            final Palette.Swatch swatch = Palette.from(BitmapFactory.decodeFile(newFile.getPath()))
-                    .generate().getVibrantSwatch();
-
-            if (swatch != null)
-                primaryColor = swatch.getRgb();
         }
 
         BloodSugar bg = null;
@@ -775,9 +771,8 @@ public class EditEntryActivity extends AppCompatActivity
         entries.add(new SugarEntry().setType(typeSpinner.getSelectedItemPosition())
                 .setTime(calendar.getTime().getTime())
                 .setLocation(locationEdit.getText().toString().trim()).setPhotoPath(photoPath)
-                .setPrimaryColor(primaryColor).setBloodSugar(bg).setFoods(foods).setCarbSum(carbSum)
-                .setCorrBolus(corrBolus).setMealBolus(mealBolus).setBasal(basal)
-                .setTempBasal(tempBasal).setPills(pills)
+                .setBloodSugar(bg).setFoods(foods).setCorrBolus(corrBolus).setMealBolus(mealBolus)
+                .setBasal(basal).setTempBasal(tempBasal).setPills(pills)
                 .setNotes(notesEdit.getText().toString().trim()));
         Collections.sort(entries, SugarEntry.getCompByTime());
 

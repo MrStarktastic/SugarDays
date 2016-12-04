@@ -1,5 +1,6 @@
 package com.mr_starktastic.sugardays.data;
 
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import org.apache.commons.lang3.time.FastDateFormat;
@@ -18,10 +19,10 @@ public class SugarEntry {
     private long time;
     private String location;
     private String photoPath;
-    private int primaryColor;
     private BloodSugar bg;
     private ArrayList<Food> foods;
-    private Float carbSum, corrBolus, mealBolus, basal;
+    private float carbs = Food.NO_CARBS;
+    private Float corrBolus, mealBolus, basal;
     private TempBasal tempBasal;
     private ArrayList<Pill> pills;
     private String notes;
@@ -76,15 +77,6 @@ public class SugarEntry {
         return this;
     }
 
-    public int getPrimaryColor() {
-        return primaryColor;
-    }
-
-    public SugarEntry setPrimaryColor(int primaryColor) {
-        this.primaryColor = primaryColor;
-        return this;
-    }
-
     public BloodSugar getBloodSugar() {
         return bg;
     }
@@ -99,24 +91,27 @@ public class SugarEntry {
     }
 
     public SugarEntry setFoods(ArrayList<Food> foods) {
-        this.foods = foods;
+        for (Food f : this.foods = foods) {
+            final float carbs = f.getCarbs();
+
+            if (carbs != Food.NO_CARBS)
+                if (this.carbs != Food.NO_CARBS)
+                    this.carbs += carbs;
+                else this.carbs = carbs;
+        }
+
         return this;
     }
 
-    public Float getCarbSum() {
-        return carbSum;
-    }
-
-    public SugarEntry setCarbSum(Float carbSum) {
-        this.carbSum = carbSum;
-        return this;
+    public float getCarbs() {
+        return carbs;
     }
 
     public Float getCorrBolus() {
         return corrBolus;
     }
 
-    public SugarEntry setCorrBolus(Float corrBolus) {
+    public SugarEntry setCorrBolus(@Nullable Float corrBolus) {
         this.corrBolus = corrBolus;
         return this;
     }
@@ -125,7 +120,7 @@ public class SugarEntry {
         return mealBolus;
     }
 
-    public SugarEntry setMealBolus(Float mealBolus) {
+    public SugarEntry setMealBolus(@Nullable Float mealBolus) {
         this.mealBolus = mealBolus;
         return this;
     }
@@ -134,7 +129,7 @@ public class SugarEntry {
         return basal;
     }
 
-    public SugarEntry setBasal(Float basal) {
+    public SugarEntry setBasal(@Nullable Float basal) {
         this.basal = basal;
         return this;
     }
@@ -143,7 +138,7 @@ public class SugarEntry {
         return tempBasal;
     }
 
-    public SugarEntry setTempBasal(TempBasal tempBasal) {
+    public SugarEntry setTempBasal(@Nullable TempBasal tempBasal) {
         this.tempBasal = tempBasal;
         return this;
     }

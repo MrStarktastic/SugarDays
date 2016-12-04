@@ -62,7 +62,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingTop="@dimen/icon_margin">
+            android:paddingTop="@dimen/normal_image_button_size">
 
             <FrameLayout
                 android:layout_width="match_parent"
@@ -140,6 +140,39 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
                     android:layout_marginStart="@dimen/huge_margin" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/food_icon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="?android:listPreferredItemHeightSmall"
+                    android:layout_marginStart="@dimen/normal_margin"
+                    android:src="@drawable/ic_food"
+                    tools:ignore="ContentDescription" />
+
+                <LinearLayout
+                    android:id="@+id/food_entry_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/normal_margin"
+                    android:layout_marginStart="@dimen/huge_margin"
+                    android:gravity="center_vertical"
+                    android:minHeight="?android:listPreferredItemHeightSmall"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/total_carbs_text"
+                        style="@style/TextAppearance.AppCompat.Subhead"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/small_margin"
+                        android:gravity="end"
+                        android:textStyle="bold" />
+                </LinearLayout>
             </FrameLayout>
         </LinearLayout>
     </android.support.v4.widget.NestedScrollView>

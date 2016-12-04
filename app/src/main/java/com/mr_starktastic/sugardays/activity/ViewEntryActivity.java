@@ -2,6 +2,8 @@ package com.mr_starktastic.sugardays.activity;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -11,8 +13,10 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.graphics.Palette;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.Toolbar;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -22,14 +26,25 @@ import android.widget.TextView;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.BloodSugar;
 import com.mr_starktastic.sugardays.data.Day;
+import com.mr_starktastic.sugardays.data.Food;
+import com.mr_starktastic.sugardays.data.Serving;
 import com.mr_starktastic.sugardays.data.SugarEntry;
 import com.mr_starktastic.sugardays.util.NumericTextUtil;
 import com.mr_starktastic.sugardays.util.PrefUtil;
-import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
+
+import java.util.List;
 
 public class ViewEntryActivity extends AppCompatActivity implements View.OnClickListener {
     private SugarEntry entry;
+
+    private CollapsingToolbarLayout collapsingToolbarLayout;
+
+    private ImageView dateTimeIcon;
+    private ImageView locationIcon;
+    private ImageView bloodSugarIcon;
+    private ImageView foodIcon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,24 +62,26 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         final FloatingActionButton editFab = (FloatingActionButton) findViewById(R.id.edit_button);
-        final CollapsingToolbarLayout collapsingToolbarLayout =
+        collapsingToolbarLayout =
                 (CollapsingToolbarLayout) findViewById(R.id.collapsing_toolbar_layout);
         final Toolbar toolbar = (Toolbar) collapsingToolbarLayout.findViewById(R.id.toolbar);
         final ImageView photoView =
                 (ImageView) collapsingToolbarLayout.findViewById(R.id.photo_view);
         final LinearLayout scrollViewContent =
                 (LinearLayout) findViewById(R.id.scroll_view_content);
-        final ImageView dateTimeIcon =
-                (ImageView) scrollViewContent.findViewById(R.id.date_time_icon);
+        dateTimeIcon = (ImageView) scrollViewContent.findViewById(R.id.date_time_icon);
         final TextView dateText = (TextView) scrollViewContent.findViewById(R.id.date_text);
         final TextView timeText = (TextView) scrollViewContent.findViewById(R.id.time_text);
-        final ImageView locationIcon =
-                (ImageView) scrollViewContent.findViewById(R.id.location_icon);
+        locationIcon = (ImageView) scrollViewContent.findViewById(R.id.location_icon);
         final TextView locationText = (TextView) scrollViewContent.findViewById(R.id.location_text);
-        final ImageView bloodSugarIcon =
-                (ImageView) scrollViewContent.findViewById(R.id.blood_sugar_icon);
+        bloodSugarIcon = (ImageView) scrollViewContent.findViewById(R.id.blood_sugar_icon);
         final TextView bloodSugarText =
                 (TextView) scrollViewContent.findViewById(R.id.blood_sugar_text);
+        foodIcon = (ImageView) scrollViewContent.findViewById(R.id.food_icon);
+        final LinearLayout foodEntryContainer =
+                (LinearLayout) scrollViewContent.findViewById(R.id.food_entry_container);
+        final TextView totalCarbsText =
+                (TextView) foodEntryContainer.findViewById(R.id.total_carbs_text);
 
         setSupportActionBar(toolbar);
         final ActionBar actionBar = getSupportActionBar();
@@ -75,38 +92,39 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
         editFab.setOnClickListener(this);
 
         final String photoPath = entry.getPhotoPath();
-        int primaryColor = entry.getPrimaryColor();
 
-        if (primaryColor == 0)
-            primaryColor = ContextCompat.getColor(this, R.color.colorPrimary);
         if (photoPath != null) {
             ActivityCompat.postponeEnterTransition(this);
 
-            Picasso.with(this).load(entry.getPhotoPath()).noFade().fit().centerCrop()
-                    .into(photoView, Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ?
-                            new Callback() {
-                                private void startPostponedEnterTransition() {
-                                    ActivityCompat.startPostponedEnterTransition(
-                                            ViewEntryActivity.this);
-                                }
+            final DisplayMetrics displayMetrics = new DisplayMetrics();
+            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+            final int width = displayMetrics.widthPixels;
 
-                                @Override
-                                public void onSuccess() {
-                                    startPostponedEnterTransition();
-                                }
+            final Target target = new Target() {
+                @Override
+                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                    photoView.setImageBitmap(bitmap);
+                    final Palette palette = Palette.from(bitmap).generate();
+                    setViewsColor(palette.getVibrantColor(ContextCompat.getColor(
+                            ViewEntryActivity.this, R.color.colorPrimary)));
+                    ActivityCompat.startPostponedEnterTransition(ViewEntryActivity.this);
+                }
 
-                                @Override
-                                public void onError() {
-                                    startPostponedEnterTransition();
-                                }
-                            } : null);
-        }
+                @Override
+                public void onBitmapFailed(Drawable errorDrawable) {
+                    ActivityCompat.startPostponedEnterTransition(ViewEntryActivity.this);
+                }
 
-        collapsingToolbarLayout.setContentScrimColor(primaryColor);
-        collapsingToolbarLayout.setStatusBarScrimColor(primaryColor);
-        dateTimeIcon.setColorFilter(primaryColor);
-        locationIcon.setColorFilter(primaryColor);
-        bloodSugarIcon.setColorFilter(primaryColor);
+                @Override
+                public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+                }
+            };
+            photoView.setTag(target);
+            Picasso.with(this).load(entry.getPhotoPath())
+                    .resize(width, Math.round(width * 9f / 16f)).centerCrop()
+                    .into(target);
+        } else setViewsColor(ContextCompat.getColor(ViewEntryActivity.this, R.color.colorPrimary));
 
         collapsingToolbarLayout.setTitle(
                 getResources().getStringArray(R.array.entry_types)[entry.getType()]);
@@ -152,6 +170,57 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
             bloodSugarText.setTextColor(val <= hypo || val >= hyper ? bColor :
                     val >= minTarget && val <= maxTarget ? gColor : mColor);
         } else ((View) bloodSugarText.getParent()).setVisibility(View.GONE);
+
+        final float totalCarbs = entry.getCarbs();
+
+        if (totalCarbs != Food.NO_CARBS)
+            totalCarbsText.setText(NumericTextUtil.trim(totalCarbs) + " " +
+                    getString(R.string.grams_of_carb));
+        else totalCarbsText.setVisibility(View.GONE);
+
+        final List<Food> foods = entry.getFoods();
+
+        if (foods != null && !foods.isEmpty()) {
+            for (int i = 0; i < foods.size(); ++i) {
+                final View entryView = getLayoutInflater()
+                        .inflate(R.layout.food_entry, foodEntryContainer, false);
+
+                final Food f = foods.get(i);
+                ((TextView) entryView.findViewById(R.id.food_name_text)).setText(f.getName());
+                final TextView quantityText = (TextView) entryView.findViewById(R.id.quantity_text);
+                final Serving[] servings = f.getServings();
+
+                if (servings != null) {
+                    final Serving chosenServing = f.getChosenServing();
+                    String servingStr = chosenServing.getDescription();
+
+                    if (chosenServing.getCaption() != null)
+                        servingStr += " - " + chosenServing.getCaption();
+
+                    quantityText.setText(String.format("%s \u00D7 %s",
+                            NumericTextUtil.trim(f.getQuantity()), servingStr));
+                } else quantityText.setVisibility(View.GONE);
+
+                final TextView carbsText = (TextView) entryView.findViewById(R.id.carbs_text);
+                final float carbs = f.getCarbs();
+
+                if (carbs != Food.NO_CARBS) {
+                    carbsText.setText(NumericTextUtil.trim(carbs) + " " +
+                            getString(R.string.grams_of_carb));
+                } else carbsText.setVisibility(View.GONE);
+
+                foodEntryContainer.addView(entryView, i);
+            }
+        } else ((View) foodEntryContainer.getParent()).setVisibility(View.GONE);
+    }
+
+    private void setViewsColor(int color) {
+        collapsingToolbarLayout.setContentScrimColor(color);
+        collapsingToolbarLayout.setStatusBarScrimColor(color);
+        dateTimeIcon.setColorFilter(color);
+        locationIcon.setColorFilter(color);
+        bloodSugarIcon.setColorFilter(color);
+        foodIcon.setColorFilter(color);
     }
 
     @Override
