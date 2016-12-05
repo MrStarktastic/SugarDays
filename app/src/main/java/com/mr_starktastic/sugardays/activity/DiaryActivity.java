@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -332,6 +333,14 @@ public class DiaryActivity extends AppCompatActivity
             case R.id.nav_settings:
                 startActivityForResult(new Intent(this, SettingsActivity.class),
                         REQ_SETTINGS_CHANGE);
+                break;
+
+            case R.id.nav_feedback:
+                // TODO: App version, Device manufacturer, Device model, OS Version
+                startActivity(Intent.createChooser(new Intent(Intent.ACTION_SENDTO)
+                        .setData(Uri.parse("mailto: benfaingold@gmail.com"))
+                        .putExtra(Intent.EXTRA_SUBJECT, "SugarDays feedback")
+                        .putExtra(Intent.EXTRA_TEXT, "Hi Ben!"), "Send mail..."));
                 break;
         }
 

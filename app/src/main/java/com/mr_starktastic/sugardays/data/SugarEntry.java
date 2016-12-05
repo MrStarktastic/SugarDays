@@ -5,7 +5,6 @@ import android.text.TextUtils;
 
 import org.apache.commons.lang3.time.FastDateFormat;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 
 public class SugarEntry {
@@ -20,11 +19,11 @@ public class SugarEntry {
     private String location;
     private String photoPath;
     private BloodSugar bg;
-    private ArrayList<Food> foods;
+    private Food[] foods;
     private float carbs = Food.NO_CARBS;
     private Float corrBolus, mealBolus, basal;
     private TempBasal tempBasal;
-    private ArrayList<Pill> pills;
+    private Pill[] pills;
     private String notes;
 
     public SugarEntry() {
@@ -34,8 +33,8 @@ public class SugarEntry {
     public static Comparator<SugarEntry> getCompByTime() {
         return new Comparator<SugarEntry>() {
             @Override
-            public int compare(SugarEntry l1, SugarEntry l2) {
-                final long diff = l1.time - l2.time;
+            public int compare(SugarEntry e1, SugarEntry e2) {
+                final long diff = e1.time - e2.time;
                 return diff < 0 ? -1 : diff > 0 ? 1 : 0;
             }
         };
@@ -86,11 +85,11 @@ public class SugarEntry {
         return this;
     }
 
-    public ArrayList<Food> getFoods() {
+    public Food[] getFoods() {
         return foods;
     }
 
-    public SugarEntry setFoods(ArrayList<Food> foods) {
+    public SugarEntry setFoods(Food[] foods) {
         for (Food f : this.foods = foods) {
             final float carbs = f.getCarbs();
 
@@ -143,11 +142,11 @@ public class SugarEntry {
         return this;
     }
 
-    public ArrayList<Pill> getPills() {
+    public Pill[] getPills() {
         return pills;
     }
 
-    public SugarEntry setPills(ArrayList<Pill> pills) {
+    public SugarEntry setPills(Pill[] pills) {
         this.pills = pills;
         return this;
     }

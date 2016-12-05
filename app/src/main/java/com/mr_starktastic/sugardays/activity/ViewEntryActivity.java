@@ -34,8 +34,6 @@ import com.mr_starktastic.sugardays.util.PrefUtil;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
-import java.util.List;
-
 public class ViewEntryActivity extends AppCompatActivity implements View.OnClickListener {
     private SugarEntry entry;
 
@@ -45,6 +43,7 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
     private ImageView locationIcon;
     private ImageView bloodSugarIcon;
     private ImageView foodIcon;
+    private ImageView notesIcon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +81,8 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
                 (LinearLayout) scrollViewContent.findViewById(R.id.food_entry_container);
         final TextView totalCarbsText =
                 (TextView) foodEntryContainer.findViewById(R.id.total_carbs_text);
+        notesIcon = (ImageView) scrollViewContent.findViewById(R.id.notes_icon);
+        final TextView notesText = (TextView) scrollViewContent.findViewById(R.id.notes_text);
 
         setSupportActionBar(toolbar);
         final ActionBar actionBar = getSupportActionBar();
@@ -178,14 +179,14 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
                     getString(R.string.grams_of_carb));
         else totalCarbsText.setVisibility(View.GONE);
 
-        final List<Food> foods = entry.getFoods();
+        final Food[] foods = entry.getFoods();
 
-        if (foods != null && !foods.isEmpty()) {
-            for (int i = 0; i < foods.size(); ++i) {
+        if (foods != null && foods.length != 0) {
+            for (int i = 0; i < foods.length; ++i) {
                 final View entryView = getLayoutInflater()
                         .inflate(R.layout.food_entry, foodEntryContainer, false);
 
-                final Food f = foods.get(i);
+                final Food f = foods[i];
                 ((TextView) entryView.findViewById(R.id.food_name_text)).setText(f.getName());
                 final TextView quantityText = (TextView) entryView.findViewById(R.id.quantity_text);
                 final Serving[] servings = f.getServings();
@@ -212,6 +213,12 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
                 foodEntryContainer.addView(entryView, i);
             }
         } else ((View) foodEntryContainer.getParent()).setVisibility(View.GONE);
+
+        final String notes = entry.getNotes();
+
+        if (notes != null)
+            notesText.setText(notes);
+        else ((View) notesIcon.getParent()).setVisibility(View.GONE);
     }
 
     private void setViewsColor(int color) {
@@ -221,6 +228,7 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
         locationIcon.setColorFilter(color);
         bloodSugarIcon.setColorFilter(color);
         foodIcon.setColorFilter(color);
+        notesIcon.setColorFilter(color);
     }
 
     @Override

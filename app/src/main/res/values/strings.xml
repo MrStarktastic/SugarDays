@@ -104,7 +104,6 @@
     <string name="notes_hint">Notes</string>
 
     <!-- Preferences -->
-    <string name="settings">Settings</string>
     <string name="off">Off</string>
     <string name="on">On</string>
 
@@ -177,4 +176,8 @@
     <string name="content_desc_clear">Remove this item</string>
     <string name="content_desc_google_attribution">Powered by Google</string>
     <string name="content_desc_fatsecret_attribution">Powered by FatSecret</string>
+
+    <string name="settings">Settings</string>
+    <string name="feedback">Send feedback</string>
+    <string name="about">About</string>
 </resources>

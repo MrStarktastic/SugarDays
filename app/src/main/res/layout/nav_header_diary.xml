@@ -16,19 +16,18 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="@dimen/normal_margin"
-        android:src="@android:drawable/sym_def_app_icon" />
+        android:src="@mipmap/ic_launcher" />
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="@dimen/normal_margin"
-        android:text="Android Studio"
+        android:text="SugarDays"
         android:textAppearance="@style/TextAppearance.AppCompat.Body1" />
 
     <TextView
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="android.studio@android.com" />
-
+        android:text="benfaingold@gmail.com" />
 </LinearLayout>

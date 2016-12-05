@@ -771,8 +771,11 @@ public class EditEntryActivity extends AppCompatActivity
         entries.add(new SugarEntry().setType(typeSpinner.getSelectedItemPosition())
                 .setTime(calendar.getTime().getTime())
                 .setLocation(locationEdit.getText().toString().trim()).setPhotoPath(photoPath)
-                .setBloodSugar(bg).setFoods(foods).setCorrBolus(corrBolus).setMealBolus(mealBolus)
-                .setBasal(basal).setTempBasal(tempBasal).setPills(pills)
+                .setBloodSugar(bg)
+                .setFoods(foods != null ? foods.toArray(new Food[foods.size()]) : null)
+                .setCorrBolus(corrBolus).setMealBolus(mealBolus).setBasal(basal)
+                .setTempBasal(tempBasal)
+                .setPills(pills != null ? pills.toArray(new Pill[pills.size()]) : null)
                 .setNotes(notesEdit.getText().toString().trim()));
         Collections.sort(entries, SugarEntry.getCompByTime());
 
