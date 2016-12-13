@@ -23,7 +23,6 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.BloodSugar;
@@ -346,7 +345,6 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
                 // noinspection ConstantConditions
                 entry = Day.findById(dayId = Day.generateId(cal))
                         .getEntries()[entryIdx = data.getIntExtra(DiaryActivity.EXTRA_ENTRY_INDEX, 0)];
-                Toast.makeText(this, Integer.toString(entryIdx), Toast.LENGTH_SHORT).show();
                 setResult(RESULT_OK, new Intent()
                         .putExtra(DiaryActivity.EXTRA_CALENDAR, cal)
                         .putExtra(DiaryActivity.EXTRA_ENTRY_INDEX, entryIdx));
