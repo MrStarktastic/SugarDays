@@ -18,23 +18,33 @@ import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.BloodSugar;
 import com.mr_starktastic.sugardays.data.Day;
 import com.mr_starktastic.sugardays.data.Food;
+import com.mr_starktastic.sugardays.data.Pill;
 import com.mr_starktastic.sugardays.data.Serving;
 import com.mr_starktastic.sugardays.data.SugarEntry;
+import com.mr_starktastic.sugardays.data.TempBasal;
 import com.mr_starktastic.sugardays.util.NumericTextUtil;
 import com.mr_starktastic.sugardays.util.PrefUtil;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
+import java.util.GregorianCalendar;
+
 public class ViewEntryActivity extends AppCompatActivity implements View.OnClickListener {
+    private static final int REQ_ENTRY_EDIT = 1;
+
+    private int dayId;
+    private int entryIdx;
     private SugarEntry entry;
 
     private CollapsingToolbarLayout collapsingToolbarLayout;
@@ -43,7 +53,27 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
     private ImageView locationIcon;
     private ImageView bloodSugarIcon;
     private ImageView foodIcon;
+    private ImageView syringeIcon;
+    private ImageView pillIcon;
     private ImageView notesIcon;
+
+    private ImageView photoView;
+    private TextView dateText;
+    private TextView timeText;
+    private TextView locationText;
+    private TextView bloodSugarText;
+    private TextView totalCarbsText;
+    private TextView corrBolusText;
+    private TextView mealBolusText;
+    private TextView basalText;
+    private TextView tempBasalText;
+    private LinearLayout pillEntryContainer;
+    private TextView notesText;
+    private LinearLayout foodEntryContainer;
+
+    private int hiddenInsulinFields;
+
+    private SharedPreferences preferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,33 +86,38 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
 
         final Intent intent = getIntent();
         // noinspection ConstantConditions
-        entry = Day.findById(intent.getIntExtra(DiaryActivity.EXTRA_DAY_ID, 0))
-                .getEntries()[intent.getIntExtra(DiaryActivity.EXTRA_ENTRY_INDEX, 0)];
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        entry = Day.findById(dayId = intent.getIntExtra(DiaryActivity.EXTRA_DAY_ID, 0))
+                .getEntries()[entryIdx = intent.getIntExtra(DiaryActivity.EXTRA_ENTRY_INDEX, 0)];
+        preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         final FloatingActionButton editFab = (FloatingActionButton) findViewById(R.id.edit_button);
         collapsingToolbarLayout =
                 (CollapsingToolbarLayout) findViewById(R.id.collapsing_toolbar_layout);
         final Toolbar toolbar = (Toolbar) collapsingToolbarLayout.findViewById(R.id.toolbar);
-        final ImageView photoView =
-                (ImageView) collapsingToolbarLayout.findViewById(R.id.photo_view);
+        photoView = (ImageView) collapsingToolbarLayout.findViewById(R.id.photo_view);
         final LinearLayout scrollViewContent =
                 (LinearLayout) findViewById(R.id.scroll_view_content);
         dateTimeIcon = (ImageView) scrollViewContent.findViewById(R.id.date_time_icon);
-        final TextView dateText = (TextView) scrollViewContent.findViewById(R.id.date_text);
-        final TextView timeText = (TextView) scrollViewContent.findViewById(R.id.time_text);
+        dateText = (TextView) scrollViewContent.findViewById(R.id.date_text);
+        timeText = (TextView) scrollViewContent.findViewById(R.id.time_text);
         locationIcon = (ImageView) scrollViewContent.findViewById(R.id.location_icon);
-        final TextView locationText = (TextView) scrollViewContent.findViewById(R.id.location_text);
+        locationText = (TextView) scrollViewContent.findViewById(R.id.location_text);
         bloodSugarIcon = (ImageView) scrollViewContent.findViewById(R.id.blood_sugar_icon);
-        final TextView bloodSugarText =
-                (TextView) scrollViewContent.findViewById(R.id.blood_sugar_text);
+        bloodSugarText = (TextView) scrollViewContent.findViewById(R.id.blood_sugar_text);
         foodIcon = (ImageView) scrollViewContent.findViewById(R.id.food_icon);
-        final LinearLayout foodEntryContainer =
+        foodEntryContainer =
                 (LinearLayout) scrollViewContent.findViewById(R.id.food_entry_container);
-        final TextView totalCarbsText =
-                (TextView) foodEntryContainer.findViewById(R.id.total_carbs_text);
+        totalCarbsText = (TextView) foodEntryContainer.findViewById(R.id.total_carbs_text);
+        syringeIcon = (ImageView) scrollViewContent.findViewById(R.id.syringe_icon);
+        corrBolusText = (TextView) scrollViewContent.findViewById(R.id.bolus_correction_text);
+        mealBolusText = (TextView) scrollViewContent.findViewById(R.id.bolus_meal_text);
+        basalText = (TextView) scrollViewContent.findViewById(R.id.basal_text);
+        tempBasalText = (TextView) scrollViewContent.findViewById(R.id.temp_basal_text);
+        pillIcon = (ImageView) scrollViewContent.findViewById(R.id.pill_icon);
+        pillEntryContainer =
+                (LinearLayout) scrollViewContent.findViewById(R.id.pill_entry_container);
         notesIcon = (ImageView) scrollViewContent.findViewById(R.id.notes_icon);
-        final TextView notesText = (TextView) scrollViewContent.findViewById(R.id.notes_text);
+        notesText = (TextView) scrollViewContent.findViewById(R.id.notes_text);
 
         setSupportActionBar(toolbar);
         final ActionBar actionBar = getSupportActionBar();
@@ -92,6 +127,10 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
 
         editFab.setOnClickListener(this);
 
+        showData();
+    }
+
+    private void showData() {
         final String photoPath = entry.getPhotoPath();
 
         if (photoPath != null) {
@@ -214,6 +253,40 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
             }
         } else ((View) foodEntryContainer.getParent()).setVisibility(View.GONE);
 
+        hiddenInsulinFields = 0;
+        final Float corrBolus = entry.getCorrBolus();
+        final Float mealBolus = entry.getMealBolus();
+        final Float basal = entry.getBasal();
+        final TempBasal tempBasal = entry.getTempBasal();
+
+        loadInsulinData(corrBolus, corrBolusText, getString(R.string.correction));
+        loadInsulinData(mealBolus, mealBolusText, getString(R.string.meal));
+        loadInsulinData(basal, basalText, getString(R.string.basal_label));
+
+        if (tempBasal != null)
+            tempBasalText.setText(tempBasal.toString() + " " +
+                    getString(R.string.temp_basal_label));
+        else {
+            tempBasalText.setVisibility(View.GONE);
+            ++hiddenInsulinFields;
+        }
+
+        final ViewGroup insulinDataContainer = (ViewGroup) corrBolusText.getParent();
+
+        if (hiddenInsulinFields == insulinDataContainer.getChildCount())
+            ((View) insulinDataContainer.getParent()).setVisibility(View.GONE);
+
+        Pill[] pills = entry.getPills();
+
+        if (pills != null && pills.length != 0)
+            for (Pill p : pills) {
+                View v = getLayoutInflater()
+                        .inflate(R.layout.pill_entry, pillEntryContainer, false);
+                ((TextView) v.findViewById(R.id.pill_entry_text)).setText(p.toString());
+                pillEntryContainer.addView(v);
+            }
+        else ((View) pillEntryContainer.getParent()).setVisibility(View.GONE);
+
         final String notes = entry.getNotes();
 
         if (notes != null)
@@ -228,7 +301,18 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
         locationIcon.setColorFilter(color);
         bloodSugarIcon.setColorFilter(color);
         foodIcon.setColorFilter(color);
+        syringeIcon.setColorFilter(color);
+        pillIcon.setColorFilter(color);
         notesIcon.setColorFilter(color);
+    }
+
+    private void loadInsulinData(Float val, TextView textView, String label) {
+        if (val != null)
+            textView.setText(NumericTextUtil.trim(val) + " " + label);
+        else {
+            textView.setVisibility(View.GONE);
+            ++hiddenInsulinFields;
+        }
     }
 
     @Override
@@ -241,8 +325,31 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
                 break;
 
             case R.id.edit_button:
-                // TODO: Launch EditEntryActivity
+                final GregorianCalendar cal = new GregorianCalendar();
+                cal.setTimeInMillis(entry.getTime());
+
+                startActivityForResult(new Intent(this, EditEntryActivity.class)
+                        .putExtra(DiaryActivity.EXTRA_CALENDAR, cal)
+                        .putExtra(DiaryActivity.EXTRA_IS_EDIT, true)
+                        .putExtra(DiaryActivity.EXTRA_DAY_ID, dayId)
+                        .putExtra(DiaryActivity.EXTRA_ENTRY_INDEX, entryIdx), REQ_ENTRY_EDIT);
                 break;
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQ_ENTRY_EDIT && resultCode == RESULT_OK) {
+            final GregorianCalendar cal =
+                    (GregorianCalendar) data.getSerializableExtra(DiaryActivity.EXTRA_CALENDAR);
+            // noinspection ConstantConditions
+            entry = Day.findById(dayId = Day.generateId(cal))
+                    .getEntries()[entryIdx = data.getIntExtra(DiaryActivity.EXTRA_ENTRY_INDEX, 0)];
+            Toast.makeText(this, Integer.toString(entryIdx), Toast.LENGTH_SHORT).show();
+            setResult(RESULT_OK, new Intent()
+                    .putExtra(DiaryActivity.EXTRA_CALENDAR, cal)
+                    .putExtra(DiaryActivity.EXTRA_ENTRY_INDEX, entryIdx));
+            showData();
         }
     }
 }

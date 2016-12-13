@@ -469,9 +469,9 @@ public class DiaryActivity extends AppCompatActivity
                             Window.NAVIGATION_BAR_BACKGROUND_TRANSITION_NAME)).toBundle();
         else sceneTransition = null;
 
-        startActivity(new Intent(this, ViewEntryActivity.class)
+        startActivityForResult(new Intent(this, ViewEntryActivity.class)
                 .putExtra(EXTRA_DAY_ID, dayId)
-                .putExtra(EXTRA_ENTRY_INDEX, entryIndex), sceneTransition);
+                .putExtra(EXTRA_ENTRY_INDEX, entryIndex), REQ_NEW_LOG, sceneTransition);
     }
 
     /**

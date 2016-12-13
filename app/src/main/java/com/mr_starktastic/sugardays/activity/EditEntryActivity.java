@@ -82,7 +82,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
@@ -140,6 +140,7 @@ public class EditEntryActivity extends AppCompatActivity
     private int oldEntryIdx;
     private GoogleApiClient googleApiClient;
     private String currentPhotoPath;
+    private BloodSugar bloodSugar;
     private boolean photoCompressEnabled, bolusPredictEnabled;
     private ArrayList<Food> foods;
     private float carbSum = 0;
@@ -228,11 +229,14 @@ public class EditEntryActivity extends AppCompatActivity
         pillEntryContainer = (LinearLayout) root.findViewById(R.id.pill_entry_container);
         notesEdit = (EditText) root.findViewById(R.id.notes_edit);
 
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        loadOldData(intent);
-
         // SugarEntry type
         typeSpinner.setSelection(intent.getIntExtra(DiaryActivity.EXTRA_TYPE, 0));
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        pillNames = PrefUtil.getPills(preferences);
+        pills = new ArrayList<>();
+        foods = new ArrayList<>();
+        loadOldData(intent);
 
         // Date
         dateText.setText(SugarEntry.DATE_FORMAT.format(calendar));
@@ -357,6 +361,13 @@ public class EditEntryActivity extends AppCompatActivity
             });
         }
 
+        if (bloodSugar != null) {
+            final float val = bloodSugar.get(bgUnitIdx);
+            bloodSugarEdit.setText(NumericTextUtil.trim(val));
+            bloodSugarEdit.setTextColor(val <= hypo || val >= hyper ? badBgColor :
+                    val >= minTargetRng && val <= maxTargetRng ? goodBgColor : medBgColor);
+        }
+
         bolusPredictEnabled = PrefUtil.getBolusPredictSwitch(preferences);
         bloodSugarEdit.addTextChangedListener(new SimpleTextWatcher() {
             @Override
@@ -391,7 +402,6 @@ public class EditEntryActivity extends AppCompatActivity
         foodTransition.setStartDelay(LayoutTransition.DISAPPEARING, 0);
         foodTransition.setAnimateParentHierarchy(false);
 
-        foods = new ArrayList<>();
         final AppCompatButton addFoodButton =
                 (AppCompatButton) foodEntryContainer.findViewById(R.id.food_add_button);
         addFoodButton.setOnClickListener(this);
@@ -421,12 +431,11 @@ public class EditEntryActivity extends AppCompatActivity
         }
 
         // Pills
-        if ((pillNames = PrefUtil.getPills(preferences)) != null) {
+        if (pillNames != null) {
             final LayoutTransition pillTransition = pillEntryContainer.getLayoutTransition();
             pillTransition.setStartDelay(LayoutTransition.DISAPPEARING, 0);
             pillTransition.setAnimateParentHierarchy(false);
 
-            pills = new ArrayList<>();
             final AppCompatButton addPillButton =
                     (AppCompatButton) pillEntryContainer.findViewById(R.id.pill_add_button);
             addPillButton.setOnClickListener(this);
@@ -442,8 +451,42 @@ public class EditEntryActivity extends AppCompatActivity
             assert oldDay != null;
             final SugarEntry entry = oldDay.getEntries()[oldEntryIdx =
                     data.getIntExtra(DiaryActivity.EXTRA_ENTRY_INDEX, 0)];
-            // TODO: Load old data here
+
+            typeSpinner.setSelection(entry.getType());
+            locationEdit.setText(entry.getLocation());
+            Picasso.with(this).load(currentPhotoPath = entry.getPhotoPath())
+                    .fit().centerCrop().into(photoThumbnailView);
+            bloodSugar = entry.getBloodSugar();
+            final Food[] foods = entry.getFoods();
+
+            for (int i = 0; i < foods.length; ++i)
+                setFood(i, foods[i]);
+
+            final Float corrBolus = entry.getCorrBolus();
+            final Float mealBolus = entry.getMealBolus();
+            final Float basal = entry.getBasal();
+            final TempBasal tempBasal = entry.getTempBasal();
+
+            loadInsulinData(corrBolus, corrBolusEdit);
+            loadInsulinData(mealBolus, mealBolusEdit);
+            loadInsulinData(basal, basalEdit);
+
+            if (tempBasal != null)
+                setTempBasal(tempBasal);
+
+            final Pill[] pills = entry.getPills();
+
+            if (pills != null)
+                for (Pill p : pills)
+                    addPillEntry(p.getName(), p.getQuantity());
+
+            notesEdit.setText(entry.getNotes());
         } else setTitle(R.string.action_title_add_entry);
+    }
+
+    private void loadInsulinData(Float val, TextView textView) {
+        if (val != null)
+            textView.setText(NumericTextUtil.trim(val));
     }
 
     /**
@@ -679,9 +722,9 @@ public class EditEntryActivity extends AppCompatActivity
      * Adds a {@link Pill} entry to the layout (and to the {@link ArrayList} respectively)
      * and sets all the required listeners for the {@link View} components.
      */
-    private void addPillEntry() {
+    private View addPillEntry() {
         final View entry =
-                getLayoutInflater().inflate(R.layout.pill_entry, pillEntryContainer, false);
+                getLayoutInflater().inflate(R.layout.pill_entry_editable, pillEntryContainer, false);
         final AppCompatSpinner quantitySpinner =
                 (AppCompatSpinner) entry.findViewById(R.id.pill_quantity_spinner);
         final AppCompatSpinner nameSpinner =
@@ -722,8 +765,26 @@ public class EditEntryActivity extends AppCompatActivity
         });
 
         removeButton.setOnClickListener(this);
-
         pillEntryContainer.addView(entry, pillEntryContainer.getChildCount() - 1);
+
+        return entry;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void addPillEntry(String name, float quantity) {
+        final View entry = addPillEntry();
+
+        final AppCompatSpinner nameSpinner =
+                (AppCompatSpinner) entry.findViewById(R.id.pill_name_spinner);
+        final AppCompatSpinner quantitySpinner =
+                (AppCompatSpinner) entry.findViewById(R.id.pill_quantity_spinner);
+
+        final int nameIdx = ((ArrayAdapter<String>) nameSpinner.getAdapter()).getPosition(name);
+        final int quantityIdx = ((ArrayAdapter<String>) quantitySpinner.getAdapter())
+                .getPosition(Float.toString(quantity));
+
+        nameSpinner.setSelection(nameIdx);
+        quantitySpinner.setSelection(quantityIdx);
     }
 
     /**
@@ -768,7 +829,7 @@ public class EditEntryActivity extends AppCompatActivity
             day = new Day(dayId);
 
         final ArrayList<SugarEntry> entries = new ArrayList<>(Arrays.asList(day.getEntries()));
-        entries.add(new SugarEntry().setType(typeSpinner.getSelectedItemPosition())
+        SugarEntry entry = new SugarEntry().setType(typeSpinner.getSelectedItemPosition())
                 .setTime(calendar.getTime().getTime())
                 .setLocation(locationEdit.getText().toString().trim()).setPhotoPath(photoPath)
                 .setBloodSugar(bg)
@@ -776,13 +837,25 @@ public class EditEntryActivity extends AppCompatActivity
                 .setCorrBolus(corrBolus).setMealBolus(mealBolus).setBasal(basal)
                 .setTempBasal(tempBasal)
                 .setPills(pills != null ? pills.toArray(new Pill[pills.size()]) : null)
-                .setNotes(notesEdit.getText().toString().trim()));
-        Collections.sort(entries, SugarEntry.getCompByTime());
+                .setNotes(notesEdit.getText().toString().trim());
+        final Comparator<SugarEntry> comp = SugarEntry.getCompByTime();
+        int newIndex = 0;
 
+        if (entries.size() != 0)
+            for (SugarEntry e : entries) {
+                if (comp.compare(entry, e) < 0)
+                    break;
+
+                ++newIndex;
+            }
+
+        entries.add(newIndex, entry);
         day.setEntries(entries.toArray(new SugarEntry[entries.size()]));
         day.save();
 
-        setResult(RESULT_OK, new Intent().putExtra(DiaryActivity.EXTRA_CALENDAR, calendar));
+        setResult(RESULT_OK, new Intent()
+                .putExtra(DiaryActivity.EXTRA_CALENDAR, calendar)
+                .putExtra(DiaryActivity.EXTRA_ENTRY_INDEX, newIndex));
         finish();
     }
 
@@ -792,7 +865,10 @@ public class EditEntryActivity extends AppCompatActivity
 
         if (entries.size() == 0)
             oldDay.delete();
-        else oldDay.setEntries(entries.toArray(new SugarEntry[entries.size()]));
+        else {
+            oldDay.setEntries(entries.toArray(new SugarEntry[entries.size()]));
+            oldDay.update();
+        }
     }
 
     @Override
@@ -1032,7 +1108,8 @@ public class EditEntryActivity extends AppCompatActivity
                 .positiveText(R.string.action_save)
                 .neutralText(android.R.string.cancel)
                 .negativeText(R.string.action_discard)
-                .title(R.string.question_save_changes)
+                .contentColorRes(android.R.color.primary_text_light)
+                .content(R.string.question_save_changes)
                 .onPositive(new MaterialDialog.SingleButtonCallback() {
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog,

@@ -1,50 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/pill_entry"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="?selectableItemBackground"
-    android:paddingBottom="@dimen/small_margin"
-    android:paddingTop="@dimen/small_margin">
+    android:layout_height="?android:listPreferredItemHeightSmall">
 
-    <ImageButton
-        android:id="@+id/pill_delete_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical|end"
-        android:layout_marginEnd="@dimen/icon_margin"
-        android:background="?selectableItemBackgroundBorderless"
-        android:contentDescription="@string/content_desc_clear"
-        android:src="@drawable/ic_remove"
-        android:tint="@color/colorAccent" />
-
-    <LinearLayout
+    <TextView
+        android:id="@+id/pill_entry_text"
+        style="@style/TextAppearance.AppCompat.Subhead"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/normal_image_button_size"
-        android:layout_marginEnd="@dimen/big_margin"
-        android:orientation="horizontal">
-
-        <android.support.v7.widget.AppCompatSpinner
-            android:id="@+id/pill_quantity_spinner"
-            style="@style/Widget.AppCompat.Spinner"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:entries="@array/pill_quantities" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_marginLeft="@dimen/tiny_margin"
-            android:layout_marginRight="@dimen/tiny_margin"
-            android:gravity="center_vertical"
-            android:text="\u00D7"
-            tools:ignore="HardcodedText" />
-
-        <android.support.v7.widget.AppCompatSpinner
-            android:id="@+id/pill_name_spinner"
-            style="@style/Widget.AppCompat.Spinner"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent" />
-    </LinearLayout>
+        android:layout_height="match_parent"
+        android:gravity="center_vertical" />
 </FrameLayout>

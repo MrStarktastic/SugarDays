@@ -1,8 +1,10 @@
 package com.mr_starktastic.sugardays.data;
 
+import com.mr_starktastic.sugardays.util.NumericTextUtil;
+
 public class Pill {
-    public float quantity;
-    public String name;
+    private float quantity;
+    private String name;
 
     public Pill(float quantity, String name) {
         this.quantity = quantity;
@@ -23,5 +25,10 @@ public class Pill {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return NumericTextUtil.trim(quantity) + " \u00D7 " + name;
     }
 }
