@@ -95,6 +95,8 @@ public class EditEntryActivity extends AppCompatActivity
         implements GoogleApiClient.OnConnectionFailedListener,
         View.OnClickListener, MenuItem.OnMenuItemClickListener,
         ResultCallback<PlaceLikelihoodBuffer> {
+    public static final int RESULT_DELETE = 2;
+
     /**
      * Request codes
      */
@@ -1085,12 +1087,14 @@ public class EditEntryActivity extends AppCompatActivity
                         .canceledOnTouchOutside(false)
                         .positiveText(R.string.action_delete)
                         .negativeText(android.R.string.cancel)
-                        .title(R.string.question_delete_entry)
+                        .contentColorRes(android.R.color.primary_text_light)
+                        .content(R.string.question_delete_entry)
                         .onPositive(new MaterialDialog.SingleButtonCallback() {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog,
                                                 @NonNull DialogAction which) {
                                 deleteEntry();
+                                setResult(RESULT_DELETE);
                                 finish();
                             }
                         }).build().show();

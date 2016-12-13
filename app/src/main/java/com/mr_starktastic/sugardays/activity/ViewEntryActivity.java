@@ -339,17 +339,22 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQ_ENTRY_EDIT && resultCode == RESULT_OK) {
-            final GregorianCalendar cal =
-                    (GregorianCalendar) data.getSerializableExtra(DiaryActivity.EXTRA_CALENDAR);
-            // noinspection ConstantConditions
-            entry = Day.findById(dayId = Day.generateId(cal))
-                    .getEntries()[entryIdx = data.getIntExtra(DiaryActivity.EXTRA_ENTRY_INDEX, 0)];
-            Toast.makeText(this, Integer.toString(entryIdx), Toast.LENGTH_SHORT).show();
-            setResult(RESULT_OK, new Intent()
-                    .putExtra(DiaryActivity.EXTRA_CALENDAR, cal)
-                    .putExtra(DiaryActivity.EXTRA_ENTRY_INDEX, entryIdx));
-            showData();
+        if (requestCode == REQ_ENTRY_EDIT) {
+            if (resultCode == RESULT_OK) {
+                final GregorianCalendar cal =
+                        (GregorianCalendar) data.getSerializableExtra(DiaryActivity.EXTRA_CALENDAR);
+                // noinspection ConstantConditions
+                entry = Day.findById(dayId = Day.generateId(cal))
+                        .getEntries()[entryIdx = data.getIntExtra(DiaryActivity.EXTRA_ENTRY_INDEX, 0)];
+                Toast.makeText(this, Integer.toString(entryIdx), Toast.LENGTH_SHORT).show();
+                setResult(RESULT_OK, new Intent()
+                        .putExtra(DiaryActivity.EXTRA_CALENDAR, cal)
+                        .putExtra(DiaryActivity.EXTRA_ENTRY_INDEX, entryIdx));
+                showData();
+            } else if (resultCode == EditEntryActivity.RESULT_DELETE) {
+                setResult(EditEntryActivity.RESULT_DELETE);
+                finish();
+            }
         }
     }
 }

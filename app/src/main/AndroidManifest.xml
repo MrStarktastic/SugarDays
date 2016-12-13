@@ -76,6 +76,7 @@
             android:theme="@style/Theme.AppCompat.NoActionBar" />
         <activity
             android:name=".activity.ViewEntryActivity"
+            android:parentActivityName=".activity.DiaryActivity"
             android:theme="@style/AppTheme.NoActionBar" />
     </application>
 

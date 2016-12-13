@@ -4,6 +4,7 @@ import android.animation.LayoutTransition;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -34,6 +35,7 @@ import android.view.Window;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.Day;
 import com.mr_starktastic.sugardays.fragment.DayPageFragment;
@@ -67,7 +69,7 @@ public class DiaryActivity extends AppCompatActivity
     /**
      * Request codes
      */
-    public static final int REQ_NEW_LOG = 1;
+    public static final int REQ_ENTRY = 1;
     public static final int REQ_SETTINGS_CHANGE = 2;
 
     /**
@@ -192,6 +194,22 @@ public class DiaryActivity extends AppCompatActivity
         pager.setAdapter(new DayAdapter(getSupportFragmentManager()));
         pager.addOnPageChangeListener(this);
         pager.setCurrentItem(TODAY_IDX);
+
+        /*
+        Logic for temporary "welcome screen".
+         */
+        final SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+
+        if (preferences.getBoolean("FIRST_USE", true)) {
+            drawerLayout.openDrawer(GravityCompat.START);
+            new MaterialDialog.Builder(this)
+                    .title(getString(R.string.welcome))
+                    .content(getString(R.string.welcome_content))
+                    .canceledOnTouchOutside(false)
+                    .positiveText(android.R.string.ok)
+                    .show();
+            preferences.edit().putBoolean("FIRST_USE", false).apply();
+        }
     }
 
     private void addLog() {
@@ -204,7 +222,7 @@ public class DiaryActivity extends AppCompatActivity
                         .putExtra(EXTRA_CALENDAR,
                                 new GregorianCalendar(cal.getYear(), cal.getMonth(), cal.getDay(),
                                         currTime.get(Calendar.HOUR_OF_DAY),
-                                        currTime.get(Calendar.MINUTE))), REQ_NEW_LOG);
+                                        currTime.get(Calendar.MINUTE))), REQ_ENTRY);
     }
 
     /**
@@ -338,9 +356,8 @@ public class DiaryActivity extends AppCompatActivity
             case R.id.nav_feedback:
                 // TODO: App version, Device manufacturer, Device model, OS Version
                 startActivity(Intent.createChooser(new Intent(Intent.ACTION_SENDTO)
-                        .setData(Uri.parse("mailto: benfaingold@gmail.com"))
-                        .putExtra(Intent.EXTRA_SUBJECT, "SugarDays feedback")
-                        .putExtra(Intent.EXTRA_TEXT, "Hi Ben!"), "Send mail..."));
+                        .setData(Uri.parse("mailto: sugardays.app@gmail.com"))
+                        .putExtra(Intent.EXTRA_SUBJECT, "SugarDays feedback"), "Send mail..."));
                 break;
         }
 
@@ -351,12 +368,13 @@ public class DiaryActivity extends AppCompatActivity
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
-            case REQ_NEW_LOG:
+            case REQ_ENTRY:
                 if (resultCode == RESULT_OK) {
                     pager.getAdapter().notifyDataSetChanged();
                     pager.setCurrentItem(getPageIndexFromDate(CalendarDay.from(
                             (Calendar) data.getSerializableExtra(EXTRA_CALENDAR))));
-                }
+                } else if (resultCode == EditEntryActivity.RESULT_DELETE)
+                    pager.getAdapter().notifyDataSetChanged();
                 break;
 
             case REQ_SETTINGS_CHANGE:
@@ -471,7 +489,7 @@ public class DiaryActivity extends AppCompatActivity
 
         startActivityForResult(new Intent(this, ViewEntryActivity.class)
                 .putExtra(EXTRA_DAY_ID, dayId)
-                .putExtra(EXTRA_ENTRY_INDEX, entryIndex), REQ_NEW_LOG, sceneTransition);
+                .putExtra(EXTRA_ENTRY_INDEX, entryIndex), REQ_ENTRY, sceneTransition);
     }
 
     /**
