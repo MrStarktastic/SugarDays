@@ -37,12 +37,11 @@
             android:id="@+id/number_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
+            android:layout_gravity="start|center_vertical"
             android:layout_marginStart="@dimen/tiny_margin"
             android:labelFor="@id/number_edit"
             android:textAppearance="?android:attr/textAppearanceListItem"
             android:textColor="?android:textColorHint" />
 
     </LinearLayout>
-
 </LinearLayout>

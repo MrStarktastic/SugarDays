@@ -235,6 +235,31 @@ public class EditEntryActivity extends AppCompatActivity
         typeSpinner.setSelection(intent.getIntExtra(DiaryActivity.EXTRA_TYPE, 0));
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        // Insulin
+        switch (PrefUtil.getInsulinTherapy(preferences)) {
+            case PrefUtil.THERAPY_PEN:
+                tempBasalEditContainer.setVisibility(View.GONE);
+                basalEdit = (LabeledEditText) basalEditContainer.findViewById(R.id.basal_edit);
+                basalEdit.setLabels((TextView) basalEditContainer.findViewById(R.id.basal_label));
+                break;
+
+            case PrefUtil.THERAPY_PUMP:
+                basalEditContainer.setVisibility(View.GONE);
+                tempBasalText =
+                        (TextView) tempBasalEditContainer.findViewById(R.id.temp_basal_text);
+                tempBasalText.setOnClickListener(this);
+                clearTempBasalButton =
+                        (Button) tempBasalEditContainer.findViewById(R.id.temp_basal_clear_button);
+                clearTempBasalButton.setOnClickListener(this);
+                setTempBasal(tempBasal);
+                break;
+
+            case PrefUtil.THERAPY_NO_INSULIN:
+                insulinEditContainer.setVisibility(View.GONE);
+                break;
+        }
+
         pillNames = PrefUtil.getPills(preferences);
         pills = new ArrayList<>();
         foods = new ArrayList<>();
@@ -408,30 +433,6 @@ public class EditEntryActivity extends AppCompatActivity
                 (AppCompatButton) foodEntryContainer.findViewById(R.id.food_add_button);
         addFoodButton.setOnClickListener(this);
 
-        // Insulin
-        switch (PrefUtil.getInsulinTherapy(preferences)) {
-            case PrefUtil.THERAPY_PEN:
-                tempBasalEditContainer.setVisibility(View.GONE);
-                basalEdit = (LabeledEditText) basalEditContainer.findViewById(R.id.basal_edit);
-                basalEdit.setLabels((TextView) basalEditContainer.findViewById(R.id.basal_label));
-                break;
-
-            case PrefUtil.THERAPY_PUMP:
-                basalEditContainer.setVisibility(View.GONE);
-                tempBasalText =
-                        (TextView) tempBasalEditContainer.findViewById(R.id.temp_basal_text);
-                tempBasalText.setOnClickListener(this);
-                clearTempBasalButton =
-                        (Button) tempBasalEditContainer.findViewById(R.id.temp_basal_clear_button);
-                clearTempBasalButton.setOnClickListener(this);
-                setTempBasal(tempBasal);
-                break;
-
-            case PrefUtil.THERAPY_NO_INSULIN:
-                insulinEditContainer.setVisibility(View.GONE);
-                break;
-        }
-
         // Pills
         if (pillNames != null) {
             final LayoutTransition pillTransition = pillEntryContainer.getLayoutTransition();
@@ -487,7 +488,7 @@ public class EditEntryActivity extends AppCompatActivity
     }
 
     private void loadInsulinData(Float val, TextView textView) {
-        if (val != null)
+        if (val != null && textView != null)
             textView.setText(NumericTextUtil.trim(val));
     }
 
@@ -813,9 +814,20 @@ public class EditEntryActivity extends AppCompatActivity
             if (bloodSugarEdit.getInputType() == InputType.TYPE_CLASS_NUMBER)
                 bg = new BloodSugar((int) val);
             else bg = new BloodSugar(val);
+        } catch (NumberFormatException | NullPointerException ignored) {
 
+        }
+        try {
             corrBolus = Float.valueOf(corrBolusEdit.getText().toString());
+        } catch (NumberFormatException | NullPointerException ignored) {
+
+        }
+        try {
             mealBolus = Float.valueOf(mealBolusEdit.getText().toString());
+        } catch (NumberFormatException | NullPointerException ignored) {
+
+        }
+        try {
             basal = Float.valueOf(basalEdit.getText().toString());
         } catch (NumberFormatException | NullPointerException ignored) {
 

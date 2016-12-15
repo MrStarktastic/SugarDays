@@ -31,8 +31,7 @@
 
             <ImageView
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
+                android:layout_height="match_parent"
                 android:layout_marginStart="@dimen/normal_margin"
                 android:src="@drawable/ic_time"
                 tools:ignore="ContentDescription" />
@@ -61,8 +60,7 @@
 
             <ImageView
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
+                android:layout_height="match_parent"
                 android:layout_marginStart="@dimen/normal_margin"
                 android:src="@drawable/ic_location"
                 tools:ignore="ContentDescription" />
@@ -142,8 +140,7 @@
 
             <ImageView
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
+                android:layout_height="match_parent"
                 android:layout_marginStart="@dimen/normal_margin"
                 android:src="@drawable/ic_blood_sugar"
                 tools:ignore="contentDescription" />
