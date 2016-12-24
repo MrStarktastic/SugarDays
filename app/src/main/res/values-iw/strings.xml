@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">SugarDays</string>
+
     <string name="navigation_drawer_open">פתח את חלונית הניווט</string>
     <string name="navigation_drawer_close">סגור את חלונית הניווט</string>
 
@@ -124,4 +126,77 @@
 
     <string name="welcome">ברוכים הבאים לSugarDays!</string>
     <string name="welcome_content">"אני מתנצל על היעדר הדרכה ראויה (היא תבוא בגרסאות הבאות).\nאנא כנס/י להגדרות של האפליקציה כדי להפיק ממנה את המרב."</string>
+
+    <string-array name="pill_quantities">
+        <item>0.5</item>
+        <item>1.0</item>
+        <item>1.5</item>
+        <item>2.0</item>
+        <item>2.5</item>
+        <item>3.0</item>
+        <item>3.5</item>
+        <item>4.0</item>
+        <item>4.5</item>
+        <item>5.0</item>
+        <item>5.5</item>
+        <item>6.0</item>
+        <item>6.5</item>
+        <item>7.0</item>
+        <item>7.5</item>
+        <item>8.0</item>
+        <item>8.5</item>
+        <item>9.0</item>
+        <item>9.5</item>
+        <item>10.0</item>
+        <item>10.5</item>
+        <item>11.0</item>
+        <item>11.5</item>
+        <item>12.0</item>
+        <item>12.5</item>
+        <item>13.0</item>
+        <item>13.5</item>
+        <item>14.0</item>
+        <item>14.5</item>
+        <item>15.0</item>
+        <item>15.5</item>
+        <item>16.0</item>
+        <item>16.5</item>
+        <item>17.0</item>
+        <item>17.5</item>
+        <item>18.0</item>
+        <item>18.5</item>
+        <item>19.0</item>
+        <item>19.5</item>
+        <item>20.0</item>
+    </string-array>
+
+    <string-array name="pref_insulin_entryValues">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+    <string name="pref_insulin_default">0</string>
+
+    <string-array name="pref_bgUnits_entryValues">
+        <item>0</item>
+        <item>1</item>
+    </string-array>
+    <string name="pref_bgUnits_default">0</string>
+
+    <string-array name="pref_insulin_increment_entries">
+        <item>1</item>
+        <item>0.5</item>
+        <item>0.25</item>
+        <item>0.1</item>
+        <item>0.05</item>
+        <item>0.025</item>
+    </string-array>
+    <string-array name="pref_insulin_increment_entryValues">
+        <item>1</item>
+        <item>0.5</item>
+        <item>0.25</item>
+        <item>0.1</item>
+        <item>0.05</item>
+        <item>0.025</item>
+    </string-array>
 </resources>
