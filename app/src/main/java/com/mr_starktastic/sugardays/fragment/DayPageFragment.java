@@ -16,6 +16,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.mr_starktastic.sugardays.R;
@@ -112,7 +113,7 @@ public class DayPageFragment extends Fragment {
     }
 
     public interface OnLogCardSelectedListener {
-        void onLogCardSelected(int dayId, int entryIndex, View sharedView);
+        void onEntryCardSelected(int dayId, int entryIndex, View sharedView);
     }
 
     private static class SpaceDecoration extends RecyclerView.ItemDecoration {
@@ -174,8 +175,13 @@ public class DayPageFragment extends Fragment {
             final SugarEntry entry = entries[position];
             final String photoPath = entry.getPhotoPath();
 
-            if (photoPath != null)
+            if (photoPath != null) {
+                holder.content.setBackgroundResource(R.drawable.shadow_gradient);
                 Picasso.with(context).load(photoPath).fit().centerCrop().into(holder.imgView);
+            } else {
+                holder.content.setBackgroundColor(ContextCompat.getColor(context, R.color.colorSecondary));
+                ((View) holder.imgView.getParent()).setVisibility(View.GONE);
+            }
 
             holder.typeText.setText(types[entry.getType()]);
             holder.timeText.setText(TIME_FORMAT.format(entry.getTime()));
@@ -202,6 +208,7 @@ public class DayPageFragment extends Fragment {
         }
 
         class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+            private LinearLayout content;
             private ImageView imgView;
             private TextView typeText, timeText, locationText, bgText;
 
@@ -210,16 +217,17 @@ public class DayPageFragment extends Fragment {
                 cardView.setOnClickListener(this);
 
                 imgView = (ImageView) cardView.findViewById(R.id.photo);
-                typeText = (TextView) cardView.findViewById(R.id.entry_type_text);
-                timeText = (TextView) cardView.findViewById(R.id.entry_time_text);
-                locationText = (TextView) cardView.findViewById(R.id.entry_location_text);
-                bgText = (TextView) cardView.findViewById(R.id.entry_blood_glucose_text);
+                content = (LinearLayout) cardView.findViewById(R.id.card_view_content);
+                typeText = (TextView) content.findViewById(R.id.entry_type_text);
+                timeText = (TextView) content.findViewById(R.id.entry_time_text);
+                locationText = (TextView) content.findViewById(R.id.entry_location_text);
+                bgText = (TextView) content.findViewById(R.id.entry_blood_glucose_text);
             }
 
             @Override
             public void onClick(View view) {
                 if (listener != null)
-                    listener.onLogCardSelected(dayId, getAdapterPosition(), view);
+                    listener.onEntryCardSelected(dayId, getAdapterPosition(), view);
             }
         }
     }

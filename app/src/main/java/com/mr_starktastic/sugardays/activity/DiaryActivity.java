@@ -3,14 +3,21 @@ package com.mr_starktastic.sugardays.activity;
 import android.animation.LayoutTransition;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.FloatingActionButton;
@@ -19,6 +26,9 @@ import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.util.Pair;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.view.ViewPager;
@@ -33,12 +43,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.mr_starktastic.sugardays.R;
 import com.mr_starktastic.sugardays.data.Day;
 import com.mr_starktastic.sugardays.fragment.DayPageFragment;
+import com.mr_starktastic.sugardays.receiver.NotificationPublisher;
 import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import com.prolificinteractive.materialcalendarview.OnDateSelectedListener;
@@ -80,6 +93,12 @@ public class DiaryActivity extends AppCompatActivity
     private static final int TODAY_IDX = Day.daysBetween(TODAY_CAL, MIN_CAL);
     private static final int ARROW_START_ANGLE = 0, ARROW_END_ANGLE = -180;
     private static final long CALENDAR_RESIZE_ANIM_DURATION = 200;
+    private static final int[] notificationDelays = {
+            900000 /* 15min */,
+            1800000 /* 30min */,
+            3600000 /* 1h */,
+            7200000 /* 2h */,
+            10800000 /* 3h */};
 
     /**
      * Date formats for setting title & subtitle texts
@@ -323,8 +342,29 @@ public class DiaryActivity extends AppCompatActivity
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.action_today)
-            pager.setCurrentItem(TODAY_IDX);
+        switch (item.getItemId()) {
+            case R.id.action_today:
+                pager.setCurrentItem(TODAY_IDX);
+                break;
+
+            case R.id.action_reminder:
+                new MaterialDialog.Builder(this)
+                        .customView(R.layout.dialog_reminder, false)
+                        .positiveText(android.R.string.ok)
+                        .negativeText(android.R.string.cancel)
+                        .onPositive(new MaterialDialog.SingleButtonCallback() {
+                            @Override
+                            public void onClick(@NonNull MaterialDialog dialog,
+                                                @NonNull DialogAction which) {
+                                // noinspection ConstantConditions
+                                scheduleNotification(getNotification(),
+                                        notificationDelays[(((Spinner) dialog.getCustomView()
+                                                .findViewById(R.id.reminder_time_spinner))
+                                                .getSelectedItemPosition())]);
+                            }
+                        }).build().show();
+                break;
+        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -338,10 +378,39 @@ public class DiaryActivity extends AppCompatActivity
                 break;
 
             case R.id.nav_feedback:
-                // TODO: App version, Device manufacturer, Device model, OS Version
-                startActivity(Intent.createChooser(new Intent(Intent.ACTION_SENDTO)
-                        .setData(Uri.parse("mailto: sugardays.app@gmail.com"))
-                        .putExtra(Intent.EXTRA_SUBJECT, "SugarDays feedback"), "Send mail..."));
+                final StringBuilder footnoteBuilder = new StringBuilder();
+
+                try {
+                    footnoteBuilder
+                            .append("App version: ")
+                            .append(getPackageManager()
+                                    .getPackageInfo(getPackageName(), 0).versionName)
+                            .append('\n');
+                } catch (PackageManager.NameNotFoundException ignored) {
+
+                }
+
+                final String footnote = footnoteBuilder
+                        .append("OS: Android ")
+                        .append(Build.VERSION.RELEASE)
+                        .append(", API ")
+                        .append(Build.VERSION.SDK_INT)
+                        .append('\n')
+                        .append("Device: ")
+                        .append(Build.MANUFACTURER)
+                        .append(' ')
+                        .append(Build.MODEL)
+                        .append('\n').toString();
+
+                final Intent intent = new Intent(Intent.ACTION_SENDTO)
+                        .setData(Uri.parse("mailto:"))
+                        .putExtra(Intent.EXTRA_EMAIL, new String[]{"sugardays.app@gmail.com"})
+                        .putExtra(Intent.EXTRA_SUBJECT, "Feedback")
+                        .putExtra(Intent.EXTRA_TEXT,
+                                "Hello developer of SugarDays,\n\n" + footnote);
+
+                if (intent.resolveActivity(getPackageManager()) != null)
+                    startActivity(intent);
                 break;
         }
 
@@ -353,12 +422,11 @@ public class DiaryActivity extends AppCompatActivity
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
             case REQ_ENTRY:
-                if (resultCode == RESULT_OK) {
-                    pager.getAdapter().notifyDataSetChanged();
+                pager.getAdapter().notifyDataSetChanged();
+
+                if (resultCode == RESULT_OK && data.hasExtra(EXTRA_CALENDAR))
                     pager.setCurrentItem(getPageIndexFromDate(CalendarDay.from(
                             (Calendar) data.getSerializableExtra(EXTRA_CALENDAR))));
-                } else if (resultCode == EditEntryActivity.RESULT_DELETE)
-                    pager.getAdapter().notifyDataSetChanged();
                 break;
 
             case REQ_SETTINGS_CHANGE:
@@ -460,7 +528,7 @@ public class DiaryActivity extends AppCompatActivity
     }
 
     @Override
-    public void onLogCardSelected(int dayId, int entryIndex, View sharedView) {
+    public void onEntryCardSelected(int dayId, int entryIndex, View sharedView) {
         final Bundle sceneTransition;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
@@ -474,6 +542,37 @@ public class DiaryActivity extends AppCompatActivity
         startActivityForResult(new Intent(this, ViewEntryActivity.class)
                 .putExtra(EXTRA_DAY_ID, dayId)
                 .putExtra(EXTRA_ENTRY_INDEX, entryIndex), REQ_ENTRY, sceneTransition);
+    }
+
+    private void scheduleNotification(Notification notification, int delay) {
+        ((AlarmManager) getSystemService(Context.ALARM_SERVICE))
+                .set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + delay,
+                        PendingIntent.getBroadcast(this, 0,
+                                new Intent(this, NotificationPublisher.class)
+                                        .putExtra(NotificationPublisher.NOTIFICATION_ID, 1)
+                                        .putExtra(NotificationPublisher.NOTIFICATION, notification),
+                                PendingIntent.FLAG_UPDATE_CURRENT));
+    }
+
+    private Notification getNotification() {
+        final int color = ContextCompat.getColor(this, R.color.colorAccent);
+
+        return new NotificationCompat.Builder(this)
+                .setContentTitle(getString(R.string.notification_reminder_title))
+                .setContentText(getString(R.string.notification_reminder_content))
+                .setSmallIcon(R.drawable.ic_notification)
+                .setColor(color)
+                .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setVibrate(new long[]{250, 1000})
+                .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
+                .setLights(color, 3000, 3000)
+                .setContentIntent(TaskStackBuilder.create(this)
+                        .addParentStack(EditEntryActivity.class)
+                        .addNextIntent(new Intent(this, EditEntryActivity.class))
+                        .getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT))
+                .build();
     }
 
     /**

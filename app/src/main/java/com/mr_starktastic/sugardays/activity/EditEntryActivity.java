@@ -266,6 +266,9 @@ public class EditEntryActivity extends AppCompatActivity
         loadOldData(intent);
 
         // Date
+        if (calendar == null)
+            calendar = new GregorianCalendar();
+
         dateText.setText(SugarEntry.DATE_FORMAT.format(calendar));
         final DatePickerDialog dateDialog = new DatePickerDialog(this,
                 new DatePickerDialog.OnDateSetListener() {

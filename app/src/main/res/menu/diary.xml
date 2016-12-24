@@ -8,4 +8,10 @@
         android:title="@string/action_today"
         app:showAsAction="ifRoom" />
 
+    <item
+        android:id="@+id/action_reminder"
+        android:icon="@drawable/ic_add_alert"
+        android:title="@string/action_reminder"
+        app:showAsAction="ifRoom" />
+
 </menu>

@@ -5,6 +5,18 @@
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
     <string name="action_today">Jump to Today</string>
+    <string name="action_reminder">Set Reminder</string>
+    <string name="dialog_reminder_title">Remind me in</string>
+    <string name="notification_reminder_title">Reminder</string>
+    <string name="notification_reminder_content">Tap to make an entry</string>
+
+    <string-array name="reminder_options">
+        <item>15 minutes</item>
+        <item>30 minutes</item>
+        <item>1 hour</item>
+        <item>2 hours</item>
+        <item>3 hours</item>
+    </string-array>
 
     <string name="today">Today</string>
     <string name="calendar_dropdown_arrow_desc">Calendar dropdown arrow</string>
@@ -21,13 +33,13 @@
     <string name="question_save_changes">Save this entry?</string>
     <string name="question_delete_entry">Delete this entry?</string>
 
-    <array name="entry_types">
+    <string-array name="entry_types">
         <item>Breakfast</item>
         <item>Lunch</item>
         <item>Dinner</item>
         <item>Bedtime</item>
         <item>Other</item>
-    </array>
+    </string-array>
 
     <string name="location_hint">Location</string>
     <string name="current_location_button_desc">Pick location</string>

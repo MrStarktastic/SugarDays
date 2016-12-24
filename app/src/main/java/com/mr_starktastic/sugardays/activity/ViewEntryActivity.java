@@ -37,6 +37,7 @@ import com.mr_starktastic.sugardays.util.PrefUtil;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
+import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 public class ViewEntryActivity extends AppCompatActivity implements View.OnClickListener {
@@ -85,8 +86,12 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
 
         final Intent intent = getIntent();
         // noinspection ConstantConditions
-        entry = Day.findById(dayId = intent.getIntExtra(DiaryActivity.EXTRA_DAY_ID, 0))
+        entry = Day.findById(dayId = intent.hasExtra(DiaryActivity.EXTRA_CALENDAR) ?
+                Day.generateId((Calendar) intent.getSerializableExtra(DiaryActivity.EXTRA_CALENDAR))
+                : intent.getIntExtra(DiaryActivity.EXTRA_DAY_ID, 0))
                 .getEntries()[entryIdx = intent.getIntExtra(DiaryActivity.EXTRA_ENTRY_INDEX, 0)];
+        setResult(RESULT_OK, intent);
+
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         final FloatingActionButton editFab = (FloatingActionButton) findViewById(R.id.edit_button);
@@ -340,15 +345,8 @@ public class ViewEntryActivity extends AppCompatActivity implements View.OnClick
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQ_ENTRY_EDIT) {
             if (resultCode == RESULT_OK) {
-                final GregorianCalendar cal =
-                        (GregorianCalendar) data.getSerializableExtra(DiaryActivity.EXTRA_CALENDAR);
-                // noinspection ConstantConditions
-                entry = Day.findById(dayId = Day.generateId(cal))
-                        .getEntries()[entryIdx = data.getIntExtra(DiaryActivity.EXTRA_ENTRY_INDEX, 0)];
-                setResult(RESULT_OK, new Intent()
-                        .putExtra(DiaryActivity.EXTRA_CALENDAR, cal)
-                        .putExtra(DiaryActivity.EXTRA_ENTRY_INDEX, entryIdx));
-                showData();
+                getIntent().putExtras(data);
+                recreate();
             } else if (resultCode == EditEntryActivity.RESULT_DELETE) {
                 setResult(EditEntryActivity.RESULT_DELETE);
                 finish();
