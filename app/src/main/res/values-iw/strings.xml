@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="navigation_drawer_open">פתח את חלונית הניווט</string>
+    <string name="navigation_drawer_close">סגור את חלונית הניווט</string>
+
+    <string name="action_today">קפוץ להיום</string>
+    <string name="action_reminder">הגדר תזכורת</string>
+    <string name="dialog_reminder_title">הזכר לי בעוד</string>
+    <string name="notification_reminder_title">תזכורת</string>
+    <string name="notification_reminder_content">הקש כדי לעשות רשומה</string>
+
+    <string-array name="reminder_options">
+        <item>15 דקות</item>
+        <item>30 דקות</item>
+        <item>שעה</item>
+        <item>שעתיים</item>
+        <item>3 שעות</item>
+    </string-array>
+
+    <string name="today">היום</string>
+    <string name="calendar_dropdown_arrow_desc">חץ של לוח שנה נשלף</string>
+
+    <string name="action_title_add_entry">הוסף רשומה</string>
+    <string name="action_title_edit_entry">ערוך רשומה</string>
+    <string name="delete_entry">מחק רשומה</string>
+    <string name="action_save">שמור</string>
+    <string name="action_discard">מחק שינויים</string>
+    <string name="action_clear">מחק</string>
+    <string name="action_delete">מחק</string>
+    <string name="empty">ריק</string>
+
+    <string name="question_save_changes">לשמור רשומה זו?</string>
+    <string name="question_delete_entry">למחוק רשומה זו?</string>
+
+    <string-array name="entry_types">
+        <item>ארוחת בוקר</item>
+        <item>ארוחת צהריים</item>
+        <item>ארוחת ערב</item>
+        <item>זמן שינה</item>
+        <item>אחר</item>
+    </string-array>
+
+    <string name="location_hint">מיקום</string>
+    <string name="current_location_button_desc">בחר מיקום</string>
+
+    <string name="change_photo">שנה</string>
+    <string name="take_photo">צלם תמונה</string>
+    <string name="choose_photo">בחר תמונה</string>
+    <string name="remove_photo">מחק תמונה</string>
+    <string name="take_new_photo">צלם תמונה חדשה</string>
+    <string name="choose_new_photo">בחר תמונה חדשה</string>
+
+    <string name="add_food">הוסף אוכל</string>
+    <string name="edit_food">ערוך אוכל</string>
+    <string name="food_hint">שם/תיאור האוכל</string>
+    <string name="quantity_hint">כמות</string>
+    <string name="carbs_hint">פחמימות</string>
+    <string name="grams_condensed">"ג'"</string>
+    <string name="scan_barcode">סרוק ברקוד</string>
+    <string name="barcode_food_not_found">אוכל לא נמצא</string>
+
+    <string name="correction">בולוס תיקון</string>
+    <string name="meal">בולוס ארוחה</string>
+
+    <string name="basal_label">באזל</string>
+    <string name="temp_basal_label">באזל זמני</string>
+    <string name="temp_basal_dialog_title">הגדר באזל זמני</string>
+    <string name="temp_basal_duration_label">"משך (ש':דק')"</string>
+    <string name="temp_basal_rate_label">קצב (%)</string>
+
+    <string name="add_pill">הוסף גלולה</string>
+
+    <string name="notes_hint">פתקים</string>
+
+    <!-- Preferences -->
+    <string name="off">כבוי</string>
+    <string name="on">מופעל</string>
+
+    <string name="pref_cat_gen_title">כללי</string>
+
+    <string name="pref_insulin_title">טיפול אינסולין</string>
+    <string-array name="pref_insulin_entries">
+        <item>ללא אינסולין</item>
+        <item>עט/מזרקים</item>
+        <item>משאבה</item>
+    </string-array>
+
+    <string name="pref_pills_title">גלולות</string>
+
+    <string name="pref_bgUnits_title">יחידת מידה של רמת גלוקוז בדם</string>
+    <string-array name="pref_bgUnits_entries">
+        <item>מ\"ג/ד\"ל</item>
+        <item>"מ\"מ/ל'"</item>
+    </string-array>
+
+    <string name="pref_pills_edit_text_hint">שם הגלולה</string>
+
+    <string name="pref_hypo_title">היפו</string>
+    <string name="pref_targetRange_title">טווח היעד</string>
+    <string name="pref_hyper_title">הייפר</string>
+
+    <string name="pref_scr_bolus_predict_title">חיזוי בולוס</string>
+    <string name="pref_bolus_predict_off_summary">כאשר אפשרות זו מופעלת, האפליקציה תחשב באופן אוטומטי את צריכת הבולוס באמצעות הגורמים האישיים הבאים:\n1) רמת גלוקוז בדם אופטימלית.\n2) יחס תיקון.\n3) יחס אינוסלין-פחמימה.\n\nשים/שימי לב! מומלץ להפעיל שיקול דעת מכיוון שאלו הם רק הערכות.</string>
+    <string name="pref_optimal_bg_title">רמת גלוקוז אופטימלית</string>
+    <string name="pref_correction_factor_title">יחס תיקון</string>
+    <string name="pref_carb_to_insulin_title">יחס אינסולין-פחמימה</string>
+    <string name="per_insulin_unit">ליחידת אינסולין</string>
+    <string name="grams_of_carb">"ג' פחמימות"</string>
+    <string name="pref_insulin_increment_title">קפיצות ערכי מינון</string>
+
+    <string name="pref_cat_extras_title">תוספות</string>
+
+    <string name="pref_compress_photos_title">דחוס תמונות</string>
+    <string name="pref_auto_location_title">רשום מיקום אוטומטית</string>
+
+    <string name="content_desc_photo">תמונה</string>
+    <string name="content_desc_clear">מחק פריט זה</string>
+    <string name="content_desc_google_attribution">מופעל על ידי Google</string>
+    <string name="content_desc_fatsecret_attribution">מופעל על ידי FatSecret</string>
+
+    <string name="settings">הגדרות</string>
+    <string name="feedback">שלח ביקורת</string>
+    <string name="about">אודות</string>
+
+    <string name="welcome">ברוכים הבאים לSugarDays!</string>
+    <string name="welcome_content">"אני מתנצל על היעדר הדרכה ראויה (היא תבוא בגרסאות הבאות).\nאנא כנס/י להגדרות של האפליקציה כדי להפיק ממנה את המרב."</string>
+</resources>
